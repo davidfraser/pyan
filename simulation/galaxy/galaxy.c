@@ -2,6 +2,29 @@
 
 #include "galaxy.h"
 
+
+double get_distance2(STAR *s1, STAR *s2)
+{
+    double d2 = 0.0;
+    double d = (s1->pos[0] - s2->pos[0]);
+    d2 += d*d;
+    d = (s1->pos[1] - s2->pos[1]);
+    d2 += d*d;
+    d = (s1->pos[2] - s2->pos[2]);
+    d2 += d*d;
+    
+    return d2;
+}
+
+
+void vector_add(VECTOR x, VECTOR y)
+{
+    x[0] += y[0];
+    x[1] += y[1];
+    x[2] += y[2];
+}
+
+
 GALAXY *create_galaxy()
 {
     GALAXY *galaxy = malloc(sizeof(GALAXY));

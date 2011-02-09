@@ -1,4 +1,4 @@
-CFLAGS = -g -Wall -O3
+CFLAGS = -g -Wall
 
 OBJ=$(patsubst %.c, %.o, $(wildcard *.c))
 HEADERS=galaxy.h
@@ -13,3 +13,6 @@ galaxy: $(OBJ)
 
 avi:
 	avidemux2_cli --load *.png --output-format AVI --video-codec FFmpeg4 --save test.avi --quit
+
+clean:
+	rm -f $(OBJ)

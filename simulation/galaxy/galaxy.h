@@ -17,7 +17,12 @@ typedef struct GALAXY
     int num;
     int max;
     STAR **stars;
+    double radius;
 } GALAXY;
+
+
+extern double get_distance2(STAR *s1, STAR *s2);
+extern void vector_add(VECTOR x, VECTOR y);
 
 extern GALAXY *create_galaxy();
 extern void destroy_galaxy(GALAXY *galaxy);
