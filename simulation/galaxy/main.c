@@ -29,13 +29,8 @@ void calculate_frame(GALAXY *g, double timestep)
     for (i = 0; i < g->num; i++)
     {
         STAR *s = g->stars[i];
-        s->vel[0] += timestep * forces[i][0] / s->mass;
-        s->vel[1] += timestep * forces[i][1] / s->mass;
-        s->vel[2] += timestep * forces[i][2] / s->mass;
-        
-        s->pos[0] += timestep * s->vel[0];
-        s->pos[1] += timestep * s->vel[1];
-        s->pos[2] += timestep * s->vel[2];
+        vector_add_scaled(s->vel, forces[i], timestep / s->mass);
+        vector_add_scaled(s->pos, s->vel, timestep);
     }
 }
 
@@ -147,7 +142,7 @@ void save_image(GALAXY *g, const char *filename)
     
     for (i = 0; i < width*height; i++)
     {
-        if (buffer[i] > 0)
+        if (buffer[i] > 100)
             buffer[i]--;
     }
     
@@ -173,15 +168,21 @@ int main(int argc, char *argv[])
     GALAXY *g = create_solar_system_2();
     //GALAXY *g = create_disc_galaxy(2.5E11, 1000);
     
+    #define SECONDS_PER_YEAR 365.242199*24*3600
+    
     f = fopen("stars.dat", "wb");
-    for (i = 0; i < 1000; i++)
+    for (i = 0; i < 250*4; i++)
     {
         char fn[1000];
         int j;
         for (j = 0; j < 100; j++)
-            calculate_frame(g, 100000.0);
+            calculate_frame(g, SECONDS_PER_YEAR/100/4);
+        double bcx = g->barycentre[1];
+        update_galaxy(g);
+        //fprintf(stderr, "Barycentre %f,%f,%f; mass %f; movement %f\n", g->barycentre[0], g->barycentre[1], g->barycentre[2], g->mass, (bcx - g->barycentre[1])/100/10000);
+        
         dump_galaxy(g, f);
-        snprintf(fn, 100, "out%03d.png", i);
+        snprintf(fn, 100, "img/out%05d.png", i / 4);
         save_image(g, fn);
     }
     fclose(f);

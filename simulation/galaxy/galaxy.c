@@ -25,6 +25,22 @@ void vector_add(VECTOR x, VECTOR y)
 }
 
 
+void vector_add_scaled(VECTOR x, VECTOR y, double scale)
+{
+    x[0] += y[0]*scale;
+    x[1] += y[1]*scale;
+    x[2] += y[2]*scale;
+}
+
+
+void vector_scale(VECTOR x, double scale)
+{
+    x[0] *= scale;
+    x[1] *= scale;
+    x[2] *= scale;
+}
+
+
 GALAXY *create_galaxy()
 {
     GALAXY *galaxy = malloc(sizeof(GALAXY));
@@ -92,4 +108,25 @@ void dump_galaxy(GALAXY *galaxy, FILE *f)
     {
         dump_star(galaxy->stars[i], f);
     }
+}
+
+
+void update_galaxy(GALAXY *galaxy)
+{
+    int i;
+    
+    galaxy->barycentre[0] = 0.0;
+    galaxy->barycentre[1] = 0.0;
+    galaxy->barycentre[2] = 0.0;
+    
+    galaxy->mass = 0.0;
+    
+    for (i = 0; i < galaxy->num; i++)
+    {
+        STAR *s = galaxy->stars[i];
+        vector_add_scaled(galaxy->barycentre, s->pos, s->mass);
+        galaxy->mass += s->mass;
+    }
+    
+    vector_scale(galaxy->barycentre, 1.0/galaxy->mass);
 }

@@ -116,7 +116,7 @@ NODE *build_tree(GALAXY *galaxy)
 }
 
 
-#define THRESHOLD 0
+#define THRESHOLD 0.75
 #define GRAVITY 6.67E-11
 
 extern void calculate_force(STAR *s1, STAR *s2, double g, VECTOR force);
