@@ -8,13 +8,6 @@
 extern void bh_calculate_all(GALAXY *galaxy, VECTOR *forces);
 extern void naive_calculate_all(GALAXY *galaxy, VECTOR *forces);
 
-float rand_float(float min, float max)
-{
-    int x = rand();
-    float r = max - min;
-    return x * r / RAND_MAX + min;
-}
-
 void calculate_frame(GALAXY *g, double timestep)
 {
     int i;
@@ -22,13 +15,15 @@ void calculate_frame(GALAXY *g, double timestep)
     
     memset(forces, 0, sizeof(forces));
     
-    naive_calculate_all(g, forces);
-    //bh_calculate_all(g, forces);
+    //naive_calculate_all(g, forces);
+    bh_calculate_all(g, forces);
     
     /* Apply forces. */
     for (i = 0; i < g->num; i++)
     {
         STAR *s = g->stars[i];
+        if (s->mass == 0.0)
+            continue;
         vector_add_scaled(s->vel, forces[i], timestep / s->mass);
         vector_add_scaled(s->pos, s->vel, timestep);
     }
@@ -96,6 +91,9 @@ static GALAXY *create_solar_system_2()
         add_star(g, s);
     }
     
+    blow_up_star(g, g->stars[9], 10, 10.0);
+    //g->stars[9]->mass = 0.0;
+    
     g->radius = 7E12;
     
     return g;
@@ -130,7 +128,7 @@ static GALAXY *create_disc_galaxy(double radius, int num)
 
 extern void write_png(const char *file_name, unsigned char *data, int width, int height);
 
-void save_image(GALAXY *g, const char *filename)
+void save_image(GALAXY *g, const char *filename, int save)
 {
     int i;
     int width = 512;
@@ -142,13 +140,15 @@ void save_image(GALAXY *g, const char *filename)
     
     for (i = 0; i < width*height; i++)
     {
-        if (buffer[i] > 100)
+        if (buffer[i] > 10)
             buffer[i]--;
     }
     
     for (i = 0; i < g->num; i++)
     {
         STAR *s = g->stars[i];
+        if (s->mass == 0.0)
+            continue;
         int px = (s->pos[0]/g->radius)*width/2 + width/2;
         int py = (s->pos[1]/g->radius)*height/2 + height/2;
         if (px >= 0 && px < width && py >= 0 && py < height)
@@ -157,7 +157,8 @@ void save_image(GALAXY *g, const char *filename)
         }
     }
     
-    write_png(filename, buffer, width, height);
+    if (save)
+        write_png(filename, buffer, width, height);
     //free(buffer);
 }
 
@@ -171,19 +172,20 @@ int main(int argc, char *argv[])
     #define SECONDS_PER_YEAR 365.242199*24*3600
     
     f = fopen("stars.dat", "wb");
-    for (i = 0; i < 250*4; i++)
+    for (i = 0; i < 2500*10; i++)
     {
         char fn[1000];
         int j;
-        for (j = 0; j < 100; j++)
-            calculate_frame(g, SECONDS_PER_YEAR/100/4);
+        for (j = 0; j < 10; j++)
+            calculate_frame(g, SECONDS_PER_YEAR/10/10);
         double bcx = g->barycentre[1];
         update_galaxy(g);
+        recentre_galaxy(g);
         //fprintf(stderr, "Barycentre %f,%f,%f; mass %f; movement %f\n", g->barycentre[0], g->barycentre[1], g->barycentre[2], g->mass, (bcx - g->barycentre[1])/100/10000);
         
         dump_galaxy(g, f);
-        snprintf(fn, 100, "img/out%05d.png", i / 4);
-        save_image(g, fn);
+        snprintf(fn, 100, "img/out%05d.png", i / 100);
+        save_image(g, fn, i % 100 == 0);
     }
     fclose(f);
     

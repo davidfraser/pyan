@@ -22,7 +22,7 @@ void calculate_force(STAR *s1, STAR *s2, double g, VECTOR force)
 }
 
 
-#define GRAVITY 6.67E-11
+#define GRAVITY 6.67428E-11
 
 
 void naive_calculate_all(GALAXY *galaxy, VECTOR *forces)
@@ -33,10 +33,13 @@ void naive_calculate_all(GALAXY *galaxy, VECTOR *forces)
         int j;
         STAR *s1 = galaxy->stars[i];
         
+        if (s1->mass == 0.0)
+            continue;
+        
         for (j = 0; j < galaxy->num; j++)
         {
             STAR *s2 = galaxy->stars[j];
-            if (i == j)
+            if (i == j || s2->mass == 0.0)
                 continue;
             
             calculate_force(s1, s2, GRAVITY, forces[i]);

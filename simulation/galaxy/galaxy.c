@@ -3,6 +3,14 @@
 #include "galaxy.h"
 
 
+float rand_float(float min, float max)
+{
+    int x = rand();
+    float r = max - min;
+    return x * r / RAND_MAX + min;
+}
+
+
 double get_distance2(STAR *s1, STAR *s2)
 {
     double d2 = 0.0;
@@ -125,8 +133,40 @@ void update_galaxy(GALAXY *galaxy)
     {
         STAR *s = galaxy->stars[i];
         vector_add_scaled(galaxy->barycentre, s->pos, s->mass);
-        galaxy->mass += s->mass;
+        galaxy->mass += s->mass;    
     }
-    
+
     vector_scale(galaxy->barycentre, 1.0/galaxy->mass);
+}
+
+
+void recentre_galaxy(GALAXY *galaxy)
+{
+    int i;
+    
+    for (i = 0; i < galaxy->num; i++)
+    {
+        STAR *s = galaxy->stars[i];
+        vector_add_scaled(s->pos, galaxy->barycentre, -1.0);
+    }
+}
+
+
+void blow_up_star(GALAXY *galaxy, STAR *star, int fragments, double velocity)
+{
+    int i;
+    for (i = 0; i < fragments; i++)
+    {
+        STAR *s = create_star();
+        *s = *star;
+        s->vel[0] += rand_float(-velocity, velocity);
+        s->vel[1] += rand_float(-velocity, velocity);
+        s->vel[2] += rand_float(-velocity, velocity);
+        s->pos[0] += rand_float(-velocity, velocity);
+        s->pos[1] += rand_float(-velocity, velocity);
+        s->pos[2] += rand_float(-velocity, velocity);
+        s->mass = 1000.0;
+        add_star(galaxy, s);
+    }
+    star->mass = 0.0;
 }

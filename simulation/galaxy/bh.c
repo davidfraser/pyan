@@ -48,6 +48,7 @@ static NODE *get_child(NODE *tree, NODE **next_node, NODE *max_node, VECTOR pos)
 }
 
 
+/** Add the positon and mass of s2 into s1. */
 static void merge_star(STAR *s1, STAR *s2)
 {
     double total_mass = s1->mass + s2->mass;
@@ -60,6 +61,8 @@ static void merge_star(STAR *s1, STAR *s2)
 }
 
 
+#define BIN_THRESHOLD 1000.0
+
 static void insert_star(NODE *tree, NODE **next_node, NODE *max_node, STAR *s)
 {
     if (tree->star == NULL)
@@ -67,6 +70,16 @@ static void insert_star(NODE *tree, NODE **next_node, NODE *max_node, STAR *s)
         //fprintf(stderr, "Insert %p into empty %p.\n", s, tree);
         /* Simple case: node is empty, just make it point to this star. */
         tree->star = s;
+    }
+    else if (tree->side <= BIN_THRESHOLD)
+    {
+        /* Special optimisation: if the tree is small enough, just bin all stars into it. */
+        if (tree->star != &tree->star_data)
+        {
+            merge_star(&tree->star_data, tree->star);
+            tree->star = &tree->star_data;
+        }
+        merge_star(&tree->star_data, s);
     }
     else if (tree->star == &tree->star_data)
     {
@@ -107,6 +120,9 @@ NODE *build_tree(GALAXY *galaxy)
     for (i = 0; i < galaxy->num; i++)
     {
         STAR *s = galaxy->stars[i];
+        if (s->mass == 0.0)
+            continue;
+        
         insert_star(tree, &next_node, max_node, s);
         //fprintf(stderr, "Star %d inserted\n", i);
     }
@@ -155,6 +171,8 @@ static void calculate_forces(NODE *tree, GALAXY *galaxy, VECTOR *forces)
     for (i = 0; i < galaxy->num; i++)
     {
         STAR *s = galaxy->stars[i];
+        if (s->mass == 0.0)
+            continue;
         
         //fprintf(stderr, "Calculating force for star %p\n", s);
         get_force_from_tree(tree, s, forces[i]);
