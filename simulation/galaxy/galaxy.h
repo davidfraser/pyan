@@ -7,9 +7,12 @@ typedef double VECTOR[3];
 
 typedef struct STAR
 {
+    char *name;
     VECTOR pos;
     VECTOR vel;
     double mass;
+    double size;
+    unsigned char rgb[3];
 } STAR;
 
 typedef struct GALAXY

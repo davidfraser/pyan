@@ -62,12 +62,12 @@ void write_png(const char *file_name, unsigned char *data, int width, int height
 
     for (i = 0; i < height; i++)
     {
-        row_pointers[i] = data + (width * i);
+        row_pointers[i] = data + (3 * width * i);
     }
     
     png_set_rows(png_ptr, info_ptr, row_pointers);    
     
-    png_set_IHDR(png_ptr, info_ptr, width, height, 8, PNG_COLOR_TYPE_GRAY,
+    png_set_IHDR(png_ptr, info_ptr, width, height, 8, PNG_COLOR_TYPE_RGB,
         PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 
     /* This is the easy way.  Use it if you already have all the

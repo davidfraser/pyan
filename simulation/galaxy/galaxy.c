@@ -83,6 +83,7 @@ void add_star(GALAXY *galaxy, STAR *star)
 STAR *create_star()
 {
     STAR *star = malloc(sizeof (STAR));
+    star->name = NULL;
     star->pos[0] = 0.0;
     star->pos[1] = 0.0;
     star->pos[2] = 0.0;
@@ -90,6 +91,7 @@ STAR *create_star()
     star->vel[1] = 0.0;
     star->vel[2] = 0.0;
     star->mass = 0.0;
+    star->size = 1.0;
     return star;
 }
 
