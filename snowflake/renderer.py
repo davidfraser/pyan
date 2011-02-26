@@ -84,6 +84,7 @@ class WxLayoutRenderer(object):
         
         try:
             new_hue = float(node.properties['hue'])
+            sat = 0.5
         except KeyError:
             pass
         
