@@ -23,25 +23,25 @@ PROPERTIES=['hue', 'layout']
 class EditNodeDialog(wx.Dialog):
     
     def __init__(
-            self, content, properties, parent, id=-1, size=wx.DefaultSize, pos=wx.DefaultPosition, 
+            self, content, properties, parent, id=-1, title="Edit node", size=wx.DefaultSize, pos=wx.DefaultPosition, 
             style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER,
             ):
         
-        wx.Dialog.__init__(self, parent, id, size=size, style=style)
+        wx.Dialog.__init__(self, parent, id, title=title, size=size, style=style)
         
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         label = wx.StaticText(self, -1, "Node content")
         sizer.Add(label, 0, wx.ALL, 5)
 
-        self.content_control = wx.TextCtrl(self, -1, content, size=(80,-1))
+        self.content_control = wx.TextCtrl(self, -1, content, size=(80,-1), style=wx.TE_MULTILINE)
         sizer.Add(self.content_control, 1, wx.EXPAND|wx.ALL, 5)
 
         label = wx.StaticText(self, -1, "Properties")
         sizer.Add(label, 0, wx.ALL, 5)
         
         self.property_grid = wx.grid.Grid(self, -1)
-        sizer.Add(self.property_grid, 1, wx.EXPAND|wx.ALL, 5)
+        sizer.Add(self.property_grid, 2, wx.EXPAND|wx.ALL, 5)
         
         self.property_grid.CreateGrid(len(properties)+1,2)
         self.property_grid.SetColLabelValue(0, "Name")
@@ -69,8 +69,15 @@ class EditNodeDialog(wx.Dialog):
 
         sizer.Add(btnsizer, 0, wx.ALIGN_CENTER|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5)
         
+        self.Bind(wx.grid.EVT_GRID_CELL_CHANGE, self.OnGridCellChange)
+        
         self.SetSizer(sizer)
         sizer.Fit(self)
+    
+    def OnGridCellChange(self, evt):
+        if evt.GetRow() >= self.property_grid.GetNumberRows()-1:
+            self.property_grid.AppendRows(1)
+            self.property_grid.SetCellEditor(evt.GetRow()+1, 0, self.prop_name_editor)
     
     def GetNewContent(self):
         return self.content_control.GetValue()
@@ -96,6 +103,7 @@ class LayoutPanel(wx.Panel):
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseScroll)
         self.Bind(wx.EVT_MOTION, self.OnMouseMove)
         self.Bind(wx.EVT_LEFT_UP, self.OnMouseLeftUp)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.OnMouseLeftDoubleClick)
 
         self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
 
@@ -159,6 +167,10 @@ class LayoutPanel(wx.Panel):
         n = self.layout.find_node(x,y)
         self.SelectNode(n)
 
+    def OnMouseLeftDoubleClick(self, evt):
+        self.OnMouseLeftUp(evt)
+        self.OnEditNode(evt)
+
     def OnKeyDown(self, evt):
         if evt.CmdDown():
             if evt.GetKeyCode() == wx.WXK_HOME:
@@ -171,13 +183,6 @@ class LayoutPanel(wx.Panel):
 
         if evt.GetKeyCode() in [wx.WXK_UP, wx.WXK_DOWN, wx.WXK_LEFT, wx.WXK_RIGHT]:
             self.MoveSelection(evt.GetKeyCode())
-        elif evt.GetKeyCode() == wx.WXK_DELETE:
-            self.DeleteNode()
-        elif evt.GetKeyCode() == wx.WXK_F2:
-            self.EditNode()
-        elif evt.GetKeyCode() == wx.WXK_INSERT:
-            if self.AddNode():
-                wx.PostEvent(self, evt)
         elif evt.GetKeyCode() == wx.WXK_F9:
             self.ReLayout()
         elif evt.GetKeyCode() == wx.WXK_BACK and self.selected_node is not None:
@@ -190,8 +195,6 @@ class LayoutPanel(wx.Panel):
             self.Pivot()
         elif evt.GetKeyCode() == ord('R'):
             self.SetRoot()
-        elif evt.GetKeyCode() == ord('Z'):
-            self.ZoomAll()
         else:
             evt.Skip()
         
@@ -281,7 +284,7 @@ class LayoutPanel(wx.Panel):
         self.editor.perform(mutation)
         self.dirty = True
 
-    def ZoomAll(self):
+    def OnZoomAll(self, evt):
         diameter = self.layout.root.bounding_radius*2
         self.scroll_x,self.scroll_y = 0,0
         self.zoom = min(self.renderer.width, self.renderer.height)/float(diameter)
@@ -311,7 +314,7 @@ class LayoutPanel(wx.Panel):
             return
         
         self.OnCopy(evt)
-        self.DeleteNode()
+        self.OnDeleteNode(evt)
 
     def OnPaste(self, evt):
         target = self.selected_node
@@ -334,14 +337,14 @@ class LayoutPanel(wx.Panel):
         self.editor.perform(mutation)
         self.dirty = True
     
-    def DeleteNode(self):
+    def OnDeleteNode(self, evt):
         if self.selected_node is not None and self.selected_node != self.layout.root:
             mutation = tree_editor.DeleteMutation(self.layout, self.selected_node)
             self.selected_node = None
             self.editor.perform(mutation)
             self.dirty = True
 
-    def EditNode(self):
+    def OnEditNode(self, evt):
         if self.selected_node is None:
             return
             
@@ -368,13 +371,13 @@ class LayoutPanel(wx.Panel):
         self.editor.perform(mutation)
         self.dirty = True
 
-    def AddNode(self):
+    def OnAddNode(self, evt):
         if self.selected_node is None:
-            return False
+            return
         
         new_text = wx.GetTextFromUser("Enter new node content", "New node", '')
         if len(new_text) == 0:
-            return False
+            return
             
         points = justify.get_points(new_text)
         all_js = justify.justify_text(points, 2)
@@ -386,7 +389,7 @@ class LayoutPanel(wx.Panel):
         self.editor.perform(mutation)
         self.dirty = True
         
-        return True
+        wx.PostEvent(self, evt)
 
     def ReLayout(self):
         self.layout.run()
@@ -434,12 +437,27 @@ class MainFrame(wx.Frame):
         edit_menu.Append(wx.ID_CUT, "Cu&t\tCtrl-X", "Cut the selected node from the tree")
         edit_menu.Append(wx.ID_COPY, "&Copy\tCtrl-C", "Copy the selected node")
         edit_menu.Append(wx.ID_PASTE, "&Paste\tCtrl-V", "Paste a child into the selected node")
+        edit_menu.AppendSeparator()
+        add_node_id = wx.NewId()
+        edit_menu.Append(add_node_id, "&Add node\tInsert", "Add a new child to the selected node")
+        edit_node_id = wx.NewId()
+        edit_menu.Append(edit_node_id, "&Edit node\tF2", "Edit the selected node's text or properties")
+        delete_node_id = wx.NewId()
+        edit_menu.Append(delete_node_id, "&Delete node\tDelete", "Delete the selected node")
         menu_bar.Append(edit_menu, "&Edit")
         self.Bind(wx.EVT_MENU, self.panel.OnUndo, id=wx.ID_UNDO)
         self.Bind(wx.EVT_MENU, self.panel.OnRedo, id=wx.ID_REDO)
         self.Bind(wx.EVT_MENU, self.panel.OnCut, id=wx.ID_CUT)
         self.Bind(wx.EVT_MENU, self.panel.OnCopy, id=wx.ID_COPY)
         self.Bind(wx.EVT_MENU, self.panel.OnPaste, id=wx.ID_PASTE)
+        self.Bind(wx.EVT_MENU, self.panel.OnAddNode, id=add_node_id)
+        self.Bind(wx.EVT_MENU, self.panel.OnEditNode, id=edit_node_id)
+        self.Bind(wx.EVT_MENU, self.panel.OnDeleteNode, id=delete_node_id)
+        
+        view_menu = wx.Menu()
+        view_menu.Append(wx.ID_ZOOM_FIT, "&Zoom all\tZ", "Zoom to show the entire tree")
+        menu_bar.Append(view_menu, "&View")
+        self.Bind(wx.EVT_MENU, self.panel.OnZoomAll, id=wx.ID_ZOOM_FIT)
         
         help_menu = wx.Menu()
         help_menu.Append(wx.ID_ABOUT, "&About...", "About this program")
