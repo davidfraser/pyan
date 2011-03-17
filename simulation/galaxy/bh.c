@@ -4,6 +4,8 @@
 #include <math.h>
 
 #include "galaxy.h"
+#include "calculate.h"
+
 
 typedef struct NODE
 {
@@ -15,7 +17,32 @@ typedef struct NODE
 } NODE;
 
 
-static NODE *get_child(NODE *tree, NODE **next_node, NODE *max_node, VECTOR pos)
+typedef struct CALC_DATA
+{
+    double side_limit;
+    double threshold;
+    NODE *tree;
+    NODE *next_node, *max_node;
+} BH_CALCULATOR;
+
+
+static NODE *get_new_node(CALC_DATA *data)
+{
+    NODE *n = data->next_node;
+    
+    if (n >= data->max_node)
+    {
+        fprintf(stderr, "Tree overflow!\n");
+        *((char *) 0) = 1;
+        exit(1);
+    }
+    
+    data->next_node++;
+    return n;
+}
+
+
+static NODE *get_child(CALC_DATA *data, NODE *tree, VECTOR pos)
 {
     int c[3];
     NODE *child;
@@ -27,15 +54,7 @@ static NODE *get_child(NODE *tree, NODE **next_node, NODE *max_node, VECTOR pos)
     if (tree->children[c[0]][c[1]][c[2]] != NULL)
         return tree->children[c[0]][c[1]][c[2]];
     
-    if (*next_node >= max_node)
-    {
-        fprintf(stderr, "Tree overflow!\n");
-        *((char *) 0) = 1;
-        exit(1);
-    }
-    
-    child = *next_node;
-    (*next_node)++;
+    child = get_new_node(data);
     
     child->side = tree->side / 2.0;
     child->centre[0] = tree->centre[0] + (c[0] ? child->side : -child->side)/2.0;
@@ -61,9 +80,7 @@ static void merge_star(STAR *s1, STAR *s2)
 }
 
 
-#define BIN_THRESHOLD 1000.0
-
-static void insert_star(NODE *tree, NODE **next_node, NODE *max_node, STAR *s)
+static void insert_star(CALC_DATA *data, NODE *tree, STAR *s)
 {
     if (tree->star == NULL)
     {
@@ -71,7 +88,7 @@ static void insert_star(NODE *tree, NODE **next_node, NODE *max_node, STAR *s)
         /* Simple case: node is empty, just make it point to this star. */
         tree->star = s;
     }
-    else if (tree->side <= BIN_THRESHOLD)
+    else if (tree->side <= data->side_limit)
     {
         /* Special optimisation: if the tree is small enough, just bin all stars into it. */
         if (tree->star != &tree->star_data)
@@ -85,9 +102,9 @@ static void insert_star(NODE *tree, NODE **next_node, NODE *max_node, STAR *s)
     {
         /* Next simple case: node internal, so insert the star into the correct child
            and update the node's star to account for this star. */
-        NODE *child = get_child(tree, next_node, max_node, s->pos);
+        NODE *child = get_child(data, tree, s->pos);
         //fprintf(stderr, "Insert %p into child %p of %p.\n", s, child, tree);
-        insert_star(child, next_node, max_node, s);
+        insert_star(data, child, s);
         merge_star(tree->star, s);
     }
     else
@@ -97,25 +114,25 @@ static void insert_star(NODE *tree, NODE **next_node, NODE *max_node, STAR *s)
         STAR *star2 = tree->star;
         //fprintf(stderr, "Insert %p alongside %p in %p.\n", s, star2, tree);
         tree->star = &tree->star_data;
-        insert_star(tree, next_node, max_node, s);
-        insert_star(tree, next_node, max_node, star2);
+        insert_star(data, tree, s);
+        insert_star(data, tree, star2);
     }
 }
 
 
-NODE *build_tree(GALAXY *galaxy)
+NODE *build_tree(CALC_DATA *data, GALAXY *galaxy)
 {
     int max_nodes = galaxy->num * 100;
-    NODE *tree = malloc(sizeof(NODE) * max_nodes);
-    NODE *next_node = tree + 1;
-    NODE *max_node = tree + max_nodes;    
+    data->tree = malloc(sizeof(NODE) * max_nodes);
+    data->next_node = data->tree + 1;
+    data->max_node = data->tree + max_nodes;    
     int i;
     
-    memset(tree, 0, sizeof(NODE) * max_nodes);
+    memset(data->tree, 0, sizeof(NODE) * max_nodes);
     
     //fprintf(stderr, "%d %p %p %p\n", max_nodes, tree, next_node, max_node);
     
-    tree->side = galaxy->radius * 2.0;
+    data->tree->side = galaxy->radius * 2.0;
     
     for (i = 0; i < galaxy->num; i++)
     {
@@ -123,23 +140,18 @@ NODE *build_tree(GALAXY *galaxy)
         if (s->mass == 0.0)
             continue;
         
-        insert_star(tree, &next_node, max_node, s);
+        insert_star(data, data->tree, s);
         //fprintf(stderr, "Star %d inserted\n", i);
     }
     
     //fprintf(stderr, "Tree built\n");
-    return tree;
+    return data->tree;
 }
 
 
-#define THRESHOLD 0.75
-#define GRAVITY 6.67E-11
-
-extern void calculate_force(STAR *s1, STAR *s2, double g, VECTOR force);
-
-
-static void get_force_from_tree(NODE *tree, STAR *s, VECTOR force)
+static void get_force_from_tree(CALCULATOR *calc, NODE *tree, STAR *s, VECTOR force)
 {
+    CALC_DATA *data = calc->data;
     double d2;
     
     if (tree == NULL || tree->star == NULL)
@@ -147,10 +159,10 @@ static void get_force_from_tree(NODE *tree, STAR *s, VECTOR force)
     
     d2 = get_distance2(s, tree->star);
     
-    if (tree->star != &tree->star_data || tree->side / sqrt(d2) < THRESHOLD)
+    if (tree->star != &tree->star_data || tree->side / sqrt(d2) < data->threshold)
     {
         //fprintf(stderr, "Calculating force between %p and %p\n", tree->star, s);
-        calculate_force(s, tree->star, GRAVITY, force);
+        calculate.calculate_force(s, tree->star, calc->gravity, force);
     }
     else
     {
@@ -159,12 +171,12 @@ static void get_force_from_tree(NODE *tree, STAR *s, VECTOR force)
         for (i = 0; i < 2; i++)
             for (j = 0; j < 2; j++)
                 for (k = 0; k < 2; k++)
-                    get_force_from_tree(tree->children[i][j][k], s, force);
+                    get_force_from_tree(calc, tree->children[i][j][k], s, force);
     }
 }
 
 
-static void calculate_forces(NODE *tree, GALAXY *galaxy, VECTOR *forces)
+static void calculate_forces(CALCULATOR *calc, NODE *tree, GALAXY *galaxy, VECTOR *forces)
 {
     int i;
     
@@ -175,18 +187,38 @@ static void calculate_forces(NODE *tree, GALAXY *galaxy, VECTOR *forces)
             continue;
         
         //fprintf(stderr, "Calculating force for star %p\n", s);
-        get_force_from_tree(tree, s, forces[i]);
+        get_force_from_tree(calc, tree, s, forces[i]);
     }
 }
 
 
-void bh_calculate_all(GALAXY *galaxy, VECTOR *forces)
+
+void bh_calculator__calculate(CALCULATOR *calculator, GALAXY *galaxy, VECTOR *forces)
 {
     NODE *tree;
     
-    tree = build_tree(galaxy);
+    tree = build_tree(calculator->data, galaxy);
     
-    calculate_forces(tree, galaxy, forces);
+    calculate_forces(calculator, tree, galaxy, forces);
     
     free(tree);
+}
+
+
+static void bh_calculator__destroy(CALCULATOR *calculator)
+{
+    free(calculator->data);
+    free(calculator);
+}
+
+
+CALCULATOR *bh_calculator(void)
+{
+    CALCULATOR *c = malloc(sizeof(CALCULATOR));
+    c->data = malloc(sizeof(CALC_DATA));
+    c->data->side_limit = 1000.0;
+    c->data->threshold = 0.75;
+    c->calculate = bh_calculator__calculate;
+    c->destroy = bh_calculator__destroy;
+    return c;
 }

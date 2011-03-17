@@ -4,29 +4,25 @@
 #include <math.h>
 
 #include "galaxy.h"
+#include "calculate.h"
+#include "bh.h"
 
-extern void bh_calculate_all(GALAXY *galaxy, VECTOR *forces);
-extern void naive_calculate_all(GALAXY *galaxy, VECTOR *forces);
+
+#define GRAVITY 6.67428E-11
 
 void calculate_frame(GALAXY *g, double timestep)
 {
-    int i;
     VECTOR forces[g->num];
+    //CALCULATOR *c = calculate.naive_calculator();
+    CALCULATOR *c = bh_calculator();
+    c->gravity = GRAVITY;
     
     memset(forces, 0, sizeof(forces));
     
-    //naive_calculate_all(g, forces);
-    bh_calculate_all(g, forces);
+    c->calculate(c, g, forces);
     
-    /* Apply forces. */
-    for (i = 0; i < g->num; i++)
-    {
-        STAR *s = g->stars[i];
-        if (s->mass == 0.0)
-            continue;
-        vector_add_scaled(s->vel, forces[i], timestep / s->mass);
-        vector_add_scaled(s->pos, s->vel, timestep);
-    }
+    calculate.apply_forces(g, forces, timestep);
+    c->destroy(c);
 }
 
 /*
@@ -196,12 +192,12 @@ int main(int argc, char *argv[])
     {
         char fn[1000];
         int j;
+        
         for (j = 0; j < calcs_per_frame; j++)
             calculate_frame(g, time_per_frame/calcs_per_frame);
+        
         update_galaxy(g);
-        printf("%f %f %f\n", g->barycentre[0]/time_per_frame, g->barycentre[1]/time_per_frame, g->barycentre[2]/time_per_frame);
         recentre_galaxy(g);
-        //fprintf(stderr, "Barycentre %f,%f,%f; mass %f; movement %f\n", g->barycentre[0], g->barycentre[1], g->barycentre[2], g->mass, (bcx - g->barycentre[1])/100/10000);
         
         dump_galaxy(g, f);
         snprintf(fn, sizeof(fn), "img/out%05d.png", i / frames_per_image);

@@ -1,11 +1,14 @@
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "galaxy.h"
+#include "calculate.h"
+
 
 #define PADDING 10.0
 
-void calculate_force(STAR *s1, STAR *s2, double g, VECTOR force)
+void calculate__calculate_force(STAR *s1, STAR *s2, double g, VECTOR force)
 {
     if (s1 == s2)
         return;
@@ -21,11 +24,22 @@ void calculate_force(STAR *s1, STAR *s2, double g, VECTOR force)
     vector_add(force, df);
 }
 
+void calculate__apply_forces(GALAXY *g, VECTOR *forces, double timestep)
+{
+    int i;
+    
+    for (i = 0; i < g->num; i++)
+    {
+        STAR *s = g->stars[i];
+        if (s->mass == 0.0)
+            continue;
+        
+        vector_add_scaled(s->vel, forces[i], timestep / s->mass);
+        vector_add_scaled(s->pos, s->vel, timestep);
+    }
+}
 
-#define GRAVITY 6.67428E-11
-
-
-void naive_calculate_all(GALAXY *galaxy, VECTOR *forces)
+static void naive_calculator__calculate(CALCULATOR *calculator, GALAXY *galaxy, VECTOR *forces)
 {
     int i;
     for (i = 0; i < galaxy->num; i++)
@@ -42,7 +56,20 @@ void naive_calculate_all(GALAXY *galaxy, VECTOR *forces)
             if (i == j || s2->mass == 0.0)
                 continue;
             
-            calculate_force(s1, s2, GRAVITY, forces[i]);
+            calculate.calculate_force(s1, s2, calculator->gravity, forces[i]);
         }
-    }    
+    }
+}
+
+static void naive_calculator__destroy(CALCULATOR *calculator)
+{
+    free(calculator);
+}
+
+CALCULATOR *calculate__naive_calculator(void)
+{
+    CALCULATOR *c = malloc(sizeof(CALCULATOR));
+    c->calculate = naive_calculator__calculate;
+    c->destroy = naive_calculator__destroy;
+    return c;
 }
