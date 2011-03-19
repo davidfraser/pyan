@@ -1,0 +1,155 @@
+FILE SYSTEM NOTES
+
+The purpose of the file system is to play with b-trees, block caches, indexing
+schemes, and FS interfaces.
+
+The file system can be mounted as a use space file system, using FUSE on
+Linux and Dokan on Windows.
+
+
+FS LAYER
+
+Public functions for creating, opening and closing filesystems.
+
+Open filesystem: specify file name.  Allocate resources, open file, and return
+FS pointer.
+
+Create filesystem: specify file name and block size.  Allocate resources.
+Create file and add super block and root block.  Return FS pointer.
+
+Close filesystem: flush dirty blocks and free resources.
+
+
+BLOCK LAYER
+
+Reading and writing blocks.
+
+Block cache: cache of blocks.  Blocks are indexed two ways:
+
+  - Birectional LRU list.  When a block is accessed, it is moved to the front
+    of the list.  When a block is read from disk, the list is traversed from
+    the tail end, until a non-dirty, unpinned block is found.  The new block
+    is placed in that position.
+
+  - Hash table (hash function is block position mod hash size).  When a block
+    is requested, the hash table is searched.  Each bucket is a singly-linked
+    list.
+
+Free space is recorded in bitmap blocks.  Pointers to bitmap blocks are in the
+superblock, after the header.  Each bitmap block contains (block_size - 20) * 8
+bits.  Bitmap blocks are allocated on demand.  Metadata blocks (tree, bitmap)
+are allocated with a preferred address of 0, i.e. as close to the front of
+the file system as possible.  File data blocks are allocated with a preference
+of the last existing block, so should be extended in place if possible.
+
+Journalling (TODO): when flushing and metadata blocks, all metadata blocks
+must be flushed.  Before writing any metadata blocks in place, all dirty
+metadata blocks must be written to the journal.  Each metadata flush has an
+incrementing transaction number.  On filesystem start, the maximum transaction
+in the journal is replayed, i.e. those blocks are copied to their target
+locations.  N.B. if a metadata block is freed and reallocated as a data block,
+metadata must be flushed before that block is written.  The location and size
+of the journal is not determined.
+
+Block header:
+    magic       2 (0xB528, TODO)
+    version     2
+    location    4
+    type        4
+    transaction 4 (TODO)
+
+Bitmap block structure:
+    block_header 16
+    num_bits     4 (unused)
+    used_bits    4 (unused)
+
+Super block structure:
+    block_header        16
+    block_size          4
+    root_location       4
+    next_label          4
+    block_counts        4*NUM_BLOCK_TYPES
+    max_bitmap_pointers 4
+    num_bitmap_pointers 4
+    bitmap_size         4
+    bitmaps             4*max_bitmap_pointers
+    journal             4*journal_size (TODO)
+
+
+TREE LAYER
+
+Navigating the B-Tree.
+
+Search function: Recursively descend from a specified block, looking for a key
+(or the key in a block before which it should be inserted).  Execute a
+callback when found.  Maintain the B-Tree if the callback inserts or deletes
+keys.
+
+Traverse function: Execute a callback for every leaf key within a range.
+
+Tree block structure:
+    block_header 16
+    height       2 (0 = leaf)
+    num_keys     2
+    string_size  2
+    strings      s (num_keys null-terminated strings packed together)
+    spare        x
+    types        1*num_keys (type of each key; leaves only)
+    offsets      2*num_keys (offset of each key in strings)
+    data         4*num_keys (pointer for each key; non-leaves only)
+
+For non-leaf tree blocks, the first key is the empty string.
+
+
+FILE LAYER
+
+Maintenance of file and directory-related keys.
+
+A file or directory with label x has the following keys:
+
+    x/A   the last access time
+    x/C   the creation time
+    x/M   the last modification time
+    x/P   permissions bitfield (Unix-style)
+    x/L   the link count (1 if absent)
+
+Additionally, a file has:
+
+    x/S         the file size (0 if absent)
+    x/Xa-b   the first fs block of the extent covering file blocks a to b
+        (inclusive), a and b are padded to 8 digits
+    x/X:...     additional extents
+
+Additionally, a directory has:
+
+    x/D   the label prefix y for the directory's filename keys
+    y/n...   the subkey for each file in the directory
+
+All these keys, except the last, have type K_ATTRIBUTE.
+
+
+SPECIAL LAYER
+
+This layer supports read-only examination of the underlying file system
+structure, by providing a ".FS" subdirectory in the root.  This contains three
+subdirectories:
+
+    super
+    blocks
+    tree     A list of every key in the B-Tree, organised in subdirectories
+        by prefix.
+
+
+OPERATION LAYER
+
+Operations on files and directories.
+
+
+USER MODE FILESYSTEM LAYER
+
+Drivers that use the fs to implement OS file system operations.
+
+The Linux driver is in the "linux" subdirectory.
+
+The Windows driver is in the "win" subdirectory.
+
