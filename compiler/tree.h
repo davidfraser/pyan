@@ -20,6 +20,7 @@ extern void tree_destroy_node(NODE *node);
 extern void tree_add_child(NODE *parent, NODE *child);
 extern void tree_add_before(NODE *parent, NODE *child, NODE *before);
 extern void tree_remove_child(NODE *parent, NODE *child);
+extern const char *tree_get_name(NODE *tree);
 extern void tree_print(NODE *tree, int indent);
 extern NODE *tree_copy(NODE *tree);
 

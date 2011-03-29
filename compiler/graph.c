@@ -292,8 +292,23 @@ void print_expression(EXPRESSION *expr, DAA_SET *set)
         print_expression(tree_get_child(expr, 1), set);
         printf(")");
     }
+    else if (tree_is_type(expr, STMT_RETURN))
+    {
+        printf("return ");
+        print_expression(tree_get_child(expr, 0), set);
+    }
+    else if (tree_is_type(expr, STMT_ENTER))
+    {
+        printf("enter");
+    }
+    else if (tree_is_type(expr, STMT_EXIT))
+    {
+        printf("exit");
+    }
     else
-        printf("?expr?");
+    {
+        printf("?expr %p %s?", expr, tree_get_name(expr));
+    }
 }
 
 

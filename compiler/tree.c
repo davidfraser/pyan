@@ -68,6 +68,14 @@ void tree_remove_child(NODE *parent, NODE *child)
 }
 
 
+const char *tree_get_name(NODE *tree)
+{
+    NODE_TYPE_DATA *data = get_from_hash(type_registry, (void *) tree->type, sizeof(void *));
+    
+    return data->name;
+}
+
+
 void tree_print(NODE *tree, int indent)
 {
     int i;
