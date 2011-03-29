@@ -41,6 +41,31 @@ KEYWORD keywords[] =
     { NULL }
 };
 
+static HASH *keyword_map;
+
+static void populate_keywords()
+{
+    KEYWORD *k;
+    
+    keyword_map = create_hash(20, key_type_indirect);
+
+    for (k = keywords; k->word; k++)
+    {
+        add_to_hash(keyword_map, k->word, strlen(k->word), (void *) k->id);
+    }    
+}
+
+static int lookup_keyword(char *word)
+{
+    if (!keyword_map)
+        populate_keywords();
+    
+    int val = (int) get_from_hash(keyword_map, word, strlen(word));
+    
+    return val;
+}
+
+
 static int isname(int a)
 {
     return isalnum(a) || (a == '_');
@@ -75,7 +100,7 @@ int yylex(YYSTYPE *yylval, YYLTYPE *loc, PARSER *parser)
 {
     char *q;
     int len;
-    KEYWORD *k;
+    int kw_id;
     
     int in_comment = 0;
     
@@ -181,14 +206,12 @@ int yylex(YYSTYPE *yylval, YYLTYPE *loc, PARSER *parser)
         //printf(" -> %d]\n", yylval->name[0]);
         return yylval->name[0];
     }
-    
-    for (k = keywords; k->word; k++)
+
+    kw_id = lookup_keyword(yylval->name);
+    if (kw_id)
     {
-        if (!strcmp(yylval->name, k->word))
-        {
-            //printf(" -> %d]\n", k->id);
-            return k->id;
-        }
+        //printf(" -> %d]\n", k->id);
+        return kw_id;
     }
     
     if (isdigit(yylval->name[0]) || yylval->name[0] == '-')
