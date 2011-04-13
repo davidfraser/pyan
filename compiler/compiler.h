@@ -190,12 +190,11 @@ extern GRAPH *make_graph(FUNCTION *func);
 extern EXPRESSION *get_input_tuple(FUNCTION *func);
 extern EXPRESSION *make_new_temp(MODULE *module, FUNCTION *func, TYPE *type);
 
+extern int evaluate_binary_op(EXPRESSION *expr);
 extern int is_unary_op(EXPRESSION *expr);
 extern int is_comparison_op(EXPRESSION *expr);
 extern int is_binary_op(EXPRESSION *expr);
 extern int is_commutable_op(EXPRESSION *expr);
-extern VALUE evaluate_binary_op(STATE *state, EXPRESSION *expr);
-extern VALUE evaluate_unary_op(STATE *state, EXPRESSION *expr);
 extern char *get_op_symbol(EXPRESSION *expr);
 
 extern void add_vertex(GRAPH *graph, NODE *vertex);

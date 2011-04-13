@@ -3,6 +3,60 @@
 #include <stdio.h>
 
 
+int evaluate_binary_op(EXPRESSION *expr)
+{
+    EXPRESSION *expr0 = tree_get_child(expr, 0);
+    EXPRESSION *expr1 = tree_get_child(expr, 1);
+    
+    int x0 = CAST_TO_INTEGER(expr0)->value;
+    int x1 = CAST_TO_INTEGER(expr1)->value;
+    
+    switch (tree_type(expr))
+    {
+        case EXPR_SUM:
+            return x0 + x1;
+        
+        case EXPR_PRODUCT:
+            return x0 * x1;
+        
+        case EXPR_DIFFERENCE:        
+            return x0 - x1;
+        
+        case EXPR_RATIO:        
+            return x0 / x1;
+        
+        case EXPR_LEQ:
+            return x0 <= x1;
+        
+        case EXPR_LT:        
+            return x0 < x1;
+        
+        case EXPR_GEQ:
+            return x0 >= x1;
+        
+        case EXPR_GT:        
+            return x0 > x1;
+        
+        case EXPR_EQ:
+            return x0 == x1;
+        
+        case EXPR_NEQ:        
+            return x0 != x1;
+        
+        case EXPR_AND:
+            return x0 && x1;
+        
+        case EXPR_OR:
+            return x0 || x1;
+        
+        default:
+            error("Unhandled %s evaluation!", tree_get_name(expr));
+    }
+    
+    return 0;
+}
+
+
 int is_unary_op(EXPRESSION *expr)
 {
     return tree_is_type(expr, EXPR_NEGATION) || tree_is_type(expr, EXPR_NOT);

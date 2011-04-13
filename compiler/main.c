@@ -137,8 +137,11 @@ extern int analyse_symbols(MODULE *mod, FUNCTION *func);
 extern int process_closures(MODULE *mod, FUNCTION *func);
 extern int flatten(MODULE *mod, FUNCTION *func);
 extern int reduce(MODULE *mod, FUNCTION *func);
+extern int optimise_constant_folding(MODULE *mod, FUNCTION *func);
 extern int definite_assignment_analysis(MODULE *mod, FUNCTION *func);
 extern int analyse_inlining(MODULE *mod, FUNCTION *func);
+extern int optimise_constant_tests(MODULE *mod, FUNCTION *func);
+extern int remove_dead_code(MODULE *mod, FUNCTION *func);
 extern int i386ify(MODULE *mod, FUNCTION *func);
 extern int register_allocation(MODULE *mod, FUNCTION *func);
 extern int analyse_function_size(MODULE *mod, FUNCTION *func);
@@ -193,9 +196,12 @@ static int compile(struct OPTIONS *options)
     process_functions(module, analyse_symbols);
     process_functions(module, process_closures);
     process_functions(module, flatten);
+    process_functions(module, optimise_constant_folding);
     process_functions(module, reduce);
     process_functions(module, definite_assignment_analysis);
     process_functions(module, analyse_inlining);
+    process_functions(module, optimise_constant_tests);
+    process_functions(module, remove_dead_code);
     
     /*
      * 3. Output assembly code.

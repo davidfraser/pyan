@@ -40,7 +40,8 @@ extern void tree_register_node_printer(int type, NODE_PRINTER printer);
 
 extern int tree_check_type(NODE *ptr, NODE_TYPE t);
 
-#define tree_is_type(tree, t) ((tree) != NULL && ((NODE *) (tree))->type == (t))
+#define tree_type(tree) (((NODE *) (tree))->type)
+#define tree_is_type(tree, t) ((tree) != NULL && tree_type(tree) == (t))
 
 #define tree_num_children(tree) (((NODE *) tree)->children->size)
 #define tree_get_child(tree, num) (((NODE *) tree)->children->items[(num)])

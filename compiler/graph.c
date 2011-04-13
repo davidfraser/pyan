@@ -107,7 +107,8 @@ void replace_forward(GRAPH *graph, NODE *old, NODE *vertex, EDGE_TYPE type)
         NODE *succ = iter.entry->key;
         EDGE_TYPE type2 = (EDGE_TYPE) iter.entry->data;
         remove_edge(graph, old, succ);
-        add_edge(graph, vertex, succ, type | type2);
+        if (vertex != NULL)
+            add_edge(graph, vertex, succ, type | type2);
     }
 }
 
@@ -121,7 +122,8 @@ void replace_backward(GRAPH *graph, NODE *old, NODE *vertex, EDGE_TYPE type)
         NODE *pred = iter.entry->key;
         EDGE_TYPE type2 = (EDGE_TYPE) iter.entry->data;
         remove_edge(graph, pred, old);
-        add_edge(graph, pred, vertex, type | type2);
+        if (vertex != NULL)
+            add_edge(graph, pred, vertex, type | type2);
     }
 }
 
