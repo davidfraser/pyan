@@ -70,7 +70,7 @@ static t_orderid next_id = 0;
 static char *order_string(t_order *data)
 {
     static char buffer[100];
-    sprintf(buffer, "{ \"%s\", \"%s\", %d, %d, %ld }", data->symbol, data->trader, data->side, data->price, data->size);
+    sprintf_s(buffer, sizeof(buffer), "{ \"%s\", \"%s\", %d, %d, %ld }", data->symbol, data->trader, data->side, data->price, data->size);
 
     return buffer;
 }
@@ -122,43 +122,49 @@ void destroy()
     
     free(nodes);
     free(orders);
+	free(id_map);
 }
 
-int steps = 0;
-
-void step()
-{
-    steps++;
-}
-
-static NODE *find_place(t_price price)
+static void find_place(t_price price, NODE **vector)
 {
     NODE *n = bottom_node;
     int i;
+	int steps = 0;
     for (i = LIST_HEIGHT - 1; i >= 0; i--)
     {
         while (n->nexts[i]->price <= price && n->nexts[i] != top_node)
         {
             n = n->nexts[i];
-            step();
+            steps++;
         }
+		vector[i] = n;
     }
-    
-    return n;
+
+	if (steps >= 20)
+	{
+		printf("EEK, steps = %d\n", steps);
+	}
 }
 
 static void add_to_list(NODE *node)
 {
     int i;
-    NODE *prev;
+    NODE *prevs[LIST_HEIGHT];
     
-    prev = find_place(node->price);
-    node->prevs[0] = prev;
-    node->nexts[0] = prev->nexts[0];
-    prev->nexts[0]->prevs[0] = node;
-    prev->nexts[0] = node;
+    find_place(node->price, prevs);
+
+	for (i = 0; i < LIST_HEIGHT; i++)
+	{
+		node->prevs[i] = prevs[i];
+		node->nexts[i] = prevs[i]->nexts[i];
+		prevs[i]->nexts[i]->prevs[i] = node;
+		prevs[i]->nexts[i] = node;
+
+		if ((rand() % 4) != 0)
+			break;
+	}
     
-    for (i = 1; i < LIST_HEIGHT; i++)
+    for (i = i+1; i < LIST_HEIGHT; i++)
     {
         node->nexts[i] = NULL;
         node->prevs[i] = NULL;
@@ -172,6 +178,8 @@ static void add_to_list(NODE *node)
 static void remove_from_list(NODE *node)
 {
     int i;
+	assert(node->nexts[0] != NULL);
+	assert(node->prevs[0] != NULL);
     node->price = 0;
     for (i = 0; i < LIST_HEIGHT; i++)
     {
@@ -184,11 +192,13 @@ static void remove_from_list(NODE *node)
     if (node == best_bid)
     {
         best_bid = best_bid->prevs[0];
+		assert(best_bid != NULL);
         assert((best_bid != bottom_node) != (best_bid->price == 0));
     }
     if (node == best_ask)
     {
         best_ask = best_ask->nexts[0];
+		assert(best_ask != NULL);
         assert((best_ask != top_node) != (best_ask->price == 0));
     }
 }
@@ -295,13 +305,13 @@ static void remove_order(ORDER *order)
    o1 and o2 are assumed to be the same price
    on opposite sides */
 void send_exec(t_order * o1, t_order * o2) {
+  t_execution exec = *(t_execution *)o1;
+  int i;
     fprintf(stderr, "Executing order %s\n", order_string(o1));
     fprintf(stderr, "        against %s\n", order_string(o2));
-  t_execution exec = (t_execution)(*o1);
   exec.size = o1->size > o2->size ? o2->size : o1->size;
   execution(exec);
   // rename trader field on exec to old's name
-  int i;
   for(i = 0; i < STRINGLEN; i++) {
     exec.trader[i] = o2->trader[i]; 
   } 
@@ -411,8 +421,9 @@ t_orderid limit(t_order data)
 
 void cancel(t_orderid id)
 {
+	ORDER *order;
     fprintf(stderr, "Cancelling order: %ld\n", id);
-    ORDER *order = free_order(id);
+    order = free_order(id);
     if (order)
     {
         fprintf(stderr, "Cancelling %s\n", order_string(&order->data));
