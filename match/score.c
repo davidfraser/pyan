@@ -6,6 +6,9 @@
 #include "engine.c"
 #include "score_feed.h"
 
+
+#define CLOCK_MONOTONIC_RAW CLOCK_REALTIME
+
 void feed(unsigned begin, unsigned end);
 long long timediff(struct timespec start, struct timespec end);
 void print_cpuaffinity();
@@ -38,10 +41,16 @@ int main() {
   int i; for (i = msg_batch_size; i < raw_feed_len; i += msg_batch_size) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &begin);
 
+      /*if (raw_feed[i-msg_batch_size].symbol[0] == 'O')
+      {
+          printf("hi!\n");
+      }*/
     feed(i-msg_batch_size, i);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
     late[i/msg_batch_size - 1 + (j*(raw_feed_len/msg_batch_size))] = timediff(begin, end);
+      //printf("%s, %d\n", raw_feed[i-msg_batch_size].symbol,  late[i/msg_batch_size - 1 + (j*(raw_feed_len/msg_batch_size))]);
+
   } 
   destroy();
   }
