@@ -11,8 +11,7 @@
  * Second trick is use an array of NODEs, one per price.  Price is limited to integers between 1 and 65536.
  * Third trick is to use a unified set of nodes for asks and bids.  At a given price, either bids or asks exist, but never both.
  * Fourth trick is to use a skip list for nodes.
- *
- * Cancelling is not yet optimised!
+ * Fifth trick is to use a hash table for orders in the queue, so we can find and cancel them.
  */ 
 
 #include <stdio.h>
@@ -70,7 +69,7 @@ static t_orderid next_id = 0;
 static char *order_string(t_order *data)
 {
     static char buffer[100];
-    sprintf_s(buffer, sizeof(buffer), "{ \"%s\", \"%s\", %d, %d, %ld }", data->symbol, data->trader, data->side, data->price, data->size);
+    snprintf(buffer, sizeof(buffer), "{ \"%s\", \"%s\", %d, %d, %ld }", data->symbol, data->trader, data->side, data->price, data->size);
 
     return buffer;
 }
@@ -130,6 +129,10 @@ static void find_place(t_price price, NODE **vector)
     NODE *n = bottom_node;
     int i;
 	int steps = 0;
+    
+    /*if (price >= best_ask->price)
+        n = best_ask;*/
+    
     for (i = LIST_HEIGHT - 1; i >= 0; i--)
     {
         while (n->nexts[i]->price <= price && n->nexts[i] != top_node)
@@ -169,6 +172,27 @@ static void add_to_list(NODE *node)
         node->nexts[i] = NULL;
         node->prevs[i] = NULL;
     }
+
+    if (is_ask(node->side) && (node->price < best_ask->price || best_ask == top_node))
+    {
+        int i;
+        /*for (i = LIST_HEIGHT-1; i >= 1; i++)
+        {
+            if (node->nexts[i] == NULL && best_ask != top_node)
+            {
+                node->nexts[i] = best_ask;
+                best_ask->prevs[i]->nexts[i] = node;
+            }
+            if (node->prevs[i] == NULL)
+            {
+                node->prevs[i] = best_ask->prevs[i];
+                best_ask->prevs[i] = node;
+            }
+        }*/
+        best_ask = node;
+    }
+    else if (!is_ask(node->side) && (node->price > best_bid->price || best_bid == bottom_node))
+        best_bid = node;
 }
 
 /**
@@ -386,11 +410,6 @@ static void queue(t_order *data)
         node->last_order = NULL;
         
         add_to_list(node);
-        
-        if (is_ask(data->side) && (node->price < best_ask->price || best_ask == top_node))
-            best_ask = node;
-        else if (!is_ask(data->side) && (node->price > best_bid->price || best_bid == bottom_node))
-            best_bid = node;
     }
     else
     {
