@@ -26,3 +26,14 @@ public int if2(int z)
     y = x;
     return y;
 }
+
+
+public int if3(int z)
+{
+    int x = 1;
+    if (z)
+    {
+       x = 2;
+    }
+    return x;
+}
