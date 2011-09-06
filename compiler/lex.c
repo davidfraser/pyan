@@ -228,7 +228,10 @@ void yyerror(YYLTYPE *loc, PARSER *parser, char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    fprintf(stderr, "%s:%d:%d: ", /*parser->module->filename*/ "TODO", loc->first_line, loc->first_column);
+    char *filename = "<?>";
+    if (parser->module->filename)
+        filename = parser->module->filename;
+    fprintf(stderr, "%s:%d:%d: ", filename, loc->first_line, loc->first_column);
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
     va_end(ap);
