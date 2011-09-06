@@ -187,7 +187,7 @@ int run_dfa(DFA *dfa)
     
     /* Verify. */
     int i;
-    result = 0;
+    result = 1;
     for (i = 0; i < tree_num_children(dfa->graph); i++)
     {
         NODE *vertex = tree_get_child(dfa->graph, i);
