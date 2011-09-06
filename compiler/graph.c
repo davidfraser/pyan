@@ -10,6 +10,8 @@ void add_vertex(GRAPH *graph, NODE *vertex)
 {
     if (!vertex)
     {
+        /* N.B. Vertex positions are sometimes important, so a NULL one still
+           needs to occupy a position in the child list. */
         tree_add_child(graph, vertex);
         return;
     }
@@ -229,7 +231,11 @@ static char *get_colour(int num)
 
 void print_expression(EXPRESSION *expr, DAA_SET *set)
 {
-    if (tree_is_type(expr, EXPR_VARIABLE))
+    if (expr == NULL)
+    {
+        printf("?null?");
+    }
+    else if (tree_is_type(expr, EXPR_VARIABLE))
     {
         VARIABLE *var = CAST_TO_VARIABLE(expr);
         int defined = !set || find_in_hash(set->set, var->name, strlen(var->name));
@@ -381,7 +387,7 @@ static void edge_printer(NODE *from, NODE *to, void *data)
         {
             printf("{");
             HASH_ITERATOR iter;
-            for (hash_iterator(set->set, &iter); hash_iterator_valid(&iter);hash_iterator_next(&iter))
+            for (hash_iterator(set->set, &iter); hash_iterator_valid(&iter); hash_iterator_next(&iter))
             {
                 DECLARATION *decl = CAST_TO_DECLARATION(iter.entry->data);
                 printf("<font color=\"%s\">%s</font>", get_colour(decl->colour), (char *) iter.entry->key);
@@ -394,6 +400,43 @@ static void edge_printer(NODE *from, NODE *to, void *data)
 
 
 static int graph_sequence = 0;
+
+
+/** Get the next vertex in this basic block.  There is a next vertex IFF there's one out-edge, and the vertex on that out-edge has one in-edge.
+ Out-edge is forward if dir == 1 and backward if dir == 2. */
+static NODE *get_bb_next(GRAPH *graph, NODE *vertex, int dir)
+{
+    HASH *dir_hash, *rev_hash;
+    if (dir == 1)
+    {
+        dir_hash = graph->forward;
+        rev_hash = graph->backward; 
+    }
+    else if (dir == 2)
+    {
+        dir_hash = graph->backward;
+        rev_hash = graph->forward;
+    }
+    else
+        error("Need to specify 1 or 2 for direction!");
+    
+    HASH *succ_hash = get_from_hash(dir_hash, vertex, sizeof (void *));
+    if (!succ_hash || succ_hash->num != 1)
+        return NULL;
+    
+    HASH_ITERATOR iter;
+    hash_iterator(succ_hash, &iter);
+    NODE *next = iter.entry->key;
+    
+    HASH *pred_hash = get_from_hash(rev_hash, next, sizeof (void *));
+    if (!pred_hash || pred_hash->num != 1)
+        return NULL;    
+    
+    return next;
+}
+
+
+int combine_bb = 1;
 
 
 void print_graph(GRAPH *graph, char *name, void *data)
@@ -414,29 +457,45 @@ void print_graph(GRAPH *graph, char *name, void *data)
         if (vertex == NULL)
             continue;
         
-        printf("    %s_%d_%d [label=<%d. ", name, graph_sequence, i, i);
+        if (combine_bb && !tree_is_type(vertex, DEF_VARIABLE) && get_bb_next(graph, vertex, 2))
+            continue;
+        
+        printf("    %s_%d_%d [label=<<table border=\"0\">\n", name, graph_sequence, i);
+        printf("<tr><td>%d. ", i);
         vertex_printer(vertex, data);
-        printf(">");
+        printf("</td></tr>\n");
+        
+        if (combine_bb && !tree_is_type(vertex, DEF_VARIABLE))
+        {
+            NODE *next_vertex = get_bb_next(graph, vertex, 1);
+            while (next_vertex)
+            {
+                vertex = next_vertex;
+                int pos = get_from_hash(graph->labels, vertex, sizeof(void *));
+                printf("<tr><td>%d. ", i);
+                vertex_printer(vertex, data);
+                printf("</td></tr>\n");
+                next_vertex = get_bb_next(graph, vertex, 1);
+            }
+        }
+        
+        printf("</table>>");
         if (tree_is_type(vertex, DEF_VARIABLE))
         {
             DECLARATION *decl = CAST_TO_DECLARATION(vertex);
             printf(", fillcolor=%s", get_colour(decl->colour));
         }
         printf("];\n");
-    }
-    
-    /* Edges. */
-    for (i = 0; i < tree_num_children(graph); i++)
-    {
+        
         HASH_ENTRY *he;
-        NODE *from = tree_get_child(graph, i);
+        NODE *from = vertex;
         
         he = find_in_hash(graph->forward, from, sizeof(void *));
         if (he)
         {
             HASH *subhash = he->data;
             HASH_ITERATOR iter;
-            for (hash_iterator(subhash, &iter); hash_iterator_valid(&iter);hash_iterator_next(&iter))
+            for (hash_iterator(subhash, &iter); hash_iterator_valid(&iter); hash_iterator_next(&iter))
             {
                 NODE *to = iter.entry->key;
                 HASH_ENTRY *he2 = find_in_hash(graph->labels, to, sizeof(void *));
