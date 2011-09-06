@@ -204,17 +204,22 @@ static int check_assignment(MODULE *module, FUNCTION *func, NODE *vertex)
 static int check_test(MODULE *module, FUNCTION *func, NODE *vertex)
 {
     EXPRESSION *expr = tree_get_child(vertex, 0);
-    EXPRESSION *expr0 = tree_get_child(expr, 0);
-    EXPRESSION *expr1 = tree_get_child(expr, 1);
     
-    //TODO tests can be optimised a bit i think
-    if (is_register(expr1) /*|| is_register(expr1)*/)
-        return 0;
+    if (is_binary_op(expr))
+    {
+        EXPRESSION *expr0 = tree_get_child(expr, 0);
+        EXPRESSION *expr1 = tree_get_child(expr, 1);
+        
+        //TODO tests can be optimised a bit i think
+        if (is_register(expr1) /*|| is_register(expr1)*/)
+            return 0;
 
-    int child_num = 1;
-    replace_child_with_temporary(module, func, vertex, expr, child_num);
+        int child_num = 1;
+        replace_child_with_temporary(module, func, vertex, expr, child_num);
+        return 1;
+    }
     
-    return 1;
+    return 0;
 }
 
 
