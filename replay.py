@@ -74,22 +74,14 @@ class CatPool(object):
 
 
 class Replayer(object):
-    def __init__(self, source_client, dest_client, worker_clients, source_url, dest_url, start_rev, end_rev):
+    def __init__(self, source_client, dest_client, worker_clients, dest_url):
         self.source_client = source_client
         self.dest_client = dest_client
         self.cat_pool = CatPool(worker_clients)
         
-        self.source_url = source_url
         self.dest_url = dest_url
-        self.start_rev = start_rev
-        self.end_rev = end_rev
         
-        self.ignore_paths = ['/trunk/sc2/content/addons/3dovideo', '/trunk/sc2/content/addons/3dovoice']
-        
-        self.source_root = self.get_root(source_url, source_client)
-        notify('Source root: %s' % self.source_root)
-        self.source_rel_path = source_url[len(self.source_root):]
-        notify('Source rel path: %s' % self.source_rel_path)
+        self.ignore_paths = []
         
         self.dest_root = self.get_root(dest_url, dest_client)
         notify('Dest root: %s' % self.dest_root)
@@ -299,12 +291,13 @@ class Replayer(object):
             if not p.path.startswith(self.source_rel_path):
                 warn('Skipping outside change: %s' % p.path)
                 continue
-            if any([p.path.startswith(ip) for ip in self.ignore_paths]):
+            local_path = self.get_local_path(p.path)
+            if any([local_path.startswith(ip) for ip in self.ignore_paths]):
                 warn('Skipping ignored change: %s' % p.path)
                 continue
             dest_path = self.get_dest_path(p.path)
             notify('Replaying %s on %s to %s' % (p.action, p.path, dest_path))
-            self.actions[self.get_local_path(p.path)] = p.action
+            self.actions[local_path] = p.action
             try:
                 if p.action == 'A' and p.copyfrom_revision is not None:
                     self.replay_copy(le.revision, p.path, p.copyfrom_revision, p.copyfrom_path)
@@ -333,7 +326,27 @@ class Replayer(object):
         else:
             notify('No actions in revision; skipping commit.')
     
+    def get_replay_config(self):
+        # Get source URL
+        results = self.dest_client.propget('replay:source', self.dest_url, recurse=False)
+        if self.dest_url in results:
+            self.source_url = results[self.dest_url]
+        else:
+            raise Exception('Destination does not have replay:source set!')
+        
+        self.source_root = self.get_root(self.source_url, self.source_client)
+        notify('Source root: %s' % self.source_root)
+        self.source_rel_path = self.source_url[len(self.source_root):]
+        notify('Source rel path: %s' % self.source_rel_path)
+        
+        # Get ignore paths
+        results = self.dest_client.propget('replay:ignore', self.dest_url, recurse=False)
+        if self.dest_url in results:
+            self.ignore_paths.extend(results[self.dest_url].split(','))
+    
     def run(self):
+        self.get_replay_config()
+        
         notify('Building rev map')
         self.rev_map = {}
         results = self.dest_client.log(self.dest_url, discover_changed_paths=False, revprops=['replay:source-rev'])
@@ -344,7 +357,11 @@ class Replayer(object):
             to_rev = r.revision.number
             self.rev_map[from_rev] = to_rev
         
-        notify('Fetching logs')
+        last_rev = max(self.rev_map.keys())
+        self.start_rev = pysvn.Revision(pysvn.opt_revision_kind.number, last_rev+1)
+        self.end_rev = pysvn.Revision(pysvn.opt_revision_kind.number, last_rev+10)
+        
+        notify('Fetching logs for revisions %d to %d' % (self.start_rev.number, self.end_rev.number))
         results = self.source_client.log(self.source_url, revision_start=self.start_rev, revision_end=self.end_rev, discover_changed_paths=True)
         for r in results:
             if r.revision.number in self.rev_map:
@@ -353,13 +370,7 @@ class Replayer(object):
 
 
 def main(args):
-    source_url = args[1] #'http://sc2.svn.sourceforge.net/svnroot/sc2/trunk/'
-    #dest_url = 'https://project6014.googlecode.com/svn/branches/uqm-import/'
-
-    start_rev = pysvn.Revision(pysvn.opt_revision_kind.number, args[2])
-    end_rev = pysvn.Revision(pysvn.opt_revision_kind.number, args[3])
-    
-    password = args[4]
+    password = args[1]
 
     source_client = pysvn.Client()
     dest_client = pysvn.Client()
@@ -370,7 +381,7 @@ def main(args):
     
     worker_clients = [pysvn.Client(), pysvn.Client(), pysvn.Client(), pysvn.Client()]
 
-    r = Replayer(source_client, dest_client, worker_clients, source_url, dest_url, start_rev, end_rev)
+    r = Replayer(source_client, dest_client, worker_clients, dest_url)
     r.run()
 
 
