@@ -132,6 +132,7 @@ class Replayer(object):
     def get_status(self, path):
         results = self.dest_client.status(path, recurse=False)
         if len(results) > 0:
+            results.sort(key=lambda x: x.path)
             return results[0]
         else:
             return None
