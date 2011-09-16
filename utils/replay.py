@@ -26,6 +26,14 @@ def retry(cmd):
     return cmd()
 
 
+def join_paths(p1, p2):
+    p = p1
+    if not p.endswith('/'):
+        p += '/'
+    p += p2
+    return p
+
+
 class CatWorker(threading.Thread):
     def __init__(self, client, queue):
         threading.Thread.__init__(self)
@@ -97,7 +105,7 @@ class Replayer(object):
     def get_dest_path(self, path):
         if not path.startswith(self.source_rel_path):
             raise Exception('Path %s does not start with %s' % (path, self.source_rel_path))
-        return self.dest_rel_path + path[len(self.source_rel_path):]
+        return join_paths(self.dest_rel_path, path[len(self.source_rel_path):])
     
     def get_local_path(self, path):
         if not path.startswith(self.source_rel_path):
@@ -142,7 +150,7 @@ class Replayer(object):
             pass
         else:
             def get_entry():
-                return self.source_client.info2(self.source_root + path, recurse=False, revision=rev, peg_revision=rev)[0][1]
+                return self.source_client.info2(join_paths(self.source_root, path), recurse=False, revision=rev, peg_revision=rev)[0][1]
             
             entry = retry(get_entry)
             
@@ -168,10 +176,10 @@ class Replayer(object):
                 to_rev = self.rev_map[from_rev]
                 local_from_path = self.get_local_path(copyfrom_path)
                 warn('Copy source rev %d mapped to %d in dest' % (from_rev, to_rev))
-                self.dest_client.copy(self.dest_url + '/' + local_from_path, local_path, pysvn.Revision(pysvn.opt_revision_kind.number, to_rev))
+                self.dest_client.copy(join_paths(self.dest_url, local_from_path), local_path, pysvn.Revision(pysvn.opt_revision_kind.number, to_rev))
                 if entry.kind != pysvn.node_kind.dir:
                     os.remove(local_path)
-                    self.cat_pool.enqueue_copy(self.source_root + path, rev, local_path)
+                    self.cat_pool.enqueue_copy(join_paths(self.source_root, path), rev, local_path)
             else:
                 if entry.kind == pysvn.node_kind.dir:
                     os.mkdir(local_path)
@@ -180,7 +188,7 @@ class Replayer(object):
                     open(local_path, 'wb').close()
                     self.dest_client.add(local_path)
                     os.remove(local_path)
-                    self.cat_pool.enqueue_copy(self.source_root + path, rev, local_path)
+                    self.cat_pool.enqueue_copy(join_paths(self.source_root, path), rev, local_path)
 
         print 'A %s (copied from %s:%s)' % (path, copyfrom_path, copyfrom_rev.number)
     
@@ -191,7 +199,7 @@ class Replayer(object):
             warn('Using existing add')
             pass
         else:
-            entry = self.source_client.info2(self.source_root + path, recurse=False, revision=rev, peg_revision=rev)[0][1]
+            entry = self.source_client.info2(join_paths(self.source_root, path), recurse=False, revision=rev, peg_revision=rev)[0][1]
             
             if entry.kind == pysvn.node_kind.dir:
                 os.mkdir(local_path)
@@ -200,7 +208,7 @@ class Replayer(object):
                 open(local_path, 'wb').close()
                 self.dest_client.add(local_path)
                 os.remove(local_path)
-                self.cat_pool.enqueue_copy(self.source_root + path, rev, local_path)
+                self.cat_pool.enqueue_copy(join_paths(self.source_root, path), rev, local_path)
 
         print 'A %s' % path
     
@@ -213,7 +221,7 @@ class Replayer(object):
         else:
             if os.path.exists(local_path):
                 os.remove(local_path)
-            self.cat_pool.enqueue_copy(self.source_root + path, rev, local_path)
+            self.cat_pool.enqueue_copy(join_paths(self.source_root, path), rev, local_path)
         print 'M %s' % path
     
     def replay_delete(self, path):
