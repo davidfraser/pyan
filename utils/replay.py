@@ -275,10 +275,11 @@ class Replayer(object):
         message = '(%s) %s\n\nCopied from %s, rev. %s by %s @ %s' % (self.name, le.message.strip('\n'), self.source_url, le.revision.number, le.author, time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(le.date)))
         global commit_notifications
         commit_notifications = 0
+        expected_notifications = len(self.actions) + len([k for k in self.actions.keys() if k != 'D'])
         def callback_notify(event_dict):
             global commit_notifications
             commit_notifications += 1
-            notify('Progress (%d/%d): %s on %s' % (commit_notifications, len(self.actions), event_dict['action'], event_dict['path']))
+            notify('Progress (%d/%d): %s on %s' % (commit_notifications, expected_notifications, event_dict['action'], event_dict['path']))
         prev_notify = self.dest_client.callback_notify
         self.dest_client.callback_notify = callback_notify
         result = self.dest_client.checkin('.', message)
