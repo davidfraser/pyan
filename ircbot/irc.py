@@ -41,7 +41,7 @@ class Message(object):
         return not (self == other)
         
     def __str__(self):
-        return '[%s %s [%s]]' % (self.prefix, self.command, ' '.join(self.params))
+        return '[%s %s [%s]]' % (self.prefix, self.command, ' '.join(["'%s'" % p for p in self.params]))
 
 
 class Connection(object):
@@ -154,6 +154,7 @@ class Connection(object):
         try:
             num = int(command)
             name = irc_replies.replies[num]
+            command = name
         except ValueError:
             pass
         except KeyError:
@@ -181,6 +182,17 @@ class Connection(object):
 
 STATE_START, STATE_OPEN, STATE_REGISTER, STATE_RUN, STATE_QUIT, STATE_CLOSE = range(6)
 
+class DumbController(object):
+    def __init__(self):
+        pass
+    
+    def see(self, channel, prefix, name):
+        print 'See %s in %s' % (name, channel)
+        
+    def hear(self, sender, recipient, text):
+        print '%s says to %s, "%s"' % (sender, recipient, text)
+
+
 class Client(object):
     
     def __init__(self):
@@ -192,6 +204,7 @@ class Client(object):
         self.state = STATE_START
         self.channels = {}
         self.send_queue = []
+        self.controller = DumbController()
     
     def connect(self, addr):
         conn = Connection(addr)
@@ -224,18 +237,44 @@ class Client(object):
         message = self.conn.read()
         if message is not None:
             self.process_message(message)
+        
+        if self.conn.socket is None:
+            self.disconnect()
     
     def process_message(self, message):
         if self.state == STATE_REGISTER and message.command != 'NOTICE':
             self.state = STATE_RUN
         
         if message.command == 'RPL_TOPIC':
-            self.channels[message.params[0]] = message.params[1]
-        
-        if message.command == 'PRIVMSG':
-            print message.params[-1]
-            if message.params[-1] == 'die':
-                self.quit()
+            channel = message.params[-2]
+            self.channels[channel] = message.params[-1]
+        elif message.command == 'RPL_NAMREPLY':
+            channel = message.params[-2]
+            self.channels[channel] = None
+            for name in message.params[-1].split(' '):
+                if name[0] in ['@', '+']:
+                    prefix = name[0]
+                    name = name[1:]
+                else:
+                    prefix = ''
+                self.controller.see(channel, prefix, name)
+        elif message.command == 'PRIVMSG':
+            name = message.prefix
+            if '!' in name:
+                name = name.split('!', 1)[0]
+            recipient = message.params[0]
+            text = message.params[-1]
+            self.controller.hear(name, recipient, text)
+        elif message.command == 'JOIN':
+            name = message.prefix
+            if '!' in name:
+                name = name.split('!', 1)[0]
+            channel = message.params[-1]
+            self.controller.see(channel, '', name)
+    
+    def speak(self, channel, text):
+        privmsg = Message(None, 'PRIVMSG', [channel, text])
+        self.send(privmsg)
     
     def join(self, channel):
         join = Message(None, 'JOIN', [channel])
