@@ -8,6 +8,8 @@ BUFFER_SIZE = 1024
 
 MAX_MESSAGE = 510
 
+READ_TIMEOUT = 5
+
 def warn(s):
     print >>sys.stderr, s
 
@@ -89,7 +91,11 @@ class Connection(object):
     
     def read(self):
         while self.socket is not None and '\n' not in self.buffer:
-            input = self.socket.recv(BUFFER_SIZE)
+            self.socket.settimeout(READ_TIMEOUT)
+            try:
+                input = self.socket.recv(BUFFER_SIZE)
+            except socket.timeout:
+                return None
             if len(input) == 0:
                 self.close()
                 break
@@ -111,8 +117,12 @@ class Connection(object):
         else:
             notice('Out: %s' % message)
             line = self.encode(message)
-        self.socket.send(line)
-        #print 'sent "%s"' % line
+        while True:
+            try:
+                self.socket.send(line)
+                break
+            except socket.timeout:
+                pass
     
     def decode(self, line):
         if len(line) == 0:
