@@ -291,6 +291,10 @@ class Client(object):
         privmsg = Message(None, 'PRIVMSG', [channel, text])
         self.send(privmsg)
     
+    def act(self, channel, action):
+        privmsg = Message(None, 'PRIVMSG', [channel, '\x01ACTION %s\x01' % action])
+        self.send(privmsg)
+    
     def join(self, channel):
         join = Message(None, 'JOIN', [channel])
         self.send(join)
