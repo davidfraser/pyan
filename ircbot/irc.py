@@ -271,6 +271,11 @@ class Client(object):
                 name = name.split('!', 1)[0]
             channel = message.params[-1]
             self.controller.see(channel, '', name)
+        elif message.command == 'PING':
+            server = message.params[-1]
+            pong = Message(None, 'PONG', [self.servername, server])
+            self.send(pong)
+            
     
     def speak(self, channel, text):
         privmsg = Message(None, 'PRIVMSG', [channel, text])
