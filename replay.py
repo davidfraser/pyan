@@ -6,15 +6,16 @@ import threading
 from Queue import Queue
 
 
+NUM_CAT_WORKERS = 3
 MAX_REVISIONS = 100
 
 
 def warn(str):
-    print >>sys.stderr, str
+    print >>sys.stderr, 'Warning: %s\n' % str,
 
 
 def notify(str):
-    print >>sys.stderr, str
+    print >>sys.stderr, '%s\n' % str,
 
 
 def retry(cmd):
@@ -23,8 +24,7 @@ def retry(cmd):
         try:
             return cmd()
         except pysvn.ClientError, ex:
-            warn('Got a ClientError in %s, retrying' % cmd.__name__)
-            warn('Exception was: %s' % ex)
+            warn('Retrying after ClientError in %s: %s' % (cmd.__name__, ex))
         attempts += 1
     return cmd()
 
@@ -49,20 +49,19 @@ class CatWorker(threading.Thread):
             try:
                 self.process(item)
             except Exception, ex:
-                warn('Exception processing item %s' % (item,))
-                warn('Exception was: %s' % ex)
+                warn('Processing item %s: %s' % (item, ex))
             self.queue.task_done()
     
     def process(self, item):
         url,rev,dest = item
-        warn('Copying: %s' % dest)
+        notify('Copying: %s' % dest)
         def get_data():
             return self.client.cat(url, revision=rev, peg_revision=rev)
         data = retry(get_data)
         f = open(dest, 'wb')
         f.write(data)
         f.close()
-        #warn('Copied: %s' % dest)
+        #notify('Copied: %s' % dest)
     
 
 class CatPool(object):    
@@ -78,7 +77,7 @@ class CatPool(object):
     def enqueue_copy(self, url, rev, dest):
         item = url, rev, dest
         self.queue.put(item)
-        #warn('Queuing copy: %s (queue size is %d)' % (dest, self.queue.qsize()))
+        #notify('Queuing copy: %s (queue size is %d)' % (dest, self.queue.qsize()))
     
     def finish(self):
         self.queue.join()
@@ -179,7 +178,7 @@ class Replayer(object):
             if do_copy:
                 to_rev = self.rev_map[from_rev]
                 local_from_path = self.get_local_path(copyfrom_path)
-                warn('Copy source rev %d mapped to %d in dest' % (from_rev, to_rev))
+                notify('Copy source rev %d mapped to %d in dest' % (from_rev, to_rev))
                 self.dest_client.copy(join_paths(self.dest_url, local_from_path), local_path, pysvn.Revision(pysvn.opt_revision_kind.number, to_rev))
                 if entry.kind != pysvn.node_kind.dir:
                     os.remove(local_path)
@@ -394,7 +393,7 @@ def main(args):
     
     dest_url = dest_client.info('.').url
     
-    worker_clients = [pysvn.Client(), pysvn.Client(), pysvn.Client(), pysvn.Client()]
+    worker_clients = [pysvn.Client() for x in range(NUM_CAT_WORKERS)]
 
     r = Replayer(source_client, dest_client, worker_clients, dest_url)
     r.run()
