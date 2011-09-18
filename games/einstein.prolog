@@ -2,22 +2,28 @@
 
 % Is Sol a valid solution?  (Assumes 5 distinct origins, 5 distinct colours, 5 distinct drinks, 5 distinct pets, and 5 distinct cigarettes].
 valid(Sol) :-
-    Supply = [[english, german, norwegian, swedish, danish], [red, green, blue, yellow, white], [tea, coffee, milk, water, bier], [cats, dogs, horses, fish, birds], [blend, dunhill, pallmall, bluemasters, prince]],
+    Supply = [[english, german, norwegian, swedish, danish],
+              [red, green, blue, yellow, white],
+              [tea, coffee, milk, water, bier],
+              [cats, dogs, horses, fish, birds],
+              [blend, dunhill, pallmall, bluemasters, prince]],
     valid(Sol, Supply).
 
-% Is [House|Rest] a distinct solution, given the supplies of origins/colours,drinks,pets,cigarettes?
+% Is [House|Rest] a distinct solution, given the supplies?  Supply is a list of lists, each of which is the values for a field.
+% N.B. Base case only checks that first supply list is empty (remainder are assumed to be same length as first).
 valid([], [[]|_]).
-valid([House|Rest], Supply) :-
+valid([House|Tail], Supply) :-
     valid_house(House, Supply, Remaining),
-    valid(Rest, Remaining).
+    valid(Tail, Remaining).
 
-% Is [F|OtherF] a valid house, given supplies [S|OtherS] and leaving [R|OtherR] as unused?
+% Is [Cell|CellTail] a valid house, given supplies [Supply|SupplyTail] and leaving [Remaining|RemainingTail] as unused?
 valid_house([], [], []).
-valid_house([F|OtherF], [S|OtherS], [R|OtherR]) :-
-    select(F, S, R),
-    valid_house(OtherF, OtherS, OtherR).
+valid_house([Cell|CellTail], [Supply|SupplyTail], [Remaining|RemainingTail]) :-
+    select(Cell, Supply, Remaining),
+    valid_house(CellTail, SupplyTail, RemainingTail).
 
 
+% Create an empty solution template (a 5x5 list of lists, with all cells unrelated variables).
 template([R1, R2, R3, R4, R5]) :-
     template_row(R1),
     template_row(R2),
@@ -29,133 +35,136 @@ template_row([_, _, _, _, _]).
 
 
 % The Englishman lives in the red house.
-action1(T) :-
-    member([english, red, _, _, _], T).
+rule1(Template) :-
+    member([english, red, _, _, _], Template).
 
 % The Swede keeps dogs.
-action2(T) :-
-    member([swedish, _, _, dogs, _], T).
+rule2(Template) :-
+    member([swedish, _, _, dogs, _], Template).
 
 % The Dane drinks tea.
-action3(T) :-
-    member([danish, _, tea, _, _], T).
+rule3(Template) :-
+    member([danish, _, tea, _, _], Template).
     
 % The green house is just to the left of the white one.
-action4(T) :-
-    nth1(N, T, [_, green, _, _, _]),
-    nth1(N2, T, [_, white, _, _, _]),
-    D is N2-N,
-    D = 1.
+rule4(Template) :-
+    nth1(N1, Template, [_, green, _, _, _]),
+    nth1(N2, Template, [_, white, _, _, _]),
+    Diff is N2 - N1,
+    Diff = 1.
     
 % The owner of the green house drinks coffee.
-action5(T) :-
-    member([_, green, coffee, _, _], T).
+rule5(Template) :-
+    member([_, green, coffee, _, _], Template).
     
 % The Pall Mall smoker keeps birds.
-action6(T) :-
-    member([_, _, _, birds, pallmall], T).
+rule6(Template) :-
+    member([_, _, _, birds, pallmall], Template).
     
 % The owner of the yellow house smokes Dunhills.
-action7(T) :-
-    member([_, yellow, _, _, dunhill], T).
+rule7(Template) :-
+    member([_, yellow, _, _, dunhill], Template).
     
 % The man in the centre house drinks milk.
-action8(T) :-
-    T = [_, _, [_, _, milk, _, _], _, _].
+rule8(Template) :-
+    Template = [_, _, [_, _, milk, _, _], _, _].
     
 % The Norwegian lives in the first house.
-action9(T) :-
-    T = [[norwegian, _, _, _, _], _, _, _, _].
+rule9(Template) :-
+    Template = [[norwegian, _, _, _, _], _, _, _, _].
 
 % The blend smoker has a neighbour who keeps cats.
-action10(T) :-
-    nth1(N, T, [_, _, _, _, blend]),
-    nth1(N2, T, [_, _, _, cats, _]),
-    D is N2-N,
-    member(D, [-1,1]).
+rule10(Template) :-
+    nth1(N1, Template, [_, _, _, _, blend]),
+    nth1(N2, Template, [_, _, _, cats, _]),
+    Diff is N2 - N1,
+    member(Diff, [-1, 1]).
 
 % The man who smokes Blue Masters drinks bier.
-action11(T) :-
-    member([_, _, bier, _, bluemasters], T).
+rule11(Template) :-
+    member([_, _, bier, _, bluemasters], Template).
 
 % The man who keeps horses lives next to the Dunhill smoker.
-action12(T) :-
-    nth1(N, T, [_, _, _, horses, _]),
-    nth1(N2, T, [_,_,_,_, dunhill]),
-    D is N2-N,
-    member(D, [-1,1]).
+rule12(Template) :-
+    nth1(N1, Template, [_, _, _, horses, _]),
+    nth1(N2, Template, [_,_,_,_, dunhill]),
+    Diff is N2 - N1,
+    member(Diff, [-1, 1]).
 
 % The German smokes Prince.
-action13(T) :-
-    member([german, _, _, _, prince], T).
+rule13(Template) :-
+    member([german, _, _, _, prince], Template).
 
 % The Norwegian lives next to the blue house.
-action14(T) :-
-    nth1(N, T, [norwegian, _, _, _, _]),
-    nth1(N2, T, [_,blue, _, _, _]),
-    D is N2-N,
-    member(D, [-1,1]).
+rule14(Template) :-
+    nth1(N1, Template, [norwegian, _, _, _, _]),
+    nth1(N2, Template, [_,blue, _, _, _]),
+    Diff is N2 - N1,
+    member(Diff, [-1, 1]).
 
 % The blend smoker has a neighbour who drinks water.
-action15(T) :-
-    nth1(N, T, [_, _, _, _, blend]),
-    nth1(N2, T, [_, _, water, _, _]),
-    D is N2-N,
-    member(D, [-1,1]).
+rule15(Template) :-
+    nth1(N1, Template, [_, _, _, _, blend]),
+    nth1(N2, Template, [_, _, water, _, _]),
+    Diff is N2 - N1,
+    member(Diff, [-1, 1]).
 
 
-solve(T) :-
-    action1(T),
-    action2(T),
-    action3(T),
-    action4(T),
-    action5(T),
-    action6(T),
-    action7(T),
-    action8(T),
-    action9(T),
-    action10(T),
-    action11(T),
-    action12(T),
-    action13(T),
-    action14(T),
-    action15(T).
+is_rule(Rule) :-
+    member(Rule, [rule9, rule14, rule8, rule1, rule2, rule3, rule4, rule5, rule6, rule7, rule10, rule11, rule12, rule13, rule15]).
 
 
-% The bound values of X dont occur in [H|T].
-not_in(_, []).
-not_in(X, [H|T]) :-
-    not_eq(X, H),
-    not_in(X, T).
-
-% The bound values of X are distinct from the bound values of Y.
-not_eq([], []).
-not_eq([H1|T1], [H2|T2]) :- var(H1), not_eq(T1, T2), !.
-not_eq([H1|T1], [H2|T2]) :- var(H2), not_eq(T1, T2), !.
-not_eq([H1|T1], [H2|T2]) :- H1 \= H2, not_eq(T1, T2), !.
+solve(Template) :-
+    findall(Rule, is_rule(Rule), Rules),
+    reset_counter(apps),
+    apply_rules(Template, Rules).
 
 
+apply_rules(_, []).
+apply_rules(Template, [Rule|Tail]) :-
+    increment_counter(apps),
+    apply(Rule, [Template]),
+    apply_rules(Template, Tail).
 
-% Print the template [H|T].
+
+% Counter to record number of operations performed.
+:- dynamic(counter/2).
+
+reset_counter(Name) :-
+    retractall(counter(Name, _)),
+    assertz(counter(Name, 0)),
+    !.
+increment_counter(Name) :-
+    (counter(Name, N0), ! ; N0 = 0),
+    N1 is N0 + 1,
+    retractall(counter(Name, _)),
+    assertz(counter(Name, N1)),
+    !.
+
+
+% Print the template [Line|Tail].
+% Output form is x,...,z
+%                y,...,w
+% Unbound variable cells are rendered as _.
 print_template([]) :-
     nl.
-print_template([H|T]) :-
-    print_template_line(H),
-    print_template(T).
+print_template([Line|Tail]) :-
+    print_template_line(Line),
+    print_template(Tail).
 
 print_template_line([]) :-
     nl.
-print_template_line([X]) :-
-    print_template_cell(X),
+print_template_line([Cell]) :-
+    print_template_cell(Cell),
     nl.
-print_template_line([H,H2|T]) :-
-    print_template_cell(H),
+print_template_line([Cell,Cell2|Tail]) :-
+    print_template_cell(Cell),
     write(','),
-    print_template_line([H2|T]).
+    print_template_line([Cell2|Tail]).
 
-print_template_cell(X) :-
-    var(X),
+print_template_cell(Cell) :-
+    var(Cell),
     write('_').
-print_template_cell(X) :-
-    \+var(X),
-    write(X).
+print_template_cell(Cell) :-
+    \+var(Cell),
+    write(Cell).
