@@ -275,7 +275,8 @@ class Replayer(object):
         
     def commit(self, le):
         notify('Committing %d actions' % len (self.actions))
-        message = '(%s) %s\n\nCopied from %s, rev. %s by %s @ %s' % (self.name, le.message.strip('\n'), self.source_url, le.revision.number, le.author, time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(le.date)))
+        message = le.message.strip('\n').decode('utf8')
+        message = '(%s) %s\n\nCopied from %s, rev. %s by %s @ %s' % (self.name, message, self.source_url, le.revision.number, le.author, time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(le.date)))
         global commit_notifications
         commit_notifications = 0
         expected_notifications = len(self.actions) + len([k for k in self.actions.keys() if k != 'D'])
