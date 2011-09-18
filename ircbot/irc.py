@@ -299,6 +299,10 @@ class Client(object):
         join = Message(None, 'JOIN', [channel])
         self.send(join)
     
+    def part(self, channel):
+        part = Message(None, 'PART', [channel])
+        self.send(part)
+    
     def quit(self):
         quit = Message(None, 'QUIT', ['Bye!'])
         self.conn.send(quit)

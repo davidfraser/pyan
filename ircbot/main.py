@@ -49,6 +49,8 @@ class Bot(irc.DumbController):
         self.handlers['friends'] = self.friends_handler
         self.handlers['befriend'] = self.befriend_handler
         self.handlers['cookie'] = self.cookie_handler
+        self.handlers['join'] = self.join_handler
+        self.handlers['part'] = self.part_handler
         
         self.friends = ['edmund', 'edmund2']
     
@@ -137,13 +139,30 @@ class Bot(irc.DumbController):
         context.speak('Ok')
     
     def cookie_handler(self, context):
-        
         if len(context.params) < 1:
             raise CommandSyntaxError('Need a param')
         if len(context.params) > 1:
             raise CommandSyntaxError('Superfluous params: %s' % (' '.join(context.params[1:])))
         name = context.params[0]
         context.act('gives cookie to %s' % name)
+    
+    def join_handler(self, context):
+        if len(context.params) < 1:
+            raise CommandSyntaxError('Need a param')
+        if len(context.params) > 1:
+            raise CommandSyntaxError('Superfluous params: %s' % (' '.join(context.params[1:])))
+        channel = context.params[0]
+        context.client.join(channel)
+        context.speak('Ok')
+    
+    def part_handler(self, context):        
+        if len(context.params) < 1:
+            raise CommandSyntaxError('Need a param')
+        if len(context.params) > 1:
+            raise CommandSyntaxError('Superfluous params: %s' % (' '.join(context.params[1:])))
+        name = context.params[0]
+        self.client.part(name)
+        context.speak('Ok')
 
 
 client = irc.Client()
