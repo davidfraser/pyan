@@ -6,6 +6,9 @@ import threading
 from Queue import Queue
 
 
+MAX_REVISIONS = 100
+
+
 def warn(str):
     print >>sys.stderr, str
 
@@ -369,10 +372,12 @@ class Replayer(object):
         
         last_rev = max(self.rev_map.keys())
         self.start_rev = pysvn.Revision(pysvn.opt_revision_kind.number, last_rev+1)
-        self.end_rev = pysvn.Revision(pysvn.opt_revision_kind.number, last_rev+10)
+        self.end_rev = pysvn.Revision(pysvn.opt_revision_kind.head)
         
-        notify('Fetching logs for revisions %d to %d' % (self.start_rev.number, self.end_rev.number))
-        results = self.source_client.log(self.source_url, revision_start=self.start_rev, revision_end=self.end_rev, discover_changed_paths=True)
+        notify('Fetching logs for revisions from %d' % self.start_rev.number)
+        results = self.source_client.log(self.source_url, revision_start=self.start_rev, revision_end=self.end_rev, discover_changed_paths=True, limit=MAX_REVISIONS)
+        results.sort(key=lambda x: x.revision.number)
+        notify('Replaying revisions from %d to %d' % (results[0].revision.number, results[-1].revision.number))
         for r in results:
             if r.revision.number in self.rev_map:
                 raise Exception('Revision %d appears to already have been replayed here!' % r.revision.number)
