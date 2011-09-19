@@ -1,0 +1,136 @@
+                         README FOR SVNINDEX
+
+$Id: README 2415 2007-01-28 08:23:17Z Edmund $
+
+svnindex is a program that indexes Subversion repositories into an
+SQL database.  Its maintainer is Edmund Horner <ejrh00@gmail.com>.
+
+
+LICENCE
+
+This product includes software developed by CollabNet
+(http://www.Collab.Net/).
+
+This progam is adapated from Subversion, in particular, the
+svnadmin dump command.  As such, it is distributed under the
+Subversion licence.  It is not, however, part of the Subversion
+project.
+
+The Subversion licence can be found in the file COPYING.
+
+
+BUILDING SVNINDEX
+
+svnindex requires the PostgreSQL frontend library libpq; the
+Subversion libraries libsvn_subr, libsvn_repos, libsvn_fs, and
+libsvn_delta; and the Apache Portable Runtime libraries libapr,
+libaprutil, and libapriconv.
+
+During development it is built by including it as part of the
+Subversion sources.  It is placed in subversion/svnindex and
+the following is added to build.conf:
+
+    # svnindex: A Subversion repository indexer
+    # Temporarily included for easing the svnindex build process.
+    [svnindex]
+    description = svnindex
+    type = exe
+    path = subversion/svnindex
+    libs = libsvn_repos libsvn_fs libsvn_delta libsvn_subr apriconv apr
+
+The Subversion build scripts are regenerated with genmake.py.
+
+
+THE DATABASE
+
+svnindex uses the PostgreSQL database system.
+
+The schema described in schema-svn.sql can be used to initialise
+the database.  Repository entries must then be added:
+
+    INSERT INTO svn.repository (uuid, name, url, indexed)
+    VALUES ('youruuid', 'yourname', 'yoururl', TRUE);
+
+where youruuid, yourname, and yoururl are the UUID of the repository,
+the name you want to give it, and its URL.
+
+
+INDEXING A REPOSITORY
+
+Once an entry has been made in the svn.repository table (as above),
+a repository can be indexed.  This can be done with the command:
+
+    svnindex.exe index repospath --db connstr
+
+where repospath is a path to the repository, and
+connstr is a PostgreSQL connection string specifying the
+database name, server host, database user name and password.
+
+This command can be added to the repository's post-commit hook
+script for automatic indexing.
+
+
+QUERYING THE DATABASE
+
+To list a directory:
+
+    SELECT
+        n.id,
+        n.name,
+        n.kind,
+        n.rev,
+        n.size,
+        r.svn_author AS author,
+        r.svn_date AS time,
+        r.svn_log AS log
+    FROM
+        svn.node AS n
+        JOIN svn.revision AS r
+            ON (n.repos_id = r.repos_id AND n.rev = r.rev)
+        JOIN svn.get_children(
+                svn.get_predecessor_id(repos_id, rev, 'path')
+            ) AS c(id) ON c.id = n.id
+
+where repos_id, rev, and path are the repository id (from the
+svn.repository table), the revision number, and the path of the
+directory to list.
+
+To retrieve the log for an item:
+
+    SELECT
+        n.id,
+        n.name,
+        n.kind,
+        n.rev,
+        n.size,
+        r.svn_author AS author,
+        r.svn_date AS time,
+        r.svn_log AS log
+    FROM
+        svn.node AS n
+        JOIN svn.revision AS r
+            ON (n.repos_id = r.repos_id AND n.rev = r.rev)
+        JOIN svn.get_children(
+                svn.get_predecessor_id(repos_id, rev, 'path')
+            ) AS c(id) ON c.id = n.id
+
+with repos_id, rev, and path as above.  The result does not currently
+match the standard Subversion result (from the svn log command), and in
+particular cannot traverse copies.
+
+To find all changes matching the a text query:
+
+    SELECT
+        n.rev,
+        n.action,
+        n.path
+    FROM
+        svn.node AS n
+        JOIN svn.content AS c
+            ON (n.text_id = c.node_id)
+    WHERE
+        n.repos_id = repos_id
+        AND c.vector @@ to_tsquery('searchstr');
+
+with repos_id as above, and where searchstr is a Tsearch2-compliant
+query string, such as "(subversion|svn)&index".
