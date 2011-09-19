@@ -1,6 +1,8 @@
 import threading
 import irc
 
+import nl
+
 class CommandSyntaxError(Exception):
     def __init__(self, message):
         super(CommandSyntaxError, self).__init__()
@@ -63,9 +65,6 @@ class Bot(irc.DumbController):
     def hear(self, sender, recipient, text):
         super(Bot, self).hear(sender, recipient, text)
         
-        if not text.endswith('?') or sender not in self.friends:
-            return
-        
         context = Context(self, self.client)
         if recipient[0] == '#':
             context.channel = recipient
@@ -73,12 +72,25 @@ class Bot(irc.DumbController):
         context.text = text
         
         try:
+            self.do_ambient(context)
+        except Exception, ex:
+            print ex
+        
+        if not text.endswith('?') or sender not in self.friends:
+            return
+        
+        try:
             self.do_command(context)
         except CommandSyntaxError, ex:
             context.speak('...')
             self.last_message = ex.message
             print 'Message from handler: %s' % self.last_message
-    
+
+    def do_ambient(self, context):
+        new_words = nl.parse_sentence(context.text, True)
+        if len(new_words) > 0:
+            context.speak('New words: %s' % (' '.join([nl.annotation(x) for x in new_words])))
+
     def do_command(self, context):
         text = context.text
         text = text[0:len(text)-1].strip()
@@ -166,10 +178,10 @@ class Bot(irc.DumbController):
 
 
 client = irc.Client()
-client.nick = 'rhobot'
+client.nick = 'skynetbot'
 client.hostname = 'smaug'
 client.servername = 'smaug'
-client.realname = 'Rho Bot'
+client.realname = 'Skynet'
 client.controller = Bot(client)
 client.connect('irc.freenode.net:6667')
 thread = threading.Thread(target=client.run)
