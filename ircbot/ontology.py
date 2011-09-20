@@ -164,6 +164,10 @@ class Query(object):
                     else:
                         rel = r, b
                     yield Result(ontology, target, [rel], r2.rels)
+    
+    def __str__(self):
+        s = '<Query %s [%s]>' % (self.target, ' '.join(['(%s %s)' % c for c in self.criteria]))
+        return s
 
 
 class Result(object):
@@ -220,6 +224,10 @@ class Result(object):
                 if verb not in ontology.get_actions(verb.name):
                     ontology.add_action(verb)
                 ontology.add_edge(subj, verb, obj)
+    
+    def __str__(self):
+        s = '<Result %s [%s]>' % (self.thing, ' '.join(['(%s %s)' % c for c in self.rels]))
+        return s
 
 
 def test():
