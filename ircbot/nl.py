@@ -1,3 +1,7 @@
+import sys
+import ontology
+
+
 class ParseError(Exception): pass
 
 class Nonterminal(object):
@@ -16,7 +20,21 @@ class Nonterminal(object):
         for p in self.parts:
             for t in p.get_terminals():
                 yield t
+    
+    def get_statements(self):
+        if isinstance(self, Statement):
+            yield self
+        for p in self.parts:
+            for s in p.get_statements():
+                yield s
 
+    def get_adjectives(self):
+        if isinstance(self, Adjective):
+            yield self
+        for p in self.parts:
+            for a in p.get_adjectives():
+                yield a
+            
 class Terminal(object):
     TERMINAL = True
     
@@ -45,15 +63,37 @@ class Terminal(object):
     def get_terminals(self):
         yield self
     
+    def get_statements(self):
+        return []
+
+    def get_adjectives(self):
+        return []
+        
 class Empty(object): pass
 
 class Sentence(Nonterminal): pass
 class Statement(Nonterminal): pass
-class NounPhrase(Nonterminal): pass
-class VerbPhrase(Nonterminal): pass
-class IntransitiveVerbPhrase(Nonterminal): pass
-class Noun(Nonterminal): pass
-class Verb(Nonterminal): pass
+class NounPhrase(Nonterminal):
+    def get_head(self):
+        for p in self.parts:
+            if isinstance(p, Noun):
+                return p.get_head()
+        raise ParseError('No head in NounPhrase?')
+class VerbPhrase(Nonterminal):
+    def get_verb(self):
+        return self.parts[0].get_verb()
+class IntransitiveVerbPhrase(Nonterminal):
+    def get_verb(self):
+        return self.parts[0].get_verb()
+class Noun(Nonterminal):
+    def get_head(self):
+        for p in self.parts:
+            if isinstance(p, NounWord):
+                return p
+        raise ParseError('No head in Noun?')
+class Verb(Nonterminal):
+    def get_verb(self):
+        return self.parts[0]
 class Adjectives(Nonterminal): pass
 class Adjective(Nonterminal): pass
 class Conjunction(Nonterminal): pass
@@ -168,9 +208,9 @@ add_rule(NounPhrase, [Article, Noun])
 add_rule(NounPhrase, [Article, Adjectives, Noun])
 add_rule(NounPhrase, [Article, Noun, AdjectiveClause])
 add_rule(NounPhrase, [Article, Adjectives, Noun, AdjectiveClause])
-add_rule(NounPhrase, [Adjectives])
+add_rule(NounPhrase, [Adjectives, Noun])
 add_rule(NounPhrase, [Adjectives, Noun, AdjectiveClause])
-add_rule(NounPhrase, [Article, Adjectives, NounPhrase])
+add_rule(NounPhrase, [Article, Adjectives, Noun])
 add_rule(VerbPhrase, [Verb])
 add_rule(VerbPhrase, [Verb, NounPhrase])
 add_rule(VerbPhrase, [Verb, PrepositionPhrase])
@@ -247,6 +287,68 @@ def annotation(result):
     return s
 
 
+o = ontology.Ontology()
+
+
+def embellish_query(tree, query):
+    if isinstance(tree, VerbPhrase):
+        verb_word = tree.get_verb()
+        verb = ontology.Action(verb_word.word)
+        obj = None
+        if isinstance(tree.parts[1], NounPhrase):
+            obj = build_query(tree.parts[1])
+        query.criteria.append((verb, obj))
+    elif isinstance(tree, Adjectives):
+        for a in tree.get_adjectives():
+            verb = ontology.Action('is')
+            obj_word = a.parts[0]
+            obj = ontology.Thing(obj_word.word)
+            query.criteria.append((verb, obj))
+    elif isinstance(tree, AdjectiveClause):
+        if isinstance(tree.parts[1], NounPhrase):
+            #add_rule(AdjectiveClause, [RelativeNounWord, NounPhrase, IntransitiveVerbPhrase])
+            obj = build_query(tree.parts[1])
+            verb_word = tree.parts[2].get_verb()
+            verb = ontology.Action(verb_word.word)
+            query.criteria.append((obj, verb))
+        elif isinstance(tree.parts[1], VerbPhrase):
+            #add_rule(AdjectiveClause, [RelativeNounWord, VerbPhrase])
+            embellish_query(tree.parts[1], query)
+        else:
+            print >>sys.stderr, "Unhandled AdjectiveClause!"
+    else:
+        print >>sys.stderr, "Can't embellish query from %s" % type(tree)
+    return query
+
+
+def build_query(tree):
+    if isinstance(tree, Statement):
+        query = build_query(tree.parts[0])
+        query = embellish_query(tree.parts[1], query)
+    elif isinstance(tree, NounPhrase):
+        noun = tree.get_head()
+        subject = ontology.Thing(noun.word)
+        query = ontology.Query(subject)
+        for p in tree.parts:
+            embellish_query(p, query)
+    else:
+        print >>sys.stderr, "Can't build query from %s" % type(tree)
+        return None
+    return query
+
+
+def comprehend_tree(ontology, tree):
+    for s in tree.get_statements():
+        q = build_query(s)
+        for r in q.run(ontology):
+            r.apply(ontology)
+        break
+    
+    f = open('ontology.dot', 'wt')
+    f.write(ontology.to_dot())
+    f.close()
+
+
 def parse_sentence(sentence, register=False):
     words = sentence.split(' ')
     scores = []
@@ -261,6 +363,7 @@ def parse_sentence(sentence, register=False):
             if register:
                 t.register()
             new_words.append(t)
+    comprehend_tree(o, best)
     return new_words
 
 
