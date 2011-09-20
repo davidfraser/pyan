@@ -293,29 +293,36 @@ o = ontology.Ontology()
 def embellish_query(tree, query):
     if isinstance(tree, VerbPhrase):
         verb_word = tree.get_verb()
-        verb = ontology.Action(verb_word.word)
+        #verb = ontology.Action(verb_word.word)
+        verb = o.lookup_action(verb_word.word)
         obj = None
-        if isinstance(tree.parts[1], NounPhrase):
+        if len(tree.parts) >= 2 and isinstance(tree.parts[1], NounPhrase):
             obj = build_query(tree.parts[1])
         query.criteria.append((verb, obj))
     elif isinstance(tree, Adjectives):
         for a in tree.get_adjectives():
-            verb = ontology.Action('is')
+            #verb = ontology.Action('is')
+            verb = o.lookup_action('is')
             obj_word = a.parts[0]
-            obj = ontology.Thing(obj_word.word)
+            obj = o.lookup_thing(obj_word.word)
             query.criteria.append((verb, obj))
     elif isinstance(tree, AdjectiveClause):
         if isinstance(tree.parts[1], NounPhrase):
             #add_rule(AdjectiveClause, [RelativeNounWord, NounPhrase, IntransitiveVerbPhrase])
             obj = build_query(tree.parts[1])
             verb_word = tree.parts[2].get_verb()
-            verb = ontology.Action(verb_word.word)
+            #verb = ontology.Action(verb_word.word)
+            verb = o.lookup_action(verb_word.word)
             query.criteria.append((obj, verb))
         elif isinstance(tree.parts[1], VerbPhrase):
             #add_rule(AdjectiveClause, [RelativeNounWord, VerbPhrase])
             embellish_query(tree.parts[1], query)
         else:
             print >>sys.stderr, "Unhandled AdjectiveClause!"
+    elif isinstance(tree, Noun):
+        pass
+    elif isinstance(tree, Article):
+        pass
     else:
         print >>sys.stderr, "Can't embellish query from %s" % type(tree)
     return query
@@ -327,7 +334,7 @@ def build_query(tree):
         query = embellish_query(tree.parts[1], query)
     elif isinstance(tree, NounPhrase):
         noun = tree.get_head()
-        subject = ontology.Thing(noun.word)
+        subject = o.lookup_thing(noun.word)
         query = ontology.Query(subject)
         for p in tree.parts:
             embellish_query(p, query)
@@ -340,9 +347,12 @@ def build_query(tree):
 def comprehend_tree(ontology, tree):
     for s in tree.get_statements():
         q = build_query(s)
+        best = None
         for r in q.run(ontology):
-            r.apply(ontology)
-        break
+            if best is None or r.get_score(ontology) < best.get_score(ontology):
+                best = r
+            print r.get_score(ontology), r.describe()
+        best.apply(ontology)
     
     f = open('ontology.dot', 'wt')
     f.write(ontology.to_dot())

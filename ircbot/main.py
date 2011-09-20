@@ -60,7 +60,8 @@ class Bot(irc.DumbController):
         super(Bot, self).see(channel, prefix, name)
         
         if name in self.friends:
-            self.client.speak(channel, 'Hi %s' % name)
+            #self.client.speak(channel, 'Hi %s' % name)
+            pass
         
     def hear(self, sender, recipient, text):
         super(Bot, self).hear(sender, recipient, text)
@@ -89,7 +90,8 @@ class Bot(irc.DumbController):
     def do_ambient(self, context):
         new_words = nl.parse_sentence(context.text, True)
         if len(new_words) > 0:
-            context.speak('New words: %s' % (' '.join([nl.annotation(x) for x in new_words])))
+            #context.speak('New words: %s' % (' '.join([nl.annotation(x) for x in new_words])))
+            pass
 
     def do_command(self, context):
         text = context.text
