@@ -79,6 +79,7 @@ class Ontology(object):
     
     def has_edge(self, subj, verb, obj=None):
         for v, o in self.get_subject_edges(subj):
+            #print 'comparing (%s, %s, %s) and (%s, %s, %s)' % (subj, v, o, subj, verb, obj)
             if v == verb and o == obj:
                 return True
         return False
@@ -87,13 +88,27 @@ class Ontology(object):
         s = """digraph G {\n"""
         for name in self.things:
             for subj in self.things[name]:
-                s += """   thing_%x [label="%s"];\n""" % (id(subj), subj.name)
+                s += """    thing_%x [label="%s"];\n""" % (id(subj), subj.name)
         for name in self.things:
             for subj in self.things[name]:
                 for verb, obj in self.get_subject_edges(subj):
-                    s += """   thing_%x -> thing_%x [label="%s"];\n""" % (id(subj), id(obj), verb.name)
+                    if obj is None:
+                        s += """    nowhere_%x%x [label="", shape=none]\n""" % (id(subj), id(verb))
+                        s += """ thing_%x -> nowhere_%x%x [label="%s"];\n""" % (id(subj), id(subj), id(verb), verb.name)
+                    else:
+                        s += """    thing_%x -> thing_%x [label="%s"];\n""" % (id(subj), id(obj), verb.name)
         s += """}\n"""
         return s
+    
+    def lookup_action(self, name):
+        if name not in self.actions or len(self.actions[name]) == 0:
+            self.add_action(Action(name))
+        return self.actions[name][0]
+    
+    def lookup_thing(self, name):
+        if name not in self.things or len(self.things[name]) == 0:
+            self.add_thing(Thing(name))
+        return self.things[name][0]
 
 
 class Query(object):
@@ -106,6 +121,10 @@ class Query(object):
         self.criteria = criteria
     
     def run(self, ontology):
+        if self.target is None:
+            yield Result(ontology, None, [])
+            return
+        
         subresults = []
         for c in self.criteria:
             a, b = c
@@ -113,7 +132,7 @@ class Query(object):
                 q = b
             else:
                 q = a
-            if isinstance(q, Thing):
+            if isinstance(q, Thing) or q is None:
                 q = Query(q)
             results = []
             for r in q.run(ontology):
@@ -140,9 +159,9 @@ class Query(object):
         if isinstance(a, Action):
             subj = t
             verb = a
-            obj = r            
+            obj = r.thing
         else:
-            subj = r
+            subj = r.thing
             verb = b
             obj = t
         a = ontology.get_actions(verb.name)
@@ -150,7 +169,9 @@ class Query(object):
             ontology.add_action(verb)
         else:
             verb = a[0]
-        return ontology.has_edge(subj, verb, obj)
+        if not ontology.has_edge(subj, verb, obj):
+            return False
+        return True
     
     def compose_results(self, ontology, target, criteria, subresults):
         if len(subresults) == 0:
@@ -180,7 +201,10 @@ class Result(object):
         if extend_rels is not None:
             self.rels.extend(extend_rels)
     
-    def describe(self, indent = 0):
+    def describe(self, indent=0):
+        if self.thing is None:
+            return ''
+        
         s = ''
         if self.thing not in self.ontology.get_things(self.thing.name):
             s += '    '*indent + 'Add vertex %s\n' % self.thing
@@ -206,6 +230,9 @@ class Result(object):
     
     def apply(self, ontology):
         """Apply this result to another ontology."""
+        if self.thing is None:
+            return
+            
         if self.thing not in ontology.get_things(self.thing.name):
             ontology.add_thing(self.thing)
         for a, b in self.rels:
@@ -224,7 +251,33 @@ class Result(object):
                 if verb not in ontology.get_actions(verb.name):
                     ontology.add_action(verb)
                 ontology.add_edge(subj, verb, obj)
-    
+
+    def get_score(self, ontology):
+        """Score a result against an ontology by how much change would be applied."""
+        if self.thing is None:
+            return 0
+        
+        score = 0
+        if self.thing not in ontology.get_things(self.thing.name):
+            score += 10
+        for a, b in self.rels:
+            if isinstance(a, Action):
+                subj = self.thing
+                verb = a
+                obj = b.thing
+                subresult = b
+            else:
+                subj = a.thing
+                verb = b
+                obj = self.thing
+                subresult = a
+            score += subresult.get_score(ontology)
+            if not ontology.has_edge(subj, verb, obj):
+                if verb not in ontology.get_actions(verb.name):
+                    score += 1
+                score += 1
+        return score
+
     def __str__(self):
         s = '<Result %s [%s]>' % (self.thing, ' '.join(['(%s %s)' % c for c in self.rels]))
         return s
