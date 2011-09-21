@@ -201,7 +201,13 @@ class DumbController(object):
         
     def hear(self, sender, recipient, text):
         print '%s says to %s, "%s"' % (sender, recipient, text)
+        
+    def feel(self, sender, recipient, action):
+        print '%s does to %s, "%s"' % (sender, recipient, action)
 
+
+ACTION_PREFIX = '\x01ACTION '
+ACTION_SUFFIX = '\x01'
 
 class Client(object):
     
@@ -274,7 +280,11 @@ class Client(object):
                 name = name.split('!', 1)[0]
             recipient = message.params[0]
             text = message.params[-1]
-            self.controller.hear(name, recipient, text)
+            if text.startswith(ACTION_PREFIX) and text.endswith(ACTION_SUFFIX):
+                action = text[len(ACTION_PREFIX):len(text) - len(ACTION_SUFFIX)]
+                self.controller.feel(name, recipient, action)
+            else:
+                self.controller.hear(name, recipient, text)
         elif message.command == 'JOIN':
             name = message.prefix
             if '!' in name:
@@ -292,7 +302,7 @@ class Client(object):
         self.send(privmsg)
     
     def act(self, channel, action):
-        privmsg = Message(None, 'PRIVMSG', [channel, '\x01ACTION %s\x01' % action])
+        privmsg = Message(None, 'PRIVMSG', [channel, '%s%s%s' % (ACTION_PREFIX, action, ACTION_SUFFIX)])
         self.send(privmsg)
     
     def join(self, channel):

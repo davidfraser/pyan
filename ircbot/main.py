@@ -86,6 +86,21 @@ class Bot(irc.DumbController):
             context.speak('...')
             self.last_message = ex.message
             print 'Message from handler: %s' % self.last_message
+    
+    def feel(self, sender, recipient, action):
+        super(Bot, self).feel(sender, recipient, action)
+        
+        context = Context(self, self.client)
+        if recipient[0] == '#':
+            context.channel = recipient
+        context.nick = sender
+        context.action = action
+        context.text = '%s %s' % (sender, action)
+        
+        try:
+            self.do_ambient(context)
+        except Exception, ex:
+            print ex
 
     def do_ambient(self, context):
         new_words = nl.parse_sentence(context.text, True)
