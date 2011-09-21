@@ -1,5 +1,14 @@
 import sys
 import ontology
+from vocabulary import nouns, relative_nouns, verbs, adjectives, conjunctions, articles, prepositions, known_words
+
+
+rules = {}
+
+def add_rule(head, body):
+    if head not in rules:
+        rules[head] = []
+    rules[head].append(body)
 
 
 class ParseError(Exception): pass
@@ -78,6 +87,8 @@ class NounPhrase(Nonterminal):
         for p in self.parts:
             if isinstance(p, Noun):
                 return p.get_head()
+            if isinstance(p, RelativeNounWord):
+                return p
         raise ParseError('No head in NounPhrase?')
 class VerbPhrase(Nonterminal):
     def get_verb(self):
@@ -88,7 +99,7 @@ class IntransitiveVerbPhrase(Nonterminal):
 class Noun(Nonterminal):
     def get_head(self):
         for p in self.parts:
-            if isinstance(p, NounWord):
+            if isinstance(p, NounWord) or isinstance(p, RelativeNounWord):
                 return p
         raise ParseError('No head in Noun?')
 class Verb(Nonterminal):
@@ -117,7 +128,7 @@ class NounWord(Terminal):
     def register(self):
         nouns.append(self.word)
 
-class RelativeNounWord(NounWord):
+class RelativeNounWord(Terminal):
     def parse(self, word):
         return word in relative_nouns
     
@@ -125,7 +136,6 @@ class RelativeNounWord(NounWord):
         return 'rn'
 
     def register(self):
-        nouns.append(self.word)
         relative_nouns.append(self.word)
 
 class VerbWord(Terminal):
@@ -183,26 +193,11 @@ class PrepositionWord(Terminal):
     def register(self):
         prepositions.append(self.word)
 
-nouns = ['i', 'jellybeans', 'jack', 'house', 'this', 'that', 'cat', 'rat', 'maid', 'farmer', 'grain']
-relative_nouns = ['that']
-verbs = ['is', 'am', 'likes', 'be', 'built', 'ate', 'caught', 'stroked']
-adjectives = ['green', 'red']
-conjunctions = ['and']
-articles = ['the', 'a', 'an']
-prepositions = []
-known_words = nouns + verbs + adjectives + conjunctions + articles + prepositions
-
-rules = {}
-
-def add_rule(head, body):
-    if head not in rules:
-        rules[head] = []
-    rules[head].append(body)
-
 add_rule(Sentence, [Statement])
 add_rule(Sentence, [Statement, Conjunction, Sentence])
 add_rule(Statement, [NounPhrase, VerbPhrase])
 add_rule(NounPhrase, [Noun])
+add_rule(NounPhrase, [RelativeNounWord])
 add_rule(NounPhrase, [Noun, AdjectiveClause])
 add_rule(NounPhrase, [Article, Noun])
 add_rule(NounPhrase, [Article, Adjectives, Noun])
@@ -381,7 +376,6 @@ def test(sentence=None):
     if sentence is None:
         sentence = 'this is the maid that stroked the cat that caught the rat that ate the grain that fed the farmer that lived in the house that jack built'
     words = sentence.split(' ')
-    print len(words)
     scores = []
     for result, remainder in parse(words, Sentence):
         if len(remainder) == 0:
