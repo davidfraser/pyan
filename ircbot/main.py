@@ -54,7 +54,7 @@ class Bot(irc.DumbController):
         self.handlers['join'] = self.join_handler
         self.handlers['part'] = self.part_handler
         
-        self.friends = ['edmund', 'edmund2']
+        self.friends = ['edmund', 'edmund2', 'edmund3']
     
     def see(self, channel, prefix, name):
         super(Bot, self).see(channel, prefix, name)
@@ -179,6 +179,8 @@ class Bot(irc.DumbController):
         context.speak('Ok')
 
 
+THREADING = False
+
 client = irc.Client()
 client.nick = 'skynetbot'
 client.hostname = 'smaug'
@@ -186,7 +188,11 @@ client.servername = 'smaug'
 client.realname = 'Skynet'
 client.controller = Bot(client)
 client.connect('irc.freenode.net:6667')
-thread = threading.Thread(target=client.run)
-thread.start()
-#client.join('##newzealand')
-thread.join()
+client.join('##newzealand')
+if THREADING:
+    thread = threading.Thread(target=client.run)
+    thread.start()
+    thread.join()
+else:
+    client.run()
+
