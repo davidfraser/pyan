@@ -4,10 +4,16 @@ import time
 import os
 import threading
 from Queue import Queue
+from optparse import OptionParser
 
 
 NUM_CAT_WORKERS = 3
 MAX_REVISIONS = 100
+
+
+REPLAY_SOURCE = 'replay:source'
+REPLAY_SOURCE_REV = 'replay:source-rev'
+REPLAY_IGNORE = 'replay:ignore'
 
 
 def warn(str):
@@ -84,18 +90,20 @@ class CatPool(object):
 
 
 class Replayer(object):
-    def __init__(self, source_client, dest_client, worker_clients, dest_url):
+    def __init__(self, options, source_client, dest_client, worker_clients):
+        self.options = options
+        
         self.source_client = source_client
         self.dest_client = dest_client
         self.cat_pool = CatPool(worker_clients)
         
-        self.dest_url = dest_url
+        self.dest_url = dest_client.info('.').url
         
         self.ignore_paths = []
         
-        self.dest_root = self.get_root(dest_url, dest_client)
+        self.dest_root = self.get_root(self.dest_url, dest_client)
         notify('Dest root: %s' % self.dest_root)
-        self.dest_rel_path = dest_url[len(self.dest_root):]
+        self.dest_rel_path = self.dest_url[len(self.dest_root):]
         notify('Dest rel path: %s' % self.dest_rel_path)
         
         self.name = self.dest_rel_path.replace('/branches/', '')
@@ -288,7 +296,7 @@ class Replayer(object):
         self.dest_client.callback_notify = callback_notify
         result = self.dest_client.checkin('.', message)
         self.dest_client.callback_notify = prev_notify
-        self.dest_client.revpropset('replay:source-rev', str(le.revision.number), self.dest_url, result)
+        self.dest_client.revpropset(REPLAY_SOURCE_REV, str(le.revision.number), self.dest_url, result)
         notify('Committed replayed revision %d as %d' % (le.revision.number, result.number))
         self.rev_map[le.revision.number] = result.number
     
@@ -341,11 +349,11 @@ class Replayer(object):
     
     def get_replay_config(self):
         # Get source URL
-        results = self.dest_client.propget('replay:source', self.dest_url, recurse=False)
+        results = self.dest_client.propget(REPLAY_SOURCE, self.dest_url, recurse=False)
         if self.dest_url in results:
             self.source_url = results[self.dest_url]
         else:
-            raise Exception('Destination does not have replay:source set!')
+            raise Exception('Destination does not have %s set!' % REPLAY_SOURCE)
         
         self.source_root = self.get_root(self.source_url, self.source_client)
         notify('Source root: %s' % self.source_root)
@@ -353,20 +361,35 @@ class Replayer(object):
         notify('Source rel path: %s' % self.source_rel_path)
         
         # Get ignore paths
-        results = self.dest_client.propget('replay:ignore', self.dest_url, recurse=False)
+        results = self.dest_client.propget(REPLAY_IGNORE, self.dest_url, recurse=False)
         if self.dest_url in results:
             self.ignore_paths.extend(results[self.dest_url].split(','))
     
-    def run(self):
+    def init(self, source_url, source_rev):
+        # Check it's not already marked as an import branch.
+        results = self.dest_client.propget(REPLAY_SOURCE, self.dest_url, recurse=False)
+        if self.dest_url in results:
+            raise Exception('Destination is already an import path (from %s)!' % results[self.dest_url])
+        
+        message = 'Initialise %s as import branch of %s, initially from revision %d.' % (self.dest_rel_path, source_url, source_rev)
+        
+        self.dest_client.propset(REPLAY_SOURCE, source_url, '.')
+        if len(self.options.ignore_paths) > 0:
+            value = ','.join(self.options.ignore_paths)
+            self.dest_client.propset(REPLAY_IGNORE, value, '.')
+        result = self.dest_client.checkin('.', message, recurse=False)
+        self.dest_client.revpropset(REPLAY_SOURCE_REV, str(source_rev), self.dest_url, result)
+    
+    def sync(self):
         self.get_replay_config()
         
         notify('Building rev map')
         self.rev_map = {}
-        results = self.dest_client.log(self.dest_url, discover_changed_paths=False, revprops=['replay:source-rev'])
+        results = self.dest_client.log(self.dest_url, discover_changed_paths=False, revprops=[REPLAY_SOURCE_REV])
         for r in results:
             if r.revprops is None:
                 continue
-            from_rev = int(r.revprops['replay:source-rev'])
+            from_rev = int(r.revprops[REPLAY_SOURCE_REV])
             to_rev = r.revision.number
             self.rev_map[from_rev] = to_rev
         
@@ -385,19 +408,50 @@ class Replayer(object):
 
 
 def main(args):
-    password = args[1]
+    usage = """usage: %prog init SOURCE-URL SOURCE-REV [--ignore PATH]...\n       %prog sync"""
+    desc = """Initialise a working copy as an import branch; a source url and revision must be specified.
+Or, syncronise an import branch from its source."""
+    parser = OptionParser(usage=usage, description=desc)
+    parser.add_option("-v", "--verbose",
+                      action="store", dest="verbose", default=False,
+                      help="print verbose status messages")
+    parser.add_option("--skip-check",
+                      action="store", dest="skip_check", default=False,
+                      help="skip sanity check")
+    parser.add_option("-c", "--commit",
+                      action="store", dest="commit", default=False,
+                      help="commit after replaying each revision")
+    parser.add_option("--ignore", metavar="PATH",
+                      action="append", dest="ignore_paths",
+                      help="specify paths to ignore (should be relative to source url)")
 
+    options, args = parser.parse_args()
+    if len(args) == 0 or args[0] not in ('init', 'sync'):
+        parser.error('A command such as init or sync must be specified.')
+    
+    command = args[0]
+    if command == 'init':
+        if len(args) != 3:
+            parser.error('init command wants exactly 2 arguments')
+        source_url = args[1]
+        source_rev = int(args[2])
+    else:
+        if len(args) != 1:
+            parser.error('sync command wants no arguments')    
+    
     source_client = pysvn.Client()
     dest_client = pysvn.Client()
     dest_client.callback_ssl_server_trust_prompt = lambda trust_dict: (True, 0, True)
     dest_client.callback_get_login = lambda realm, username, may_save: (True,  'ejrh00', password, True)
     
-    dest_url = dest_client.info('.').url
-    
     worker_clients = [pysvn.Client() for x in range(NUM_CAT_WORKERS)]
 
-    r = Replayer(source_client, dest_client, worker_clients, dest_url)
-    r.run()
+    r = Replayer(options, source_client, dest_client, worker_clients)
+    
+    if command == 'init':
+        r.init(source_url, source_rev)
+    elif command == 'sync':
+        r.sync()
 
 
 if __name__ == '__main__':
