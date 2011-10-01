@@ -298,6 +298,9 @@ int main(int argc, char *argv[])
 		}
 
 		SDL_UpdateRect(display, 0, 0, screen_width, screen_height);
+
+		if (pixels_done >= width*height)
+			SDL_Delay(100);
 	}
 
 	TTF_Quit();
