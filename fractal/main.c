@@ -58,12 +58,53 @@ void DrawPixel(SDL_Surface *screen, Uint8 R, Uint8 G, Uint8 B, int x, int y)
     }
 }
 
-int mfunc(double cx, double cy, int max, double *fx, double *fy)
+void ReadPixel(SDL_Surface *screen, Uint8 *R, Uint8 *G, Uint8 *B, int x, int y)
+{
+	Uint8 A;
+
+    switch (screen->format->BytesPerPixel) {
+        case 1: { /* Assuming 8-bpp */
+            Uint8 *bufp;
+
+            bufp = (Uint8 *)screen->pixels + y*screen->pitch + x;
+			SDL_GetRGBA(*bufp, screen->format, R, G, B, &A);
+        }
+        break;
+
+        case 2: { /* Probably 15-bpp or 16-bpp */
+            Uint16 *bufp;
+
+            bufp = (Uint16 *)screen->pixels + y*screen->pitch/2 + x;
+			SDL_GetRGBA(*bufp, screen->format, R, G, B, &A);
+        }
+        break;
+
+        case 3: { /* Slow 24-bpp mode, usually not used */
+            Uint8 *bufp;
+
+            bufp = (Uint8 *)screen->pixels + y*screen->pitch + x;
+            *R = *(bufp+screen->format->Rshift/8);
+            *G = *(bufp+screen->format->Gshift/8);
+            *B = *(bufp+screen->format->Bshift/8);
+        }
+        break;
+
+        case 4: { /* Probably 32-bpp */
+            Uint32 *bufp;
+
+            bufp = (Uint32 *)screen->pixels + y*screen->pitch/4 + x;
+			SDL_GetRGBA(*bufp, screen->format, R, G, B, &A);
+        }
+        break;
+    }
+}
+
+int mfunc(double cx, double cy, int max_iterations, double *fx, double *fy)
 {
 	int i = 0;
 	double zr = 0.0, zi = 0.0;
 
-	while (i < max && zr*zr + zi*zi < 2.0*2.0)
+	while (i < max_iterations && zr*zr + zi*zi < 2.0*2.0)
 	{
 		double t = zr;
 		zr = zr*zr - zi*zi + cx;
@@ -72,6 +113,9 @@ int mfunc(double cx, double cy, int max, double *fx, double *fy)
 	}
 	*fx = zr;
 	*fy = zi;
+
+	if (zr*zr + zi*zi < 2.0*2.0)
+		return 0;
 
 	return i;
 }
@@ -140,51 +184,32 @@ static int screen_width = 1920;
 static int screen_height = 1080;
 static int width = 1920*2;
 static int height = 1080*2;
-int max = 0;
+static int max = 0;
+int max_iterations = 256;
 static int pixels_done;
 static SDL_Surface *display;
-static int *buffer;
+static float *buffer;
 char *status = "?";
 
 
-void set_pixel(int x, int y, int k)
+void set_pixel(int x, int y, float val)
 {
 	SDL_Color col;
 	int x1 = x/2;
 	int y1 = y/2;
+	double f, g;
 
-	buffer[y*width + x] = k;
-	k = buffer[(y1*2)*width + (x1*2)] + buffer[(y1*2)*width + (x1*2+1)] + buffer[(y1*2+1)*width + (x1*2)] + buffer[(y1*2+1)*width + (x1*2+1)];
-	k /= 4;
+	buffer[y*width + x] = val;
+	val = buffer[y*width + x] + buffer[(y^1)*width + x] + buffer[y*width + (x^1)] + buffer[(y^1)*width + (x^1)];
+	val /= 4.0;
 
-	/*double px = (x - width/2.0)*scale + centrex;
-	double py = (y - height/2.0)*scale + centrey;
-	double fx, fy;
-	double theta;*/
-	if (k >= (max ? 256*16 : 64))
-	{
-		col.r = 0;
-		col.g = 0;
-		col.b = 0;
-	}
-	else
-	{
-		/*double f = sqrt(k)*4;
-		double s;
-		if (!max || f < 32)
-			f = f*8;
-		theta = atan2(fx, fy) + M_PI;
-		if (f >= 128.0)
-			s = (256.0 - f)/128.0;
-		else
-			s = f/128.0;
-		hsl_to_colour(theta/M_PI/2.0, s, f/256.0, &col);
-		*/
-		double f = sqrt(k) / (double) (max ? 16*16 : 8);
-		hsl_to_colour(0, 0, f, &col);
-		col.r = k % 256;
-		col.g = 255;
-	}
+	//f = sqrt(val) / sqrt((double) max_iterations);
+	//hsl_to_colour(0, 0, f, &col);
+	//col.r = (int) val % 256;
+	//col.g = 255;
+	f = log(val) / log((double) max_iterations);
+	g = sqrt(val) / sqrt((double) max_iterations);
+	hsl_to_colour(g, 0.5, f, &col);
 
 	DrawPixel(display, col.r, col.g, col.b, x1, y1);
 	pixels_done++;
@@ -195,18 +220,36 @@ int do_pixel(int x, int y)
 	double px = (x - width/2.0)*scale + centrex;
 	double py = (y - height/2.0)*scale + centrey;
 	double fx, fy;
-	double theta;
+	float val;
 
-	int k = mfunc(px, py, max ? 256*256 : 64, &fx, &fy);
+	int k = mfunc(px, py, max_iterations, &fx, &fy);
 
-	set_pixel(x, y, k);
-
-	if (k != 1)
+	if (k == 0)
 	{
-		k = mfunc(px, py, max ? 256*256 : 64, &fx, &fy);
+		val = 0.0;
+	}
+	else
+	{
+		float z = sqrt(fx*fx + fy*fy);
+		val = (float) k - log(log(z))/log(2.0);
 	}
 
+	set_pixel(x, y, val);
+
 	return k;
+}
+
+void fade_screen()
+{
+	int i, j;
+	for (i = 0; i < screen_height; i++)
+		for (j = 0; j < screen_width; j++)
+		{
+			SDL_Color col;
+			ReadPixel(display, &col.r, &col.g, &col.b, j, i);
+			DrawPixel(display, col.r/2, col.g/2, col.b/2, j, i);
+		}
+
 }
 
 int main(int argc, char *argv[])
@@ -250,6 +293,7 @@ int main(int argc, char *argv[])
 				trace_restart();
 				pixels_done = 0;
 				max = !max;
+				max_iterations = max ? (256*256) : 256;
 			}
 			else if (evt.type == SDL_MOUSEBUTTONDOWN && evt.button.button == 1)
 			{
@@ -258,6 +302,7 @@ int main(int argc, char *argv[])
 				scale = scale * M_SQRT1_2;
 				trace_restart();
 				pixels_done = 0;
+				fade_screen();
 			}
 			else if (evt.type == SDL_MOUSEBUTTONDOWN && evt.button.button == 3)
 			{
@@ -266,6 +311,7 @@ int main(int argc, char *argv[])
 				scale = scale / M_SQRT1_2;
 				trace_restart();
 				pixels_done = 0;
+				fade_screen();
 			}
 		}
 

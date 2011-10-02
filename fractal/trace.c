@@ -27,6 +27,8 @@ typedef struct COORDS
 
 
 #define NUM_SEEDS 1000
+#define PIXEL_COST 100
+#define QUOTA_SIZE 500000
 
 
 void trace_restart(void)
@@ -48,7 +50,6 @@ void trace_restart(void)
 }
 
 
-extern int max;
 extern int do_pixel(int x, int y);
 extern int set_pixel(int x, int y, int k);
 extern char *status;
@@ -108,7 +109,7 @@ static void fill_black(void)
 		for (j = 0; j < width; j++)
 			if (!done[i*width + j])
 			{
-				set_pixel(j, i, max ? 256*256 : 64);
+				set_pixel(j, i, 0);
 				done[i*width + j] = 1;
 			}
 	state = FILLED;
@@ -117,7 +118,7 @@ static void fill_black(void)
 
 void trace_update(void)
 {
-	int quota = 250000;
+	int quota = QUOTA_SIZE;
 
 	while (quota > 0)
 	{
@@ -148,7 +149,7 @@ void trace_update(void)
 		val = do_pixel(c.x, c.y);
 		done[c.y*width + c.x] = 1;
 
-		quota -= (val + 10);
+		quota -= (val + PIXEL_COST);
 
 		for (i = 0; i < 8; i++)
 		{
@@ -157,7 +158,7 @@ void trace_update(void)
 			c2.y = c.y + dy[i];
 			if (c2.x < 0 || c2.y < 0 || c2.x >= width || c2.y >= height)
 				continue;
-			pq_push(pq, (val == (max ? 256*256 : 64)) ? 0 : -10-val-((c2.x ^ c2.y ^ quota) & 15), &c2);
+			pq_push(pq, (val == 0) ? 0 : (-10-val-((c2.x ^ c2.y ^ quota) & 15)) , &c2);
 		}
 	}
 
