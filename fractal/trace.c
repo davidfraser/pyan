@@ -6,7 +6,7 @@
 static int width, height;
 static PQ *pq;
 static int *done;
-static enum { SEEDING, TRACING, EDGING, FILLED } state;
+static enum { SEEDING, TRACING, EDGING, FILLING, WAITING } state;
 
 extern void trace_restart(void);
 
@@ -27,7 +27,7 @@ typedef struct COORDS
 
 
 #define NUM_SEEDS 1000
-#define PIXEL_COST 100
+#define PIXEL_COST 50
 #define QUOTA_SIZE 500000
 
 
@@ -101,21 +101,6 @@ static int push_edges(void)
 }
 
 
-static void fill_black(void)
-{
-	int i, j;
-
-	for (i = 0; i < height; i++)
-		for (j = 0; j < width; j++)
-			if (!done[i*width + j])
-			{
-				set_pixel(j, i, 0);
-				done[i*width + j] = 1;
-			}
-	state = FILLED;
-}
-
-
 void trace_update(void)
 {
 	int quota = QUOTA_SIZE;
@@ -130,7 +115,10 @@ void trace_update(void)
 		int val;
 
 		if (pq->num_items <= 0)
+		{
+			state = WAITING;
 			break;
+		}
 
 		pq_pop(pq, &priority, &c);
 		if (done[c.y*width + c.x])
@@ -141,12 +129,18 @@ void trace_update(void)
 			if (state == TRACING || state == SEEDING)
 				push_edges();
 			else if (state == EDGING)
-				fill_black();
+				state = FILLING;
 		}
 		else if (state == SEEDING)
 			state = TRACING;
 
-		val = do_pixel(c.x, c.y);
+		if (state == FILLING)
+		{
+			val = 0;
+			set_pixel(c.x, c.y, val);
+		}
+		else
+			val = do_pixel(c.x, c.y);
 		done[c.y*width + c.x] = 1;
 
 		quota -= (val + PIXEL_COST);
@@ -168,8 +162,10 @@ void trace_update(void)
 		status = "TRACING";
 	else if (state == EDGING)
 		status = "EDGING";
-	else if (state == FILLED)
-		status = "FILLED";
+	else if (state == FILLING)
+		status = "FILLING";
+	else if (state == WAITING)
+		status = "WAITING";
 	else
 		status = "UNKNOWN";
 }
