@@ -53,6 +53,7 @@ void trace_restart(void)
 extern int do_pixel(int x, int y);
 extern int set_pixel(int x, int y, int k);
 extern char *status;
+extern int max_iterations;
 
 
 static int push_edges(void)
@@ -138,12 +139,14 @@ void trace_update(void)
 		{
 			val = 0;
 			set_pixel(c.x, c.y, val);
+			quota -= PIXEL_COST;
 		}
 		else
+		{
 			val = do_pixel(c.x, c.y);
+			quota -= ((val == 0) ? max_iterations : val) + PIXEL_COST;
+		}
 		done[c.y*width + c.x] = 1;
-
-		quota -= (val + PIXEL_COST);
 
 		for (i = 0; i < 8; i++)
 		{
