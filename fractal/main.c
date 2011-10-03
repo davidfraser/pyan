@@ -1,9 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <time.h>
 
 #include <SDL.h>
 #include <SDL_ttf.h>
@@ -190,6 +190,7 @@ static int pixels_done;
 static SDL_Surface *display;
 static float *buffer;
 char *status = "?";
+static clock_t start_time, end_time;
 
 
 void set_pixel(int x, int y, float val)
@@ -279,6 +280,8 @@ int main(int argc, char *argv[])
 	memset(buffer, 0, sizeof(int) * width * height);
 
 	trace_init(width, height);
+	pixels_done = 0;
+	start_time = clock();
 
     while (running)
 	{
@@ -294,6 +297,7 @@ int main(int argc, char *argv[])
 				pixels_done = 0;
 				max = !max;
 				max_iterations = max ? (256*256) : 256;
+				start_time = clock();
 			}
 			else if (evt.type == SDL_MOUSEBUTTONDOWN && evt.button.button == 1)
 			{
@@ -303,6 +307,7 @@ int main(int argc, char *argv[])
 				trace_restart();
 				pixels_done = 0;
 				fade_screen();
+				start_time = clock();
 			}
 			else if (evt.type == SDL_MOUSEBUTTONDOWN && evt.button.button == 3)
 			{
@@ -312,6 +317,7 @@ int main(int argc, char *argv[])
 				trace_restart();
 				pixels_done = 0;
 				fade_screen();
+				start_time = clock();
 			}
 		}
 
@@ -329,8 +335,15 @@ int main(int argc, char *argv[])
 			char buffer[100];
 			SDL_Surface *txt;
 			SDL_Rect dest = { 0, 0 };
+			int seconds;
+			int pixels_per_second;
 
-			sprintf_s(buffer, sizeof(buffer), "done=%d/%d, cx,cy=%f,%f, scale=%f, status=%s    ", pixels_done, width*height, centrex, centrey, scale, status);
+			if (pixels_done < width*height)
+				end_time = clock();
+			seconds = (end_time - start_time) / CLOCKS_PER_SEC;
+			pixels_per_second = (seconds > 0) ? pixels_done/seconds : 0;
+
+			sprintf_s(buffer, sizeof(buffer), "done=%d/%d, PPS=%d, cx,cy=%f,%f, scale=%f, status=%s     ", pixels_done, width*height, pixels_per_second, centrex, centrey, scale, status);
 			txt = TTF_RenderText(font, buffer, white, black);
 			dest.w = txt->w;
 			dest.h = txt->h;
