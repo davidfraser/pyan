@@ -179,11 +179,11 @@ void error()
 
 
 static double centrex = 0.0, centrey = 0.0;
-static double scale = 0.00125;
-static int screen_width = 1920;
-static int screen_height = 1080;
-static int width = 1920*2;
-static int height = 1080*2;
+static double scale = 0.0025;
+static int screen_width = 640;
+static int screen_height = 640;
+static int width = 640*2;
+static int height = 640*2;
 static int max = 0;
 int max_iterations = 256;
 static int pixels_done;
@@ -248,7 +248,7 @@ void fade_screen()
 		{
 			SDL_Color col;
 			ReadPixel(display, &col.r, &col.g, &col.b, j, i);
-			DrawPixel(display, col.r/2, col.g/2, col.b/2, j, i);
+			DrawPixel(display, col.r/2 + 64, col.g/2 + 64, col.b/2 + 64, j, i);
 		}
 
 }
@@ -271,7 +271,7 @@ int main(int argc, char *argv[])
 	if (!font)
 		error();
 
-	display = SDL_SetVideoMode(screen_width, screen_height, 32, SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN);
+	display = SDL_SetVideoMode(screen_width, screen_height, 32, SDL_HWSURFACE | SDL_DOUBLEBUF); // | SDL_FULLSCREEN);
     if(display == NULL) {
         error();
     }

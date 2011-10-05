@@ -10,9 +10,6 @@
     <ClCompile Include="..\main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\parallel.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\pq.c">
       <Filter>Source Files</Filter>
     </ClCompile>
