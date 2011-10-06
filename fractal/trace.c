@@ -56,7 +56,7 @@ extern char *status;
 extern int max_iterations;
 
 
-static int push_edges(void)
+static void push_edges(void)
 {
 	int i;
 

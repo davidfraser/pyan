@@ -8,6 +8,13 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 
+#ifdef WIN32
+    #define snprintf sprintf_s
+    #define FONT_PATH "c:/windows/fonts/arial.ttf"
+#else
+    #define FONT_PATH "/usr/share/fonts/truetype/msttcorefonts/arial.ttf"
+#endif
+
 
 extern void parallel_init(int w, int h);
 extern void parallel_restart(void);
@@ -178,14 +185,14 @@ void error()
 }
 
 
-static double centrex = 0.0, centrey = 0.0;
-static double scale = 0.00125;
-static int screen_width = 1920;
-static int screen_height = 1080;
-static int width = 1920*2;
-static int height = 1080*2;
-static int max = 0;
-int max_iterations = 256;
+static double centrex, centrey;
+static double scale;
+static int screen_width;
+static int screen_height;
+static int width;
+static int height;
+static int max;
+int max_iterations;
 static int pixels_done;
 static SDL_Surface *display;
 static float *buffer;
@@ -258,6 +265,7 @@ int main(int argc, char *argv[])
     SDL_Event evt;
 	int running = 1;
 	TTF_Font *font;
+    const SDL_VideoInfo* video_info;
 
 	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
         error();
@@ -267,16 +275,27 @@ int main(int argc, char *argv[])
 		error();
 	}
 
-	font = TTF_OpenFont("c:/windows/fonts/arial.ttf", 16);
+	font = TTF_OpenFont(FONT_PATH, 16);
 	if (!font)
 		error();
 
-	display = SDL_SetVideoMode(screen_width, screen_height, 32, SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN);
+	display = SDL_SetVideoMode(0, 0, 32, SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN);
     if(display == NULL) {
         error();
     }
+    
+    video_info = SDL_GetVideoInfo();
+    
+    centrex = 0.0, centrey = 0.0;
+    screen_width = video_info->current_w;
+    screen_height = video_info->current_h;
+    width = screen_width*2;
+    height = screen_height*2;
+    scale = 1.5/screen_height;
+    max = 0;
+    max_iterations = 256;    
 
-	buffer = (int *) malloc(sizeof(int) * width * height);
+	buffer = (float *) malloc(sizeof(int) * width * height);
 	memset(buffer, 0, sizeof(int) * width * height);
 
 	trace_init(width, height);
@@ -343,7 +362,7 @@ int main(int argc, char *argv[])
 			seconds = (end_time - start_time) / CLOCKS_PER_SEC;
 			pixels_per_second = (seconds > 0) ? pixels_done/seconds : 0;
 
-			sprintf_s(buffer, sizeof(buffer), "done=%d/%d, PPS=%d, cx,cy=%f,%f, scale=%f, status=%s     ", pixels_done, width*height, pixels_per_second, centrex, centrey, scale, status);
+			snprintf(buffer, sizeof(buffer), "done=%d/%d, PPS=%d, cx,cy=%f,%f, scale=%f, status=%s     ", pixels_done, width*height, pixels_per_second, centrex, centrey, scale, status);
 			txt = TTF_RenderText(font, buffer, white, black);
 			dest.w = txt->w;
 			dest.h = txt->h;

@@ -23,9 +23,9 @@ void pq_destroy(PQ *pq)
 /** Move the best child into the given slot, then sift_up on that child. */
 static void sift_up(PQ *pq, int slot)
 {
-	int *x = pq->data + (pq->slot_size * slot);
-	int *c1 = pq->data + (pq->slot_size * (2*slot+1));
-	int *c2 = pq->data + (pq->slot_size * (2*slot+2));
+	int *x = (int *) (pq->data + (pq->slot_size * slot));
+	int *c1 = (int *) (pq->data + (pq->slot_size * (2*slot+1)));
+	int *c2 = (int *) (pq->data + (pq->slot_size * (2*slot+2)));
 	if (2*slot+2 >= pq->num_items)
 	{
 		memmove(x, pq->data + (pq->slot_size * (pq->num_items-1)), pq->slot_size);
@@ -47,8 +47,8 @@ static int sift_down(PQ *pq, int slot, int priority)
 {
 	int pslot = (slot-1)/2;
 
-	int *x = pq->data + (pq->slot_size * slot);
-	int *p = pq->data + (pq->slot_size * pslot);
+	int *x = (int *) (pq->data + (pq->slot_size * slot));
+	int *p = (int *) (pq->data + (pq->slot_size * pslot));
 
 	if (slot > 0 && priority < *p)
 	{
@@ -75,7 +75,7 @@ int pq_push(PQ *pq, int priority, void *item)
 	if (slot > 0)
 		slot = sift_down(pq, slot, priority);
 
-	x = pq->data + (pq->slot_size * slot);
+	x = (int *) (pq->data + (pq->slot_size * slot));
 	*x = priority;
 	memmove(&x[1], item, pq->item_size);
 
