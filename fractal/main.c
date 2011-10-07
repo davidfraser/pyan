@@ -266,6 +266,7 @@ int main(int argc, char *argv[])
 	int running = 1;
 	TTF_Font *font;
     const SDL_VideoInfo* video_info;
+    int save_num = 0;
 
 	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
         error();
@@ -317,6 +318,13 @@ int main(int argc, char *argv[])
 				max = !max;
 				max_iterations = max ? (256*256) : 256;
 				start_time = clock();
+			}
+			else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_F12)
+			{
+                char buffer[100];
+                snprintf(buffer, sizeof(buffer), "save%d.bmp", save_num);
+                save_num++;
+                SDL_SaveBMP(display, buffer);
 			}
 			else if (evt.type == SDL_MOUSEBUTTONDOWN && evt.button.button == 1)
 			{
