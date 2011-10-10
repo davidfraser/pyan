@@ -205,7 +205,7 @@ static int width;
 static int height;
 static int max;
 int max_iterations;
-static int pixels_done;
+int pixels_done;
 static SDL_Surface *display;
 static float *buffer;
 char *status = "?";
@@ -320,8 +320,7 @@ int main(int argc, char *argv[])
 	memset(buffer, 0, sizeof(int) * width * height);
 
     modes[current_mode].init(width, height);
-	pixels_done = 0;
-	start_time = clock();
+    restart();
 
     while (running)
 	{
@@ -345,11 +344,12 @@ int main(int argc, char *argv[])
                 if (modes[current_mode].name == NULL)
                     current_mode = 0;
                 modes[current_mode].init(width, height);
+                restart();
 			}
 			else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_F12)
 			{
                 char buffer[100];
-                snprintf(buffer, sizeof(buffer), "save%d.bmp", save_num);
+                snprintf(buffer, sizeof(buffer), "save%04d.bmp", save_num);
                 save_num++;
                 SDL_SaveBMP(display, buffer);
 			}
@@ -382,15 +382,15 @@ int main(int argc, char *argv[])
 		{
 			SDL_Color white = { 255, 255, 255 };
 			SDL_Color black = { 0, 0, 0 };
-			char buffer[100];
+			char buffer[1000];
 			SDL_Surface *txt;
 			SDL_Rect dest = { 0, 0 };
-			int seconds;
+			float seconds;
 			int pixels_per_second;
 
 			if (pixels_done < width*height)
 				end_time = clock();
-			seconds = (end_time - start_time) / CLOCKS_PER_SEC;
+			seconds = (end_time - start_time) / (float) CLOCKS_PER_SEC;
 			pixels_per_second = (seconds > 0) ? pixels_done/seconds : 0;
 
 			snprintf(buffer, sizeof(buffer), "mode=%s, depth=%d, done=%d/%d, PPS=%d, cx,cy=%f,%f, scale=%f, status=%s     ", modes[current_mode].name, max_iterations, pixels_done, width*height, pixels_per_second, centrex, centrey, scale, status);
