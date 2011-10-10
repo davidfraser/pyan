@@ -24,6 +24,18 @@ extern void trace_init(int w, int h);
 extern void trace_restart(void);
 extern void trace_update(void);
 
+static struct {
+    char *name;
+    void (* init)(int w, int h);
+    void (* restart)();
+    void (* update)();
+} modes[] = {
+    { "PARALLEL", parallel_init, parallel_restart, parallel_update },
+    { "TRACE", trace_init, trace_restart, trace_update },
+    { NULL }
+};
+
+
 void DrawPixel(SDL_Surface *screen, Uint8 R, Uint8 G, Uint8 B, int x, int y)
 {
     Uint32 color = SDL_MapRGB(screen->format, R, G, B);
@@ -198,6 +210,7 @@ static SDL_Surface *display;
 static float *buffer;
 char *status = "?";
 static clock_t start_time, end_time;
+static int current_mode = 0;
 
 
 void set_pixel(int x, int y, float val)
@@ -260,6 +273,13 @@ void fade_screen()
 
 }
 
+void restart()
+{
+    modes[current_mode].restart();
+    pixels_done = 0;
+    start_time = clock();
+}
+
 int main(int argc, char *argv[])
 {
     SDL_Event evt;
@@ -299,7 +319,7 @@ int main(int argc, char *argv[])
 	buffer = (float *) malloc(sizeof(int) * width * height);
 	memset(buffer, 0, sizeof(int) * width * height);
 
-	trace_init(width, height);
+    modes[current_mode].init(width, height);
 	pixels_done = 0;
 	start_time = clock();
 
@@ -313,11 +333,18 @@ int main(int argc, char *argv[])
 				running = 0;
 			else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_1)
 			{
-				trace_restart();
-				pixels_done = 0;
 				max = !max;
 				max_iterations = max ? (256*256) : 256;
-				start_time = clock();
+				fade_screen();
+                restart();
+			}
+			else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_2)
+			{
+				fade_screen();
+                current_mode++;
+                if (modes[current_mode].name == NULL)
+                    current_mode = 0;
+                modes[current_mode].init(width, height);
 			}
 			else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_F12)
 			{
@@ -331,20 +358,16 @@ int main(int argc, char *argv[])
 				centrex = (evt.button.x - screen_width/2.0)*scale*2 + centrex;
 				centrey = (evt.button.y - screen_height/2.0)*scale*2 + centrey;
 				scale = scale * M_SQRT1_2;
-				trace_restart();
-				pixels_done = 0;
 				fade_screen();
-				start_time = clock();
+				restart();
 			}
 			else if (evt.type == SDL_MOUSEBUTTONDOWN && evt.button.button == 3)
 			{
 				centrex = (evt.button.x - screen_width/2.0)*scale*2 + centrex;
 				centrey = (evt.button.y - screen_height/2.0)*scale*2 + centrey;
 				scale = scale / M_SQRT1_2;
-				trace_restart();
-				pixels_done = 0;
 				fade_screen();
-				start_time = clock();
+				restart();
 			}
 		}
 
@@ -354,7 +377,7 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		trace_update();
+		modes[current_mode].update();
 
 		{
 			SDL_Color white = { 255, 255, 255 };
@@ -370,7 +393,7 @@ int main(int argc, char *argv[])
 			seconds = (end_time - start_time) / CLOCKS_PER_SEC;
 			pixels_per_second = (seconds > 0) ? pixels_done/seconds : 0;
 
-			snprintf(buffer, sizeof(buffer), "done=%d/%d, PPS=%d, cx,cy=%f,%f, scale=%f, status=%s     ", pixels_done, width*height, pixels_per_second, centrex, centrey, scale, status);
+			snprintf(buffer, sizeof(buffer), "mode=%s, depth=%d, done=%d/%d, PPS=%d, cx,cy=%f,%f, scale=%f, status=%s     ", modes[current_mode].name, max_iterations, pixels_done, width*height, pixels_per_second, centrex, centrey, scale, status);
 			txt = TTF_RenderText(font, buffer, white, black);
 			dest.w = txt->w;
 			dest.h = txt->h;
