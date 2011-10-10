@@ -36,7 +36,7 @@ void trace_restart(void)
 	int i;
 	if (pq)
 		pq_destroy(pq);
-	pq = pq_create(sizeof (COORDS), width*height*2);
+	pq = pq_create(sizeof (COORDS), width*height*5);
 	for (i = 0; i < NUM_SEEDS; i++)
 	{
 		COORDS c;
@@ -54,6 +54,7 @@ extern int do_pixel(int x, int y);
 extern int set_pixel(int x, int y, int k);
 extern char *status;
 extern int max_iterations;
+extern int pixels_done;
 
 
 static void push_edges(void)
@@ -102,6 +103,29 @@ static void push_edges(void)
 }
 
 
+static void catch_remaining(void)
+{
+	int i, j;
+
+	for (i = 0; i < height; i++)
+	{
+        for (j = 0; j < width; j++)
+        {
+            COORDS c2;
+
+            if (!done[i*width + j])
+            {
+                c2.x = j;
+                c2.y = i;
+                pq_push(pq, -10, &c2);
+            }
+        }
+	}
+
+	state = TRACING;
+}
+
+
 void trace_update(void)
 {
 	int quota = QUOTA_SIZE;
@@ -117,6 +141,11 @@ void trace_update(void)
 
 		if (pq->num_items <= 0)
 		{
+            if (pixels_done < width*height)
+            {
+                catch_remaining();
+                continue;
+            }
 			state = WAITING;
 			break;
 		}
