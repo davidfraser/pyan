@@ -1,3 +1,5 @@
+#include "fractal.h"
+
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -26,9 +28,6 @@ void parallel_restart(void)
 	frame_offset = frame;
 	frame = 0;
 }
-
-
-extern int do_pixel(int x, int y);
 
 
 void parallel_update(void)

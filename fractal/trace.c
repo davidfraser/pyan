@@ -1,3 +1,5 @@
+#include "fractal.h"
+
 #include <string.h>
 
 #include "pq.h"
@@ -8,7 +10,7 @@ static PQ *pq;
 static int *done;
 static enum { SEEDING, TRACING, EDGING, FILLING, WAITING } state;
 
-extern void trace_restart(void);
+void trace_restart(void);
 
 void trace_init(int w, int h)
 {
@@ -48,13 +50,6 @@ void trace_restart(void)
 	memset(done, 0, sizeof(int)*width*height);
 	state = SEEDING;
 }
-
-
-extern int do_pixel(int x, int y);
-extern int set_pixel(int x, int y, int k);
-extern char *status;
-extern int max_iterations;
-extern int pixels_done;
 
 
 static void push_edges(void)

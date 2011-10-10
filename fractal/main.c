@@ -1,3 +1,5 @@
+#include "fractal.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -181,8 +183,8 @@ void error()
 }
 
 
-static double centrex, centrey;
-static double scale;
+double centrex, centrey;
+double scale;
 static int screen_width;
 static int screen_height;
 static int width;
@@ -195,9 +197,6 @@ static float *buffer;
 char *status = "?";
 static clock_t start_time, end_time;
 static int current_mode = 0;
-
-
-extern int mfunc(double cx, double cy, int max_iterations, double *fx, double *fy);
 
 
 void set_pixel(int x, int y, float val)
@@ -223,7 +222,7 @@ void set_pixel(int x, int y, float val)
 	pixels_done++;
 }
 
-int do_pixel(int x, int y)
+float do_pixel(int x, int y)
 {
 	double px = (x - width/2.0)*scale + centrex;
 	double py = (y - height/2.0)*scale + centrey;
@@ -244,7 +243,7 @@ int do_pixel(int x, int y)
 
 	set_pixel(x, y, val);
 
-	return k;
+	return val;
 }
 
 void fade_screen()

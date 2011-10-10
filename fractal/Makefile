@@ -1,7 +1,7 @@
 CFLAGS = -g -Wall $(OPT) -lSDL -lSDL_ttf -I /usr/include/SDL -lgomp -fopenmp
 
 OBJ=$(patsubst %.c, %.o, $(wildcard *.c))
-HEADERS=
+HEADERS=fractal.h
 
 all: fractal
 
