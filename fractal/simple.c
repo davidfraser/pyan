@@ -4,8 +4,13 @@
 #include <math.h>
 
 
+#define PIXEL_COST 50
+#define QUOTA_SIZE 500000
+
+
 static int width, height;
 static int i, j;
+static int quota;
 
 
 void simple_init(int w, int h)
@@ -26,7 +31,7 @@ void simple_restart(void)
 
 int simple_next_pixel(int slot, double *cx, double *cy)
 {
-    if (i >= height)
+    if (quota <= 0 || i >= height)
         return 0;
     
 	*cx = (j - width/2.0)*scale + centrex;
@@ -49,8 +54,10 @@ void simple_output_pixel(int slot, int k, double fx, double fy)
 		val = (float) k - log(log(z))/log(2.0);
 	}
     
-    set_pixel(j, i, val);
+    quota -= val;
     
+    set_pixel(j, i, val);
+    quota -= ((val == 0) ? max_iterations : val) + PIXEL_COST;
     j++;
 
     if (j >= width)
@@ -66,13 +73,15 @@ void simple_output_pixel(int slot, int k, double fx, double fy)
 
 void simple_update(void)
 {
+    quota = QUOTA_SIZE;
 #if USE_LOOP
     mfunc_loop(max_iterations, simple_next_pixel, simple_output_pixel);
 #else
-    int quota = 1000;
 
     while (quota > 0)
     {
+        float val;
+        
         if (j >= width)
         {
             j = 0;
@@ -82,9 +91,9 @@ void simple_update(void)
         if (i >= height)
             return;
         
-        do_pixel(j, i);
+        val = do_pixel(j, i);
+        quota -= ((val == 0) ? max_iterations : val) + PIXEL_COST;
         j++;
-        quota--;
 	}
 #endif
 }

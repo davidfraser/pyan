@@ -32,7 +32,6 @@ void mfunc_loop(int max_iterations, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output
     double cx, cy;
     double zr, zi;
     int done = 0;
-    int quota = 1000;
     
     while (1)
     {
@@ -49,7 +48,7 @@ void mfunc_loop(int max_iterations, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output
                     output_pixel(0, i, zr, zi);
             }
             
-            if (done >= quota || !next_pixel(0, &cx, &cy))
+            if (!next_pixel(0, &cx, &cy))
                 break;
             
             done += 1;
