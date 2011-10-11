@@ -266,6 +266,8 @@ void restart()
     start_time = clock();
 }
 
+#define FULL_SCREEN 1
+
 int main(int argc, char *argv[])
 {
     SDL_Event evt;
@@ -286,7 +288,11 @@ int main(int argc, char *argv[])
 	if (!font)
 		error();
 
+#if FULL_SCREEN
 	display = SDL_SetVideoMode(0, 0, 32, SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN);
+#else
+	display = SDL_SetVideoMode(400, 400, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
+#endif
     if(display == NULL) {
         error();
     }
