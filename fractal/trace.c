@@ -13,7 +13,7 @@ typedef struct COORDS
 } COORDS;
 
 static int width, height;
-static PQ *pq;
+static PQ *pq = NULL;
 static int *done;
 static enum { SEEDING, TRACING, EDGING, FILLING, WAITING } state;
 
@@ -23,7 +23,8 @@ void trace_init(int w, int h)
 {
 	width = w;
 	height = h;
-	pq = pq_create(sizeof (COORDS), width*height*5);
+	if (!pq)
+		pq = pq_create(sizeof (COORDS), width*height*5);
 	if (!pq)
 	{
 		fprintf(stderr, "Can't allocate PQ for %d items!", width*height*5);
