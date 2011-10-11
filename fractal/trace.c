@@ -1,9 +1,16 @@
 #include "fractal.h"
 
 #include <string.h>
+#include <stdio.h>
 
 #include "pq.h"
 
+
+typedef struct COORDS
+{
+	int x;
+	int y;
+} COORDS;
 
 static int width, height;
 static PQ *pq;
@@ -16,16 +23,15 @@ void trace_init(int w, int h)
 {
 	width = w;
 	height = h;
-	pq = NULL;
+	pq = pq_create(sizeof (COORDS), width*height*5);
+	if (!pq)
+	{
+		fprintf(stderr, "Can't allocate PQ for %d items!", width*height*5);
+		exit(1);
+	}
 	done = malloc(sizeof(int) * width * height);
 	trace_restart();
 }
-
-typedef struct COORDS
-{
-	int x;
-	int y;
-} COORDS;
 
 
 #define NUM_SEEDS 1000
@@ -36,9 +42,7 @@ typedef struct COORDS
 void trace_restart(void)
 {
 	int i;
-	if (pq)
-		pq_destroy(pq);
-	pq = pq_create(sizeof (COORDS), width*height*5);
+    pq->num_items = 0;
 	for (i = 0; i < NUM_SEEDS; i++)
 	{
 		COORDS c;

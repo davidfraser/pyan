@@ -6,8 +6,15 @@
 PQ *pq_create(size_t item_size, int max_items)
 {
 	PQ *pq = malloc(sizeof(PQ));
+	if (!pq)
+		return NULL;
 	pq->slot_size = item_size + sizeof(int);
 	pq->data = malloc(pq->slot_size * max_items);
+	if (!pq->data)
+	{
+		free(pq);
+		return NULL;
+	}
 	pq->item_size = item_size;
 	pq->max_items = max_items;
 	pq->num_items = 0;
