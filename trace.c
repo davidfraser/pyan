@@ -1,38 +1,29 @@
-#include "fractal.h"
-
 #include <string.h>
-#include <stdio.h>
 
 #include "pq.h"
 
+
+static int width, height;
+static PQ *pq;
+static int *done;
+static enum { SEEDING, TRACING, EDGING, FILLING, WAITING } state;
+
+extern void trace_restart(void);
+
+void trace_init(int w, int h)
+{
+	width = w;
+	height = h;
+	pq = NULL;
+	done = malloc(sizeof(int) * width * height);
+	trace_restart();
+}
 
 typedef struct COORDS
 {
 	int x;
 	int y;
 } COORDS;
-
-static int width, height;
-static PQ *pq = NULL;
-static int *done;
-static enum { SEEDING, TRACING, EDGING, FILLING, WAITING } state;
-
-void trace_restart(void);
-
-void trace_init(int w, int h)
-{
-	width = w;
-	height = h;
-	if (!pq)
-		pq = pq_create(sizeof (COORDS), width*height*5);
-	if (!pq)
-	{
-		fprintf(stderr, "Can't allocate PQ for %d items!", width*height*5);
-		exit(1);
-	}
-	done = malloc(sizeof(int) * width * height);
-	trace_restart();
-}
 
 
 #define NUM_SEEDS 1000
@@ -43,7 +34,9 @@ void trace_init(int w, int h)
 void trace_restart(void)
 {
 	int i;
-    pq->num_items = 0;
+	if (pq)
+		pq_destroy(pq);
+	pq = pq_create(sizeof (COORDS), width*height*2);
 	for (i = 0; i < NUM_SEEDS; i++)
 	{
 		COORDS c;
@@ -55,6 +48,12 @@ void trace_restart(void)
 	memset(done, 0, sizeof(int)*width*height);
 	state = SEEDING;
 }
+
+
+extern int do_pixel(int x, int y);
+extern int set_pixel(int x, int y, int k);
+extern char *status;
+extern int max_iterations;
 
 
 static void push_edges(void)
@@ -103,29 +102,6 @@ static void push_edges(void)
 }
 
 
-static void catch_remaining(void)
-{
-	int i, j;
-
-	for (i = 0; i < height; i++)
-	{
-        for (j = 0; j < width; j++)
-        {
-            COORDS c2;
-
-            if (!done[i*width + j])
-            {
-                c2.x = j;
-                c2.y = i;
-                pq_push(pq, -10, &c2);
-            }
-        }
-	}
-
-	state = TRACING;
-}
-
-
 void trace_update(void)
 {
 	int quota = QUOTA_SIZE;
@@ -141,11 +117,6 @@ void trace_update(void)
 
 		if (pq->num_items <= 0)
 		{
-            if (pixels_done < width*height)
-            {
-                catch_remaining();
-                continue;
-            }
 			state = WAITING;
 			break;
 		}

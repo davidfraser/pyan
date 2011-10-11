@@ -1,5 +1,3 @@
-#include "fractal.h"
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -18,12 +16,6 @@
 #endif
 
 
-extern void simple_init(int w, int h);
-extern void simple_restart(void);
-extern void simple_update(void);
-extern void simple_update_loop(void);
-extern void simple_update_simd(void);
-
 extern void parallel_init(int w, int h);
 extern void parallel_restart(void);
 extern void parallel_update(void);
@@ -31,21 +23,6 @@ extern void parallel_update(void);
 extern void trace_init(int w, int h);
 extern void trace_restart(void);
 extern void trace_update(void);
-
-static struct {
-    char *name;
-    void (* init)(int w, int h);
-    void (* restart)();
-    void (* update)();
-} modes[] = {
-    { "SIMPLE", simple_init, simple_restart, simple_update },
-    { "SIMPLE_LOOP", simple_init, simple_restart, simple_update_loop },
-    { "SIMPLE_SIMD", simple_init, simple_restart, simple_update_simd },
-    { "PARALLEL", parallel_init, parallel_restart, parallel_update },
-    { "TRACE", trace_init, trace_restart, trace_update },
-    { NULL }
-};
-
 
 void DrawPixel(SDL_Surface *screen, Uint8 R, Uint8 G, Uint8 B, int x, int y)
 {
@@ -129,6 +106,27 @@ void ReadPixel(SDL_Surface *screen, Uint8 *R, Uint8 *G, Uint8 *B, int x, int y)
     }
 }
 
+int mfunc(double cx, double cy, int max_iterations, double *fx, double *fy)
+{
+	int i = 0;
+	double zr = 0.0, zi = 0.0;
+
+	while (i < max_iterations && zr*zr + zi*zi < 2.0*2.0)
+	{
+		double t = zr;
+		zr = zr*zr - zi*zi + cx;
+		zi = 2*t*zi + cy;
+		i++;
+	}
+	*fx = zr;
+	*fy = zi;
+
+	if (zr*zr + zi*zi < 2.0*2.0)
+		return 0;
+
+	return i;
+}
+
 void hsl_to_colour(double h, double s, double l, SDL_Color *colour)
 {
 	double c = (1 - fabs(2*l - 1)) * s;
@@ -187,20 +185,19 @@ void error()
 }
 
 
-double centrex, centrey;
-double scale;
+static double centrex, centrey;
+static double scale;
 static int screen_width;
 static int screen_height;
 static int width;
 static int height;
 static int max;
 int max_iterations;
-int pixels_done;
+static int pixels_done;
 static SDL_Surface *display;
 static float *buffer;
 char *status = "?";
 static clock_t start_time, end_time;
-static int current_mode = 0;
 
 
 void set_pixel(int x, int y, float val)
@@ -226,7 +223,7 @@ void set_pixel(int x, int y, float val)
 	pixels_done++;
 }
 
-float do_pixel(int x, int y)
+int do_pixel(int x, int y)
 {
 	double px = (x - width/2.0)*scale + centrex;
 	double py = (y - height/2.0)*scale + centrey;
@@ -247,7 +244,7 @@ float do_pixel(int x, int y)
 
 	set_pixel(x, y, val);
 
-	return val;
+	return k;
 }
 
 void fade_screen()
@@ -262,15 +259,6 @@ void fade_screen()
 		}
 
 }
-
-void restart()
-{
-    modes[current_mode].restart();
-    pixels_done = 0;
-    start_time = clock();
-}
-
-#define FULL_SCREEN 1
 
 int main(int argc, char *argv[])
 {
@@ -292,11 +280,7 @@ int main(int argc, char *argv[])
 	if (!font)
 		error();
 
-#if FULL_SCREEN
 	display = SDL_SetVideoMode(0, 0, 32, SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN);
-#else
-	display = SDL_SetVideoMode(400, 400, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
-#endif
     if(display == NULL) {
         error();
     }
@@ -315,8 +299,9 @@ int main(int argc, char *argv[])
 	buffer = (float *) malloc(sizeof(int) * width * height);
 	memset(buffer, 0, sizeof(int) * width * height);
 
-    modes[current_mode].init(width, height);
-    restart();
+	trace_init(width, height);
+	pixels_done = 0;
+	start_time = clock();
 
     while (running)
 	{
@@ -328,24 +313,16 @@ int main(int argc, char *argv[])
 				running = 0;
 			else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_1)
 			{
+				trace_restart();
+				pixels_done = 0;
 				max = !max;
 				max_iterations = max ? (256*256) : 256;
-				fade_screen();
-                restart();
-			}
-			else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_2)
-			{
-				fade_screen();
-                current_mode++;
-                if (modes[current_mode].name == NULL)
-                    current_mode = 0;
-                modes[current_mode].init(width, height);
-                restart();
+				start_time = clock();
 			}
 			else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_F12)
 			{
                 char buffer[100];
-                snprintf(buffer, sizeof(buffer), "save%04d.bmp", save_num);
+                snprintf(buffer, sizeof(buffer), "save%d.bmp", save_num);
                 save_num++;
                 SDL_SaveBMP(display, buffer);
 			}
@@ -354,16 +331,20 @@ int main(int argc, char *argv[])
 				centrex = (evt.button.x - screen_width/2.0)*scale*2 + centrex;
 				centrey = (evt.button.y - screen_height/2.0)*scale*2 + centrey;
 				scale = scale * M_SQRT1_2;
+				trace_restart();
+				pixels_done = 0;
 				fade_screen();
-				restart();
+				start_time = clock();
 			}
 			else if (evt.type == SDL_MOUSEBUTTONDOWN && evt.button.button == 3)
 			{
 				centrex = (evt.button.x - screen_width/2.0)*scale*2 + centrex;
 				centrey = (evt.button.y - screen_height/2.0)*scale*2 + centrey;
 				scale = scale / M_SQRT1_2;
+				trace_restart();
+				pixels_done = 0;
 				fade_screen();
-				restart();
+				start_time = clock();
 			}
 		}
 
@@ -373,23 +354,23 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		modes[current_mode].update();
+		trace_update();
 
 		{
 			SDL_Color white = { 255, 255, 255 };
 			SDL_Color black = { 0, 0, 0 };
-			char buffer[1000];
+			char buffer[100];
 			SDL_Surface *txt;
 			SDL_Rect dest = { 0, 0 };
-			float seconds;
+			int seconds;
 			int pixels_per_second;
 
 			if (pixels_done < width*height)
 				end_time = clock();
-			seconds = (end_time - start_time) / (float) CLOCKS_PER_SEC;
+			seconds = (end_time - start_time) / CLOCKS_PER_SEC;
 			pixels_per_second = (seconds > 0) ? pixels_done/seconds : 0;
 
-			snprintf(buffer, sizeof(buffer), "mode=%s, depth=%d, done=%d/%d, PPS=%d, cx,cy=%f,%f, scale=%f, status=%s     ", modes[current_mode].name, max_iterations, pixels_done, width*height, pixels_per_second, centrex, centrey, scale, status);
+			snprintf(buffer, sizeof(buffer), "done=%d/%d, PPS=%d, cx,cy=%f,%f, scale=%f, status=%s     ", pixels_done, width*height, pixels_per_second, centrex, centrey, scale, status);
 			txt = TTF_RenderText(font, buffer, white, black);
 			dest.w = txt->w;
 			dest.h = txt->h;
@@ -412,5 +393,5 @@ int main(int argc, char *argv[])
 		
 	SDL_Quit();
 
-	exit(0);
+	return 0;
 }
