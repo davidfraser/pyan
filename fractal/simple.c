@@ -29,6 +29,9 @@ void simple_restart(void)
 }
 
 
+int x_slots[2];
+int y_slots[2];
+
 int simple_next_pixel(int slot, double *cx, double *cy)
 {
     if (quota <= 0 || i >= height)
@@ -36,7 +39,18 @@ int simple_next_pixel(int slot, double *cx, double *cy)
     
 	*cx = (j - width/2.0)*scale + centrex;
 	*cy = (i - height/2.0)*scale + centrey;
+
+	x_slots[slot] = j;
+	y_slots[slot] = i;
     
+    j++;
+
+    if (j >= width)
+    {
+        j = 0;
+        i++;
+    }
+
     return 1;
 }
 
@@ -51,32 +65,19 @@ void simple_output_pixel(int slot, int k, double fx, double fy)
 	else
 	{
 		float z = sqrt(fx*fx + fy*fy);
-		val = (float) k - log(log(z))/log(2.0);
+		val = (float) k; // - log(log(z))/log(2.0);
 	}
     
     quota -= val;
     
-    set_pixel(j, i, val);
+    set_pixel(x_slots[slot], y_slots[slot], val);
     quota -= ((val == 0) ? max_iterations : val) + PIXEL_COST;
-    j++;
-
-    if (j >= width)
-    {
-        j = 0;
-        i++;
-    }
 }
-
-
-#define USE_LOOP 1
 
 
 void simple_update(void)
 {
     quota = QUOTA_SIZE;
-#if USE_LOOP
-    mfunc_loop(max_iterations, simple_next_pixel, simple_output_pixel);
-#else
 
     while (quota > 0)
     {
@@ -95,5 +96,20 @@ void simple_update(void)
         quota -= ((val == 0) ? max_iterations : val) + PIXEL_COST;
         j++;
 	}
-#endif
+}
+
+
+void simple_update_loop(void)
+{
+    quota = QUOTA_SIZE;
+
+    mfunc_loop(max_iterations, simple_next_pixel, simple_output_pixel);
+}
+
+
+void simple_update_simd(void)
+{
+    quota = QUOTA_SIZE;
+
+    mfunc_simd(max_iterations, simple_next_pixel, simple_output_pixel);
 }

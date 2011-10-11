@@ -21,6 +21,8 @@
 extern void simple_init(int w, int h);
 extern void simple_restart(void);
 extern void simple_update(void);
+extern void simple_update_loop(void);
+extern void simple_update_simd(void);
 
 extern void parallel_init(int w, int h);
 extern void parallel_restart(void);
@@ -37,6 +39,8 @@ static struct {
     void (* update)();
 } modes[] = {
     { "SIMPLE", simple_init, simple_restart, simple_update },
+    { "SIMPLE_LOOP", simple_init, simple_restart, simple_update_loop },
+    { "SIMPLE_SIMD", simple_init, simple_restart, simple_update_simd },
     { "PARALLEL", parallel_init, parallel_restart, parallel_update },
     { "TRACE", trace_init, trace_restart, trace_update },
     { NULL }
