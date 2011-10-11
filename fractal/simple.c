@@ -65,7 +65,7 @@ void simple_output_pixel(int slot, int k, double fx, double fy)
 	else
 	{
 		float z = sqrt(fx*fx + fy*fy);
-		val = (float) k; // - log(log(z))/log(2.0);
+		val = (float) k - log(log(z))/log(2.0);
 	}
     
     quota -= val;
