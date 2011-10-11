@@ -19,9 +19,18 @@
     <ClCompile Include="..\trace.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\mfunc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\simple.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\pq.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fractal.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
