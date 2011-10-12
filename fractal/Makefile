@@ -1,4 +1,4 @@
-CFLAGS = -g -Wall $(OPT) -lSDL -lSDL_ttf -I /usr/include/SDL -lgomp -fopenmp
+CFLAGS = -g -Wall $(OPT) -lSDL -lSDL_ttf -I /usr/include/SDL -lgomp -fopenmp -msse3
 
 OBJ=$(patsubst %.c, %.o, $(wildcard *.c))
 HEADERS=fractal.h

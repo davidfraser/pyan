@@ -67,7 +67,6 @@ void mfunc_loop(int max_iterations, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output
 }
 
 
-#if WIN32
 #include <pmmintrin.h>
 
 #define ENABLE_SLOT0 1
@@ -79,7 +78,6 @@ PIXEL_OUTPUT output_pixel)
     int i0 = max_iterations;
     int i1 = max_iterations;
     int in_progress = 0;
-    int boundary_exceeded = 1;
 
     __m128d cx;
     __m128d cy;
@@ -93,9 +91,9 @@ PIXEL_OUTPUT output_pixel)
 
     union {
         __m128d m128d;
-		long long int ints[2];
+		unsigned long long int ints[2];
     } test;
-
+    
     boundary = _mm_set1_pd(2.0*2.0);
     zero = _mm_set1_pd(0.0);
 	cx = _mm_set1_pd(0.0);
@@ -121,8 +119,8 @@ new one. */
 
             if (in_progress & 1)
             {
-                pixel_x.m128d = _mm_move_sd(zr, zr);
-                pixel_y.m128d = _mm_move_sd(zi, zi);
+                pixel_x.m128d = zr;
+                pixel_y.m128d = zi;
                 output_pixel(0, test.ints[0] ? i0 : 0, pixel_x.doubles[0], pixel_y.doubles[0]);
             }
             else
@@ -163,8 +161,8 @@ a new one. */
 
             if (in_progress & 2)
             {
-                pixel_x.m128d = _mm_move_sd(zr, zi);
-                pixel_y.m128d = _mm_move_sd(zr, zi);
+                pixel_x.m128d = zr;
+                pixel_y.m128d = zi;
                 output_pixel(1, test.ints[1] ? i1 : 0, pixel_x.doubles[1], pixel_y.doubles[1]);
             }
             else
@@ -202,8 +200,9 @@ a new one. */
         t = _mm_add_pd(zr2, zi2);
         test.m128d = _mm_cmpgt_pd(t, boundary);
 
-        i0++;
-        i1++;
+        if (ENABLE_SLOT0)
+            i0++;
+        if (ENABLE_SLOT1)
+            i1++;
     }
 }
-#endif
