@@ -196,7 +196,7 @@ static int height;
 static int max;
 int max_iterations;
 int pixels_done;
-static SDL_Surface *display;
+static SDL_Surface *display = NULL;
 static float *buffer;
 char *status = "?";
 static clock_t start_time, end_time;
@@ -270,6 +270,102 @@ void restart()
     start_time = clock();
 }
 
+static int benchmark = 0;
+
+static void parse_args(int argc, char *argv[])
+{
+    int i;
+    
+    for (i = 1; i < argc; i++)
+    {
+        if (strcmp(argv[i], "--benchmark") == 0)
+        {
+            benchmark = 1;
+        }
+        else if (strcmp(argv[i], "--mode") == 0)
+        {
+            i++;
+            if (i >= argc)
+            {
+                fprintf(stderr, "--mode argument needs to be followed by a mode name\n");
+                exit(1);
+            }
+            while (modes[current_mode].name)
+            {
+                if (strcmp(modes[current_mode].name, argv[i]) == 0)
+                    break;
+                current_mode++;
+            }
+            if (!modes[current_mode].name)
+            {
+                fprintf(stderr, "No such mode: %s\n", argv[i]);
+                exit(1);
+            }
+        }
+        else
+        {
+            fprintf(stderr, "Unrecognised command: %s\n", argv[i]);
+            exit(1);
+        }
+    }
+}
+
+
+#define BENCHMARK_LOOPS 5
+#define BENCHMARK_SIZE 1000
+
+
+void do_benchmark(void)
+{
+    int i;
+    int average_pps;
+    
+    centrex = 0.0, centrey = 0.0;
+    screen_width = BENCHMARK_SIZE;
+    screen_height = BENCHMARK_SIZE;
+    width = screen_width*2;
+    height = screen_height*2;
+    scale = 1.5/screen_height;
+    max = 0;
+    max_iterations = 256;    
+
+    display = SDL_CreateRGBSurface(SDL_SWSURFACE, screen_width, screen_height, 32, 0, 0, 0, 0);
+    
+	buffer = (float *) malloc(sizeof(int) * width * height);
+	memset(buffer, 0, sizeof(int) * width * height);
+
+    modes[current_mode].init(width, height);
+    
+    printf("Starting benchmark of mode %s, size %dx%d, max depth %d\n", modes[current_mode].name, width, height, max_iterations);
+    
+    average_pps = 0;
+    for (i = 0; i < BENCHMARK_LOOPS; i++)
+    {
+        float seconds;
+        int pixels_per_second;
+        
+        restart();
+
+        while (pixels_done < width*height)
+        {
+            modes[current_mode].update();
+        }
+
+        end_time = clock();
+        seconds = (end_time - start_time) / (float) CLOCKS_PER_SEC;
+        pixels_per_second = (seconds > 0) ? pixels_done/seconds : 0;
+        
+        printf("Benchmark loop %d, PPS was %d\n", i, pixels_per_second);
+        average_pps += pixels_per_second;
+    }
+
+    SDL_SaveBMP(display, "benchmark.bmp");
+    SDL_FreeSurface(display);
+
+    average_pps /= BENCHMARK_LOOPS;
+    printf("Benchmark finished, average PPS was %d\n", average_pps);
+}
+
 #define FULL_SCREEN 1
 
 int main(int argc, char *argv[])
@@ -279,7 +375,9 @@ int main(int argc, char *argv[])
 	TTF_Font *font;
     const SDL_VideoInfo* video_info;
     int save_num = 0;
-
+    
+    parse_args(argc, argv);
+    
 	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
         error();
     }
@@ -291,6 +389,14 @@ int main(int argc, char *argv[])
 	font = TTF_OpenFont(FONT_PATH, 16);
 	if (!font)
 		error();
+
+    if (benchmark)
+    {
+        do_benchmark();
+        TTF_Quit();            
+        SDL_Quit();
+        exit(1);
+    }
 
 #if FULL_SCREEN
 	display = SDL_SetVideoMode(0, 0, 32, SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN);
