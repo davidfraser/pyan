@@ -8,8 +8,9 @@
 
 typedef struct COORDS
 {
-	int x;
-	int y;
+	unsigned int x:12;
+	unsigned int y:12;
+	char priority:8;
 } COORDS;
 
 static int width, height;
@@ -24,14 +25,13 @@ void trace_init(int w, int h)
 	width = w;
 	height = h;
 	if (!pq)
-		pq = pq_create(sizeof (COORDS), width*height*5);
+		pq = pq_create(0, width*height*5);
 	if (!pq)
 	{
 		fprintf(stderr, "Can't allocate PQ for %d items!", width*height*5);
 		exit(1);
 	}
 	done = malloc(sizeof(int) * width * height);
-	trace_restart();
 }
 
 
@@ -49,7 +49,8 @@ void trace_restart(void)
 		COORDS c;
 		c.x = rand() % width;
 		c.y = rand() % height;
-		pq_push(pq, -10, &c);
+        c.priority = -(i & 15);
+        pq_push(pq, *(int *) &c, NULL);
 	}
 
 	memset(done, 0, sizeof(int)*width*height);
@@ -69,14 +70,16 @@ static void push_edges(void)
 		{
 			c2.x = i;
 			c2.y = 0;
-			pq_push(pq, -10, &c2);
+            c2.priority = -10;
+            pq_push(pq, *(int *) &c2, NULL);
 		}
 
 		if (!done[(height-1)*width + i])
 		{
 			c2.x = i;
 			c2.y = height-1;
-			pq_push(pq, -10, &c2);
+            c2.priority = -10;
+            pq_push(pq, *(int *) &c2, NULL);
 		}
 	}
 
@@ -88,14 +91,16 @@ static void push_edges(void)
 		{
 			c2.x = 0;
 			c2.y = i;
-			pq_push(pq, -10, &c2);
+            c2.priority = -10;
+            pq_push(pq, *(int *) &c2, NULL);
 		}
 
 		if (!done[i*width + width - 1])
 		{
 			c2.x = width - 1;
 			c2.y = i;
-			pq_push(pq, -10, &c2);
+            c2.priority = -10;
+            pq_push(pq, *(int *) &c2, NULL);
 		}
 	}
 
@@ -117,7 +122,8 @@ static void catch_remaining(void)
             {
                 c2.x = j;
                 c2.y = i;
-                pq_push(pq, -10, &c2);
+                c2.priority = -10;
+                pq_push(pq, *(int *) &c2, NULL);
             }
         }
 	}
@@ -133,7 +139,6 @@ void trace_update(void)
 	while (quota > 0)
 	{
 		COORDS c;
-		int priority;
 		static int dx[] = { -1, -1, -1, 0, 1, 1, 1, 0 };
 		static int dy[] = { -1, 0, 1, 1, 1, 0, -1, -1 };
 		int i;
@@ -150,11 +155,11 @@ void trace_update(void)
 			break;
 		}
 
-		pq_pop(pq, &priority, &c);
+		pq_pop(pq, (int *) &c, NULL);
 		if (done[c.y*width + c.x])
 			continue;
 		
-		if (priority == 0)
+		if (c.priority == 0)
 		{
 			if (state == TRACING || state == SEEDING)
 				push_edges();
@@ -180,11 +185,18 @@ void trace_update(void)
 		for (i = 0; i < 8; i++)
 		{
 			COORDS c2;
+            int priority;
 			c2.x = c.x + dx[i];
 			c2.y = c.y + dy[i];
 			if (c2.x < 0 || c2.y < 0 || c2.x >= width || c2.y >= height)
 				continue;
-			pq_push(pq, (val == 0) ? 0 : (-10-val-((c2.x ^ c2.y ^ quota) & 15)) , &c2);
+            priority = (val == 0) ? 0 : (-10-val-((c2.x ^ c2.y ^ quota) & 15));
+            if (priority < -128)
+                priority = -128;
+            else if (priority > 127)
+                priority = 127;
+            c2.priority = priority;
+			pq_push(pq, *(int *) &c2, NULL);
 		}
 	}
 

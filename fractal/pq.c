@@ -31,13 +31,16 @@ void pq_destroy(PQ *pq)
 static void sift_up(PQ *pq, int slot)
 {
 	int *x = (int *) (pq->data + (pq->slot_size * slot));
-	int *c1 = (int *) (pq->data + (pq->slot_size * (2*slot+1)));
-	int *c2 = (int *) (pq->data + (pq->slot_size * (2*slot+2)));
+	int *c1, *c2;
+    
 	if (2*slot+2 >= pq->num_items)
 	{
 		memmove(x, pq->data + (pq->slot_size * (pq->num_items-1)), pq->slot_size);
 		return;
 	}
+    
+	c1 = (int *) (pq->data + (pq->slot_size * (2*slot+1)));
+	c2 = (int *) (pq->data + (pq->slot_size * (2*slot+2)));
 	if (*c1 < *c2)
 	{
 		memmove(x, c1, pq->slot_size);
@@ -47,6 +50,32 @@ static void sift_up(PQ *pq, int slot)
 	{
 		memmove(x, c2, pq->slot_size);
 		sift_up(pq, 2*slot+2);
+	}
+}
+
+static void sift_up_4(PQ *pq, int slot)
+{
+	int *x = (int *) (pq->data + (4 * slot));
+	int *c1, *c2;
+    
+	if (2*slot+2 >= pq->num_items)
+	{
+        int *last_item = (int *) (pq->data + (4 * (pq->num_items-1)));
+        *x = *last_item;
+		return;
+	}
+    
+	c1 = (int *) (pq->data + (4 * (2*slot+1)));
+	c2 = (int *) (pq->data + (4 * (2*slot+2)));
+	if (*c1 < *c2)
+	{
+		*x = *c1;
+		sift_up_4(pq, 2*slot+1);
+	}
+	else
+	{
+		*x = *c2;
+		sift_up_4(pq, 2*slot+2);
 	}
 }
 
@@ -68,6 +97,24 @@ static int sift_down(PQ *pq, int slot, int priority)
 	}
 }
 
+static int sift_down_4(PQ *pq, int slot, int priority)
+{
+	int pslot = (slot-1)/2;
+
+	int *x = (int *) (pq->data + (pq->slot_size * slot));
+	int *p = (int *) (pq->data + (pq->slot_size * pslot));
+
+	if (slot > 0 && priority < *p)
+	{
+        *x = *p;
+		return sift_down_4(pq, pslot, priority);
+	}
+	else
+	{
+		return slot;
+	}
+}
+
 int pq_push(PQ *pq, int priority, void *item)
 {
 	int slot = pq->num_items;
@@ -80,11 +127,17 @@ int pq_push(PQ *pq, int priority, void *item)
 	}
 
 	if (slot > 0)
-		slot = sift_down(pq, slot, priority);
+    {
+        if (pq->item_size == 0)
+            slot = sift_down(pq, slot, priority);
+        else
+            slot = sift_down_4(pq, slot, priority);
+    }
 
 	x = (int *) (pq->data + (pq->slot_size * slot));
 	*x = priority;
-	memmove(&x[1], item, pq->item_size);
+    if (item != NULL && pq->item_size != 0)
+        memmove(&x[1], item, pq->item_size);
 
 	pq->num_items++;
 
@@ -99,11 +152,16 @@ int pq_pop(PQ *pq, int *priority, void *dest)
 	if (priority)
 		*priority = *(int *)(pq->data);
 
-	if (dest)
+	if (dest && pq->item_size != 0)
 		memmove(dest, pq->data + sizeof(int), pq->item_size);
 
 	if (pq->num_items > 1)
-		sift_up(pq, 0);
+    {
+        if (pq->item_size == 0)
+            sift_up_4(pq, 0);
+        else
+            sift_up(pq, 0);
+    }
 
 	pq->num_items--;
 
