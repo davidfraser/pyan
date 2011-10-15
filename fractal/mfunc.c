@@ -8,18 +8,24 @@ int mfunc(double cx, double cy, int max_iterations, double *fx, double *fy)
 {
 	int i = 0;
 	double zr = 0.0, zi = 0.0;
+	double zr2 = 0.0, zi2 = 0.0;
 
-	while (i < max_iterations && zr*zr + zi*zi < 2.0*2.0)
+	while (i < max_iterations && zr2 + zi2 < 2.0*2.0)
 	{
-		double t = zr;
-		zr = zr*zr - zi*zi + cx;
-		zi = 2*t*zi + cy;
+		double t;
+
+		zr2 = zr*zr;
+		zi2 = zi*zi;
+		t = zr*zi;
+		zr = zr2 - zi2 + cx;
+		zi = t + t + cy;
+
 		i++;
 	}
 	*fx = zr;
 	*fy = zi;
 
-	if (zr*zr + zi*zi < 2.0*2.0)
+	if (zr2 + zi2 < 2.0*2.0)
 		return 0;
 
 	return i;
@@ -31,6 +37,7 @@ void mfunc_loop(int max_iterations, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output
     int i = max_iterations;
     double cx, cy;
     double zr, zi;
+	double zr2, zi2;
     int done = 0;
     
     while (1)
@@ -38,11 +45,11 @@ void mfunc_loop(int max_iterations, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output
         double t;
         
         /* Check if it's time to output a pixel and/or start a new one. */
-        if (i >= max_iterations || zr*zr + zi*zi > 2.0*2.0)
+        if (i >= max_iterations || zr2 + zi2 > 2.0*2.0)
         {
             if (done != 0)
             {
-                if (zr*zr + zi*zi < 2.0*2.0)
+                if (zr2 + zi2 <= 2.0*2.0)
                     output_pixel(0, 0, zr, zi);
                 else
                     output_pixel(0, i, zr, zi);
@@ -59,9 +66,12 @@ void mfunc_loop(int max_iterations, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output
         }
     
         /* Do some work on the current pixel. */
-		t = zr;
-		zr = zr*zr - zi*zi + cx;
-		zi = 2*t*zi + cy;
+		zr2 = zr*zr;
+		zi2 = zi*zi;
+		t = zr*zi;
+		zr = zr2 - zi2 + cx;
+		zi = t + t + cy;
+
 		i++;
     }
 }
