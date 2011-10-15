@@ -31,6 +31,8 @@ extern void parallel_update(void);
 extern void trace_init(int w, int h);
 extern void trace_restart(void);
 extern void trace_update(void);
+extern void trace_update_loop(void);
+extern void trace_update_simd(void);
 
 static struct {
     char *name;
@@ -43,6 +45,8 @@ static struct {
     { "SIMPLE_SIMD", simple_init, simple_restart, simple_update_simd },
     { "PARALLEL", parallel_init, parallel_restart, parallel_update },
     { "TRACE", trace_init, trace_restart, trace_update },
+    { "TRACE_LOOP", trace_init, trace_restart, trace_update_loop },
+    { "TRACE_SIMD", trace_init, trace_restart, trace_update_simd },
     { NULL }
 };
 

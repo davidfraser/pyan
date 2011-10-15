@@ -2,6 +2,8 @@
 
 #include <string.h>
 #include <stdio.h>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 #include "pq.h"
 
@@ -210,6 +212,163 @@ void trace_update(void)
             pq_push(pq, *(int *) &c2, NULL);
         }
     }
+
+    if (state == SEEDING)
+        status = "SEEDING";
+    else if (state == TRACING)
+        status = "TRACING";
+    else if (state == EDGING)
+        status = "EDGING";
+    else if (state == FILLING)
+        status = "FILLING";
+    else if (state == WAITING)
+        status = "WAITING";
+    else
+        status = "UNKNOWN";
+}
+
+
+static int quota;
+static int x_slots[2];
+static int y_slots[2];
+
+int trace_next_pixel(int slot, double *cx, double *cy)
+{
+    COORDS c;
+
+    if (quota <= 0)
+    {
+        x_slots[slot] = -1;
+        y_slots[slot] = -1;
+        return 0;
+    }
+
+restart:
+    if (pq->num_items <= 0)
+    {
+        if (pixels_done < width*height)
+        {
+            catch_remaining();
+            goto restart;
+        }
+        state = WAITING;
+        x_slots[slot] = -1;
+        y_slots[slot] = -1;
+        return 0;
+    }
+
+    pq_pop(pq, (int *) &c, NULL);
+    if (done[c.y*width + c.x])
+        goto restart;
+        
+    if (c.priority == 0)
+    {
+        if (state == TRACING || state == SEEDING)
+            push_edges();
+        else if (state == EDGING)
+            state = FILLING;
+    }
+    else if (state == SEEDING)
+        state = TRACING;
+
+    if (state == FILLING)
+    {
+        int val = 0;
+        set_pixel(c.x, c.y, val);
+        done[c.y*width + c.x] = 1;
+        quota -= PIXEL_COST;
+        goto restart;
+    }
+
+    if (c.x == x_slots[1-slot] && c.y == y_slots[1-slot])
+        goto restart;
+
+    *cx = (c.x - width/2.0)*scale + centrex;
+    *cy = (c.y - height/2.0)*scale + centrey;
+
+    x_slots[slot] = c.x;
+    y_slots[slot] = c.y;
+
+    return 1;
+}
+
+
+void trace_output_pixel(int slot, int k, double fx, double fy)
+{
+    static int dx[] = { -1, -1, -1, 0, 1, 1, 1, 0 };
+    static int dy[] = { -1, 0, 1, 1, 1, 0, -1, -1 };
+    int i;
+    float val = 0.0;
+
+    if (k == 0)
+    {
+        val = 0.0;
+    }
+    else
+    {
+        float z = sqrt(fx*fx + fy*fy);
+        val = (float) k - log(log(z))/log(2.0);
+    }
+    
+    set_pixel(x_slots[slot], y_slots[slot], val);
+    done[y_slots[slot]*width + x_slots[slot]] = 1;
+    quota -= ((val == 0) ? max_iterations : val) + PIXEL_COST;
+
+    for (i = 0; i < 8; i++)
+    {
+        COORDS c2;
+        int priority;
+        c2.x = x_slots[slot] + dx[i];
+        c2.y = y_slots[slot] + dy[i];
+        if (c2.x < 0 || c2.y < 0 || c2.x >= width || c2.y >= height)
+            continue;
+        priority = (val == 0) ? 0 : (-10-val-((c2.x ^ c2.y ^ quota) & 15));
+        if (priority < -128)
+            priority = -128;
+        else if (priority > 127)
+            priority = 127;
+        c2.priority = priority;
+        pq_push(pq, *(int *) &c2, NULL);
+    }
+}
+
+
+void trace_update_loop(void)
+{
+    quota = QUOTA_SIZE;
+
+    x_slots[0] = -1;
+    x_slots[1] = -1;
+    y_slots[0] = -1;
+    y_slots[1] = -1;
+
+    mfunc_loop(max_iterations, trace_next_pixel, trace_output_pixel);
+
+    if (state == SEEDING)
+        status = "SEEDING";
+    else if (state == TRACING)
+        status = "TRACING";
+    else if (state == EDGING)
+        status = "EDGING";
+    else if (state == FILLING)
+        status = "FILLING";
+    else if (state == WAITING)
+        status = "WAITING";
+    else
+        status = "UNKNOWN";
+}
+
+
+void trace_update_simd(void)
+{
+    quota = QUOTA_SIZE;
+
+    x_slots[0] = -1;
+    x_slots[1] = -1;
+    y_slots[0] = -1;
+    y_slots[1] = -1;
+
+    mfunc_simd(max_iterations, trace_next_pixel, trace_output_pixel);
 
     if (state == SEEDING)
         status = "SEEDING";
