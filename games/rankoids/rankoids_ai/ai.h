@@ -49,14 +49,14 @@ typedef struct GAME
 
 typedef struct PARAMETERS
 {
-	int depth;
-	int playing_bonus;
+    int depth;
+    int playing_bonus;
     int total_score;
-	int current_player_bonus;
-	int hand_size_bonus;
-	int different_card_bonus;
-	int rank_bonus;
-	int card_values[DECK_SIZE];
+    int current_player_bonus;
+    int hand_size_bonus;
+    int different_card_bonus;
+    int rank_bonus;
+    int card_values[DECK_SIZE];
 } PARAMETERS;
 
 extern void clear_transposition_table(void);

@@ -379,49 +379,49 @@ db_get_youngest_rev(svn_revnum_t *rev, PGconn *conn, int repos_id, apr_pool_t *p
 
 svn_error_t *
 db_create_node(int *node_id,
-							 PGconn *conn,
-							 int repos_id,
-							 int rev,
-							 const char *kind_str,
-							 const char *action_str,
-							 const char *path,
+                             PGconn *conn,
+                             int repos_id,
+                             int rev,
+                             const char *kind_str,
+                             const char *action_str,
+                             const char *path,
                const char *copyfrom_rev_str,
                const char *copyfrom_path,
-							 apr_pool_t *pool)
+                             apr_pool_t *pool)
 {
-	PGresult *res;
-	const char *param_values[7];
+    PGresult *res;
+    const char *param_values[7];
   int id_fnum;
 
-	param_values[0] = apr_psprintf (pool, "%d", repos_id);
-	param_values[1] = apr_psprintf (pool, "%ld", rev);
-	param_values[2] = (*path == '/') ? path + 1 : path;
-	param_values[3] = kind_str;
-	param_values[4] = action_str;
-	param_values[5] = copyfrom_rev_str;
-	param_values[6] = copyfrom_path;
+    param_values[0] = apr_psprintf (pool, "%d", repos_id);
+    param_values[1] = apr_psprintf (pool, "%ld", rev);
+    param_values[2] = (*path == '/') ? path + 1 : path;
+    param_values[3] = kind_str;
+    param_values[4] = action_str;
+    param_values[5] = copyfrom_rev_str;
+    param_values[6] = copyfrom_path;
 
-	res = PQexecParams(conn,
-						"SELECT svn.create_node($1, $2, $3, $4, $5, $6, $7) AS id",
-						7,
-						NULL,
-						param_values,
-						NULL,
-						NULL,
-						0);
-	if (PQresultStatus(res) != PGRES_TUPLES_OK)
-		{
-		PQclear(res);
-		return svn_error_createf (SVN_ERR_FS_GENERAL, NULL,
-									_("Couldn't create node; path '%s', error message '%s'"),
-									path, PQerrorMessage(conn));
-		}
+    res = PQexecParams(conn,
+                        "SELECT svn.create_node($1, $2, $3, $4, $5, $6, $7) AS id",
+                        7,
+                        NULL,
+                        param_values,
+                        NULL,
+                        NULL,
+                        0);
+    if (PQresultStatus(res) != PGRES_TUPLES_OK)
+        {
+        PQclear(res);
+        return svn_error_createf (SVN_ERR_FS_GENERAL, NULL,
+                                    _("Couldn't create node; path '%s', error message '%s'"),
+                                    path, PQerrorMessage(conn));
+        }
 
-	id_fnum = PQfnumber(res, "id");
+    id_fnum = PQfnumber(res, "id");
 
-	*node_id = atol(PQgetvalue(res, 0, id_fnum));
+    *node_id = atol(PQgetvalue(res, 0, id_fnum));
 
-	PQclear(res);
+    PQclear(res);
 
   return SVN_NO_ERROR;
 }

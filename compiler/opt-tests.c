@@ -54,7 +54,7 @@ int optimise_constant_tests(MODULE *module, FUNCTION *func)
         /* Replace with a jump.  Test vertex remains will be clean up by dead code removal. */
         replace_backward(func->graph, vertex, target_succ, 0);
         changed = 1;
-	}
-	
+    }
+    
     return changed;
 };

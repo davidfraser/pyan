@@ -6,29 +6,29 @@
 
 int mfunc(double cx, double cy, int max_iterations, double *fx, double *fy)
 {
-	int i = 0;
-	double zr = 0.0, zi = 0.0;
-	double zr2 = 0.0, zi2 = 0.0;
+    int i = 0;
+    double zr = 0.0, zi = 0.0;
+    double zr2 = 0.0, zi2 = 0.0;
 
-	while (i < max_iterations && zr2 + zi2 < 2.0*2.0)
-	{
-		double t;
+    while (i < max_iterations && zr2 + zi2 < 2.0*2.0)
+    {
+        double t;
 
-		zr2 = zr*zr;
-		zi2 = zi*zi;
-		t = zr*zi;
-		zr = zr2 - zi2 + cx;
-		zi = t + t + cy;
+        zr2 = zr*zr;
+        zi2 = zi*zi;
+        t = zr*zi;
+        zr = zr2 - zi2 + cx;
+        zi = t + t + cy;
 
-		i++;
-	}
-	*fx = zr;
-	*fy = zi;
+        i++;
+    }
+    *fx = zr;
+    *fy = zi;
 
-	if (zr2 + zi2 < 2.0*2.0)
-		return 0;
+    if (zr2 + zi2 < 2.0*2.0)
+        return 0;
 
-	return i;
+    return i;
 }
 
 
@@ -37,7 +37,7 @@ void mfunc_loop(int max_iterations, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output
     int i = max_iterations;
     double cx, cy;
     double zr, zi;
-	double zr2, zi2;
+    double zr2, zi2;
     int done = 0;
     
     while (1)
@@ -66,13 +66,13 @@ void mfunc_loop(int max_iterations, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output
         }
     
         /* Do some work on the current pixel. */
-		zr2 = zr*zr;
-		zi2 = zi*zi;
-		t = zr*zi;
-		zr = zr2 - zi2 + cx;
-		zi = t + t + cy;
+        zr2 = zr*zr;
+        zi2 = zi*zi;
+        t = zr*zi;
+        zr = zr2 - zi2 + cx;
+        zi = t + t + cy;
 
-		i++;
+        i++;
     }
 }
 
@@ -101,15 +101,15 @@ PIXEL_OUTPUT output_pixel)
 
     union {
         __m128d m128d;
-		unsigned long long int ints[2];
+        unsigned long long int ints[2];
     } test;
     
     boundary = _mm_set1_pd(2.0*2.0);
     zero = _mm_set1_pd(0.0);
-	cx = _mm_set1_pd(0.0);
-	cy = _mm_set1_pd(0.0);
-	zr = _mm_set1_pd(0.0);
-	zi = _mm_set1_pd(0.0);
+    cx = _mm_set1_pd(0.0);
+    cy = _mm_set1_pd(0.0);
+    zr = _mm_set1_pd(0.0);
+    zi = _mm_set1_pd(0.0);
 
     while (1)
     {

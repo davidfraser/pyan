@@ -5,11 +5,11 @@
 
 typedef struct PQ
 {
-	char *data;
-	size_t slot_size;
-	size_t item_size;
-	int max_items;
-	int num_items;
+    char *data;
+    size_t slot_size;
+    size_t item_size;
+    int max_items;
+    int num_items;
 } PQ;
 
 extern PQ *pq_create(size_t item_size, int max_items);

@@ -80,7 +80,7 @@ int optimise_constant_folding(MODULE *module, FUNCTION *func)
             expr = optimise_expression(module, func, expr);
             tree_get_child(vertex, 0) = expr;
         }
-	}
-	
+    }
+    
     return changed;
 };

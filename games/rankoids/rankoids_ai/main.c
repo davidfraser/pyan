@@ -3,11 +3,11 @@
 
 int main(int argc, char *argv[])
 {
-	test();
+    test();
 
 #ifdef WIN32
-	getch();
+    getch();
 #endif
 
-	return 0;
+    return 0;
 }

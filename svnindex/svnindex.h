@@ -100,15 +100,15 @@ extern svn_error_t *db_get_youngest_rev(svn_revnum_t *rev,
 
 
 extern svn_error_t *db_create_node(int *node_id,
-										             	 PGconn *conn,
-																	 int repos_id,
-																	 int rev,
-																	 const char *kind_str,
-																	 const char *action_str,
-																	 const char *path,
+                                                          PGconn *conn,
+                                                                     int repos_id,
+                                                                     int rev,
+                                                                     const char *kind_str,
+                                                                     const char *action_str,
+                                                                     const char *path,
                                    const char *copyfrom_rev_str,
                                    const char *copyfrom_path,
-														 			 apr_pool_t *pool);
+                                                                      apr_pool_t *pool);
 
 extern svn_error_t *db_set_node_size(PGconn *conn,
                                      const char *path,

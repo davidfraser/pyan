@@ -90,14 +90,14 @@ void DrawPixel(SDL_Surface *screen, Uint8 R, Uint8 G, Uint8 B, int x, int y)
 
 void ReadPixel(SDL_Surface *screen, Uint8 *R, Uint8 *G, Uint8 *B, int x, int y)
 {
-	Uint8 A;
+    Uint8 A;
 
     switch (screen->format->BytesPerPixel) {
         case 1: { /* Assuming 8-bpp */
             Uint8 *bufp;
 
             bufp = (Uint8 *)screen->pixels + y*screen->pitch + x;
-			SDL_GetRGBA(*bufp, screen->format, R, G, B, &A);
+            SDL_GetRGBA(*bufp, screen->format, R, G, B, &A);
         }
         break;
 
@@ -105,7 +105,7 @@ void ReadPixel(SDL_Surface *screen, Uint8 *R, Uint8 *G, Uint8 *B, int x, int y)
             Uint16 *bufp;
 
             bufp = (Uint16 *)screen->pixels + y*screen->pitch/2 + x;
-			SDL_GetRGBA(*bufp, screen->format, R, G, B, &A);
+            SDL_GetRGBA(*bufp, screen->format, R, G, B, &A);
         }
         break;
 
@@ -123,7 +123,7 @@ void ReadPixel(SDL_Surface *screen, Uint8 *R, Uint8 *G, Uint8 *B, int x, int y)
             Uint32 *bufp;
 
             bufp = (Uint32 *)screen->pixels + y*screen->pitch/4 + x;
-			SDL_GetRGBA(*bufp, screen->format, R, G, B, &A);
+            SDL_GetRGBA(*bufp, screen->format, R, G, B, &A);
         }
         break;
     }
@@ -131,59 +131,59 @@ void ReadPixel(SDL_Surface *screen, Uint8 *R, Uint8 *G, Uint8 *B, int x, int y)
 
 void hsl_to_colour(double h, double s, double l, SDL_Color *colour)
 {
-	double c = (1 - fabs(2*l - 1)) * s;
-	double hp = h*6.0;
-	double hpm2;
-	double x;
-	double m = l - c/2.0;
-	double r1 = 0, g1 = 0, b1 = 0;
+    double c = (1 - fabs(2*l - 1)) * s;
+    double hp = h*6.0;
+    double hpm2;
+    double x;
+    double m = l - c/2.0;
+    double r1 = 0, g1 = 0, b1 = 0;
 
-	hpm2 = hp;
-	while (hpm2 >= 2.0)
-		hpm2 -= 2.0;
-	
-	x = c*(1 - fabs(hpm2 - 1));
+    hpm2 = hp;
+    while (hpm2 >= 2.0)
+        hpm2 -= 2.0;
+    
+    x = c*(1 - fabs(hpm2 - 1));
 
-	if (hp < 1.0)
-	{
-		r1 = c;
-		g1 = x;
-	}
-	else if (hp < 2.0)
-	{
-		r1 = x;
-		g1 = c;
-	}
-	else if (hp < 3.0)
-	{
-		g1 = c;
-		b1 = x;
-	}
-	else if (hp < 4.0)
-	{
-		g1 = x;
-		b1 = c;
-	}
-	else if (hp < 5.0)
-	{
-		r1 = x;
-		b1 = c;
-	}
-	else
-	{
-		r1 = c;
-		b1 = x;
-	}
+    if (hp < 1.0)
+    {
+        r1 = c;
+        g1 = x;
+    }
+    else if (hp < 2.0)
+    {
+        r1 = x;
+        g1 = c;
+    }
+    else if (hp < 3.0)
+    {
+        g1 = c;
+        b1 = x;
+    }
+    else if (hp < 4.0)
+    {
+        g1 = x;
+        b1 = c;
+    }
+    else if (hp < 5.0)
+    {
+        r1 = x;
+        b1 = c;
+    }
+    else
+    {
+        r1 = c;
+        b1 = x;
+    }
 
-	colour->r = (int) (255 * (r1+m));
-	colour->g = (int) (255 * (g1+m));
-	colour->b = (int) (255 * (b1+m));
+    colour->r = (int) (255 * (r1+m));
+    colour->g = (int) (255 * (g1+m));
+    colour->b = (int) (255 * (b1+m));
 }
 
 void error()
 {
-	fprintf(stderr, "SDL error: %s\n", SDL_GetError());
-		exit(1);
+    fprintf(stderr, "SDL error: %s\n", SDL_GetError());
+        exit(1);
 }
 
 
@@ -205,61 +205,61 @@ static int current_mode = 0;
 
 void set_pixel(int x, int y, float val)
 {
-	SDL_Color col;
-	int x1 = x/2;
-	int y1 = y/2;
-	double f, g;
+    SDL_Color col;
+    int x1 = x/2;
+    int y1 = y/2;
+    double f, g;
 
-	buffer[y*width + x] = val;
-	val = buffer[y*width + x] + buffer[(y^1)*width + x] + buffer[y*width + (x^1)] + buffer[(y^1)*width + (x^1)];
-	val /= 4.0;
+    buffer[y*width + x] = val;
+    val = buffer[y*width + x] + buffer[(y^1)*width + x] + buffer[y*width + (x^1)] + buffer[(y^1)*width + (x^1)];
+    val /= 4.0;
 
-	//f = sqrt(val) / sqrt((double) max_iterations);
-	//hsl_to_colour(0, 0, f, &col);
-	//col.r = (int) val % 256;
-	//col.g = 255;
-	f = log(val) / log((double) max_iterations);
-	g = sqrt(val) / sqrt((double) max_iterations);
-	hsl_to_colour(g, 0.5, f, &col);
+    //f = sqrt(val) / sqrt((double) max_iterations);
+    //hsl_to_colour(0, 0, f, &col);
+    //col.r = (int) val % 256;
+    //col.g = 255;
+    f = log(val) / log((double) max_iterations);
+    g = sqrt(val) / sqrt((double) max_iterations);
+    hsl_to_colour(g, 0.5, f, &col);
 
-	DrawPixel(display, col.r, col.g, col.b, x1, y1);
-	pixels_done++;
+    DrawPixel(display, col.r, col.g, col.b, x1, y1);
+    pixels_done++;
 }
 
 float do_pixel(int x, int y)
 {
-	double px = (x - width/2.0)*scale + centrex;
-	double py = (y - height/2.0)*scale + centrey;
-	double fx, fy;
-	float val;
+    double px = (x - width/2.0)*scale + centrex;
+    double py = (y - height/2.0)*scale + centrey;
+    double fx, fy;
+    float val;
 
-	int k = mfunc(px, py, max_iterations, &fx, &fy);
+    int k = mfunc(px, py, max_iterations, &fx, &fy);
 
-	if (k == 0)
-	{
-		val = 0.0;
-	}
-	else
-	{
-		float z = sqrt(fx*fx + fy*fy);
-		val = (float) k - log(log(z))/log(2.0);
-	}
+    if (k == 0)
+    {
+        val = 0.0;
+    }
+    else
+    {
+        float z = sqrt(fx*fx + fy*fy);
+        val = (float) k - log(log(z))/log(2.0);
+    }
 
-	set_pixel(x, y, val);
+    set_pixel(x, y, val);
 
-	return val;
+    return val;
 }
 
 void fade_screen()
 {
-	int i, j;
-	for (i = 0; i < screen_height; i++)
-		for (j = 0; j < screen_width; j++)
-		{
-			SDL_Color col;
-			ReadPixel(display, &col.r, &col.g, &col.b, j, i);
-			DrawPixel(display, col.r/2, col.g/2, col.b/2, j, i);
-		}
+    int i, j;
+    for (i = 0; i < screen_height; i++)
+        for (j = 0; j < screen_width; j++)
+        {
+            SDL_Color col;
+            ReadPixel(display, &col.r, &col.g, &col.b, j, i);
+            DrawPixel(display, col.r/2, col.g/2, col.b/2, j, i);
+        }
 
 }
 
@@ -310,7 +310,7 @@ static void parse_args(int argc, char *argv[])
                 fprintf(stderr, "--depth argument needs to be followed by a natural number\n");
                 exit(1);
             }
-			max_iterations = atoi(argv[i]);
+            max_iterations = atoi(argv[i]);
         }
         else
         {
@@ -339,8 +339,8 @@ void do_benchmark(void)
 
     display = SDL_CreateRGBSurface(SDL_SWSURFACE, screen_width, screen_height, 32, 0, 0, 0, 0);
     
-	buffer = (float *) malloc(sizeof(int) * width * height);
-	memset(buffer, 0, sizeof(int) * width * height);
+    buffer = (float *) malloc(sizeof(int) * width * height);
+    memset(buffer, 0, sizeof(int) * width * height);
 
     modes[current_mode].init(width, height);
     
@@ -379,8 +379,8 @@ void do_benchmark(void)
 int main(int argc, char *argv[])
 {
     SDL_Event evt;
-	int running = 1;
-	TTF_Font *font;
+    int running = 1;
+    TTF_Font *font;
     const SDL_VideoInfo* video_info;
     int save_num = 0;
     
@@ -389,17 +389,17 @@ int main(int argc, char *argv[])
 
     parse_args(argc, argv);
     
-	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if(SDL_Init(SDL_INIT_VIDEO) < 0) {
         error();
     }
 
-	if (TTF_Init() < 0) {
-		error();
-	}
+    if (TTF_Init() < 0) {
+        error();
+    }
 
-	font = TTF_OpenFont(FONT_PATH, 16);
-	if (!font)
-		error();
+    font = TTF_OpenFont(FONT_PATH, 16);
+    if (!font)
+        error();
 
     if (benchmark)
     {
@@ -410,9 +410,9 @@ int main(int argc, char *argv[])
     }
 
 #if FULL_SCREEN
-	display = SDL_SetVideoMode(0, 0, 32, SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN);
+    display = SDL_SetVideoMode(0, 0, 32, SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN);
 #else
-	display = SDL_SetVideoMode(400, 400, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
+    display = SDL_SetVideoMode(400, 400, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
 #endif
     if(display == NULL) {
         error();
@@ -427,105 +427,105 @@ int main(int argc, char *argv[])
     height = screen_height*2;
     scale = 1.5/screen_height;
 
-	buffer = (float *) malloc(sizeof(int) * width * height);
-	memset(buffer, 0, sizeof(int) * width * height);
+    buffer = (float *) malloc(sizeof(int) * width * height);
+    memset(buffer, 0, sizeof(int) * width * height);
 
     modes[current_mode].init(width, height);
     restart();
 
     while (running)
-	{
+    {
         while (SDL_PollEvent(&evt))
-		{
-			if (evt.type == SDL_QUIT)
-				running = 0;
-			else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_ESCAPE)
-				running = 0;
-			else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_1)
-			{
-				max = !max;
-				max_iterations = max ? (256*256) : 256;
-				fade_screen();
+        {
+            if (evt.type == SDL_QUIT)
+                running = 0;
+            else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_ESCAPE)
+                running = 0;
+            else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_1)
+            {
+                max = !max;
+                max_iterations = max ? (256*256) : 256;
+                fade_screen();
                 restart();
-			}
-			else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_2)
-			{
-				fade_screen();
+            }
+            else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_2)
+            {
+                fade_screen();
                 current_mode++;
                 if (modes[current_mode].name == NULL)
                     current_mode = 0;
                 modes[current_mode].init(width, height);
                 restart();
-			}
-			else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_F12)
-			{
+            }
+            else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_F12)
+            {
                 char buffer[100];
                 snprintf(buffer, sizeof(buffer), "save%04d.bmp", save_num);
                 save_num++;
                 SDL_SaveBMP(display, buffer);
-			}
-			else if (evt.type == SDL_MOUSEBUTTONDOWN && evt.button.button == 1)
-			{
-				centrex = (evt.button.x - screen_width/2.0)*scale*2 + centrex;
-				centrey = (evt.button.y - screen_height/2.0)*scale*2 + centrey;
-				scale = scale * M_SQRT1_2;
-				fade_screen();
-				restart();
-			}
-			else if (evt.type == SDL_MOUSEBUTTONDOWN && evt.button.button == 3)
-			{
-				centrex = (evt.button.x - screen_width/2.0)*scale*2 + centrex;
-				centrey = (evt.button.y - screen_height/2.0)*scale*2 + centrey;
-				scale = scale / M_SQRT1_2;
-				fade_screen();
-				restart();
-			}
-		}
+            }
+            else if (evt.type == SDL_MOUSEBUTTONDOWN && evt.button.button == 1)
+            {
+                centrex = (evt.button.x - screen_width/2.0)*scale*2 + centrex;
+                centrey = (evt.button.y - screen_height/2.0)*scale*2 + centrey;
+                scale = scale * M_SQRT1_2;
+                fade_screen();
+                restart();
+            }
+            else if (evt.type == SDL_MOUSEBUTTONDOWN && evt.button.button == 3)
+            {
+                centrex = (evt.button.x - screen_width/2.0)*scale*2 + centrex;
+                centrey = (evt.button.y - screen_height/2.0)*scale*2 + centrey;
+                scale = scale / M_SQRT1_2;
+                fade_screen();
+                restart();
+            }
+        }
 
-		if ( SDL_MUSTLOCK(display) ) {
-			if ( SDL_LockSurface(display) < 0 ) {
-				error();
-			}
-		}
+        if ( SDL_MUSTLOCK(display) ) {
+            if ( SDL_LockSurface(display) < 0 ) {
+                error();
+            }
+        }
 
-		modes[current_mode].update();
+        modes[current_mode].update();
 
-		{
-			SDL_Color white = { 255, 255, 255 };
-			SDL_Color black = { 0, 0, 0 };
-			char buffer[1000];
-			SDL_Surface *txt;
-			SDL_Rect dest = { 0, 0 };
-			float seconds;
-			int pixels_per_second;
+        {
+            SDL_Color white = { 255, 255, 255 };
+            SDL_Color black = { 0, 0, 0 };
+            char buffer[1000];
+            SDL_Surface *txt;
+            SDL_Rect dest = { 0, 0 };
+            float seconds;
+            int pixels_per_second;
 
-			if (pixels_done < width*height)
-				end_time = clock();
-			seconds = (end_time - start_time) / (float) CLOCKS_PER_SEC;
-			pixels_per_second = (seconds > 0) ? pixels_done/seconds : 0;
+            if (pixels_done < width*height)
+                end_time = clock();
+            seconds = (end_time - start_time) / (float) CLOCKS_PER_SEC;
+            pixels_per_second = (seconds > 0) ? pixels_done/seconds : 0;
 
-			snprintf(buffer, sizeof(buffer), "mode=%s, depth=%d, done=%d/%d, PPS=%d, cx,cy=%f,%f, scale=%f, status=%s     ", modes[current_mode].name, max_iterations, pixels_done, width*height, pixels_per_second, centrex, centrey, scale, status);
-			txt = TTF_RenderText(font, buffer, white, black);
-			dest.w = txt->w;
-			dest.h = txt->h;
+            snprintf(buffer, sizeof(buffer), "mode=%s, depth=%d, done=%d/%d, PPS=%d, cx,cy=%f,%f, scale=%f, status=%s     ", modes[current_mode].name, max_iterations, pixels_done, width*height, pixels_per_second, centrex, centrey, scale, status);
+            txt = TTF_RenderText(font, buffer, white, black);
+            dest.w = txt->w;
+            dest.h = txt->h;
 
-			SDL_BlitSurface(txt, NULL, display, &dest);
-			SDL_FreeSurface(txt);
-		}
+            SDL_BlitSurface(txt, NULL, display, &dest);
+            SDL_FreeSurface(txt);
+        }
 
-		if ( SDL_MUSTLOCK(display) ) {
-			SDL_UnlockSurface(display);
-		}
+        if ( SDL_MUSTLOCK(display) ) {
+            SDL_UnlockSurface(display);
+        }
 
-		SDL_UpdateRect(display, 0, 0, screen_width, screen_height);
+        SDL_UpdateRect(display, 0, 0, screen_width, screen_height);
 
-		if (pixels_done >= width*height)
-			SDL_Delay(100);
-	}
+        if (pixels_done >= width*height)
+            SDL_Delay(100);
+    }
 
-	TTF_Quit();
-		
-	SDL_Quit();
+    TTF_Quit();
+        
+    SDL_Quit();
 
-	exit(0);
+    exit(0);
 }

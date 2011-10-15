@@ -7,7 +7,7 @@
 static int base = 0;
 
 NODE *flatten_block(MODULE *module, FUNCTION *func, GRAPH *graph, BLOCK *block,
-		NODE *predecessor, NODE *exit_node, NODE *loop_start_node, NODE *loop_end_node, EDGE_TYPE edge_type)
+        NODE *predecessor, NODE *exit_node, NODE *loop_start_node, NODE *loop_end_node, EDGE_TYPE edge_type)
 {
     int i;
     
@@ -68,15 +68,15 @@ NODE *flatten_block(MODULE *module, FUNCTION *func, GRAPH *graph, BLOCK *block,
         }
         else if (tree_is_type(stmt, STMT_CONTINUE))
         {
-			if (loop_start_node == NULL)
-				error("Continue outside loop!");
+            if (loop_start_node == NULL)
+                error("Continue outside loop!");
             add_edge(graph, predecessor, loop_start_node, (i == 0 ? edge_type : EDGE_NORMAL) | EDGE_BACK);
             predecessor = NULL;
         }
         else if (tree_is_type(stmt, STMT_BREAK))
         {
-			if (loop_end_node == NULL)
-				error("Break outside loop!");
+            if (loop_end_node == NULL)
+                error("Break outside loop!");
             add_edge(graph, predecessor, loop_end_node, i == 0 ? edge_type : EDGE_NORMAL);
             predecessor = NULL;
         }

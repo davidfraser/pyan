@@ -15,55 +15,55 @@ static int width, height;
 
 void parallel_init(int w, int h)
 {
-	frame = 0;
-	num_frames = 43;
-	frame_offset = 0;
-	num_jobs = omp_get_num_procs();
-	width = w;
-	height = h;
+    frame = 0;
+    num_frames = 43;
+    frame_offset = 0;
+    num_jobs = omp_get_num_procs();
+    width = w;
+    height = h;
 }
 
 
 void parallel_restart(void)
 {
-	frame_offset = frame;
-	frame = 0;
+    frame_offset = frame;
+    frame = 0;
 }
 
 
 void parallel_update(void)
 {
-	int num_pixels = width*height;
-	int pixels_per_job = (int) ceil((double) num_pixels / num_frames / num_jobs);
-	int j;
+    int num_pixels = width*height;
+    int pixels_per_job = (int) ceil((double) num_pixels / num_frames / num_jobs);
+    int j;
     int old_pixels_done = pixels_done;
     int thread_done[16];
     
     memset(thread_done, 0, sizeof(thread_done));
 
-	if (frame >= num_frames)
-		return;
+    if (frame >= num_frames)
+        return;
 
-	#pragma omp parallel for
-	for (j = 0; j < num_jobs; j++)
-	{
-		int i;
-		for (i = 0; i < pixels_per_job; i++)
-		{
-		    int a = (i * num_jobs + j) * num_frames + ((frame + frame_offset) % num_frames);
-			if (a < num_pixels)
-			{
-		        int x = a % width;
-				int y = a / width;
+    #pragma omp parallel for
+    for (j = 0; j < num_jobs; j++)
+    {
+        int i;
+        for (i = 0; i < pixels_per_job; i++)
+        {
+            int a = (i * num_jobs + j) * num_frames + ((frame + frame_offset) % num_frames);
+            if (a < num_pixels)
+            {
+                int x = a % width;
+                int y = a / width;
 
-				do_pixel(x, y);
+                do_pixel(x, y);
                 thread_done[j]++;
-			}
-		}
-	}
+            }
+        }
+    }
     pixels_done = old_pixels_done;
-	for (j = 0; j < num_jobs; j++)
+    for (j = 0; j < num_jobs; j++)
         pixels_done += thread_done[j];
 
-	frame++;
+    frame++;
 }

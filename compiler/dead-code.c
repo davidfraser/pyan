@@ -40,7 +40,7 @@ int remove_dead_code(MODULE *module, FUNCTION *func)
         replace_forward(func->graph, vertex, NULL, 0);
         remove_vertex(func->graph, vertex);
         changed = 1;        
-	}
-	
+    }
+    
     return changed;
 };

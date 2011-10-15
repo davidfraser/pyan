@@ -391,7 +391,7 @@ index_node (struct edit_baton *eb,
       md5_str = hex_digest;
     }
 
-	SVN_ERR(db_create_node(&node_id,
+    SVN_ERR(db_create_node(&node_id,
                          eb->conn,
                          eb->repos_id,
                          eb->current_rev,

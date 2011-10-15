@@ -15,8 +15,8 @@ static int quota;
 
 void simple_init(int w, int h)
 {
-	width = w;
-	height = h;
+    width = w;
+    height = h;
     i = 0;
     j = 0;
 }
@@ -37,11 +37,11 @@ int simple_next_pixel(int slot, double *cx, double *cy)
     if (quota <= 0 || i >= height)
         return 0;
     
-	*cx = (j - width/2.0)*scale + centrex;
-	*cy = (i - height/2.0)*scale + centrey;
+    *cx = (j - width/2.0)*scale + centrex;
+    *cy = (i - height/2.0)*scale + centrey;
 
-	x_slots[slot] = j;
-	y_slots[slot] = i;
+    x_slots[slot] = j;
+    y_slots[slot] = i;
     
     j++;
 
@@ -58,15 +58,15 @@ int simple_next_pixel(int slot, double *cx, double *cy)
 void simple_output_pixel(int slot, int k, double fx, double fy)
 {
     float val = 0.0;
-	if (k == 0)
-	{
-		val = 0.0;
-	}
-	else
-	{
-		float z = sqrt(fx*fx + fy*fy);
-		val = (float) k - log(log(z))/log(2.0);
-	}
+    if (k == 0)
+    {
+        val = 0.0;
+    }
+    else
+    {
+        float z = sqrt(fx*fx + fy*fy);
+        val = (float) k - log(log(z))/log(2.0);
+    }
     
     quota -= val;
     
@@ -95,7 +95,7 @@ void simple_update(void)
         val = do_pixel(j, i);
         quota -= ((val == 0) ? max_iterations : val) + PIXEL_COST;
         j++;
-	}
+    }
 }
 
 
