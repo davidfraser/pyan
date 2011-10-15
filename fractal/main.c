@@ -333,13 +333,14 @@ void do_benchmark(void)
 {
     int i;
     int average_pps;
+    char filename[1000];
     
-    centrex = 0.0, centrey = 0.0;
+    centrex = -0.754682, centrey = 0.055260;
     screen_width = BENCHMARK_SIZE;
     screen_height = BENCHMARK_SIZE;
     width = screen_width*2;
     height = screen_height*2;
-    scale = 1.5/screen_height;
+    scale = 0.000732/screen_height;
 
     display = SDL_CreateRGBSurface(SDL_SWSURFACE, screen_width, screen_height, 32, 0, 0, 0, 0);
     
@@ -351,7 +352,7 @@ void do_benchmark(void)
     printf("Starting benchmark of mode %s, size %dx%d, max depth %d\n", modes[current_mode].name, width, height, max_iterations);
     
     average_pps = 0;
-    for (i = 0; i < BENCHMARK_LOOPS; i++)
+    for (i = 1; i <= BENCHMARK_LOOPS; i++)
     {
         float seconds;
         int pixels_per_second;
@@ -367,11 +368,12 @@ void do_benchmark(void)
         seconds = (end_time - start_time) / (float) CLOCKS_PER_SEC;
         pixels_per_second = (seconds > 0) ? pixels_done/seconds : 0;
         
-        printf("Benchmark loop %d, PPS was %d\n", i, pixels_per_second);
+        printf("Benchmark iteration %d, PPS was %d\n", i, pixels_per_second);
         average_pps += pixels_per_second;
     }
 
-    SDL_SaveBMP(display, "benchmark.bmp");
+    snprintf(filename, sizeof(filename), "%s_%dx%d_%d.bmp", modes[current_mode].name, width, height, max_iterations);
+    SDL_SaveBMP(display, filename);
     SDL_FreeSurface(display);
 
     average_pps /= BENCHMARK_LOOPS;
@@ -508,7 +510,7 @@ int main(int argc, char *argv[])
             seconds = (end_time - start_time) / (float) CLOCKS_PER_SEC;
             pixels_per_second = (seconds > 0) ? pixels_done/seconds : 0;
 
-            snprintf(buffer, sizeof(buffer), "mode=%s, depth=%d, done=%d/%d, PPS=%d, cx,cy=%f,%f, scale=%f, status=%s     ", modes[current_mode].name, max_iterations, pixels_done, width*height, pixels_per_second, centrex, centrey, scale, status);
+            snprintf(buffer, sizeof(buffer), "mode=%s, depth=%d, done=%d/%d, PPS=%d, cx,cy=%f,%f, scale=%f, status=%s     ", modes[current_mode].name, max_iterations, pixels_done, width*height, pixels_per_second, centrex, centrey, scale*screen_height, status);
             txt = TTF_RenderText(font, buffer, white, black);
             dest.w = txt->w;
             dest.h = txt->h;
