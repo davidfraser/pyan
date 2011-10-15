@@ -6,12 +6,23 @@
 #include "pq.h"
 
 
-typedef struct COORDS
-{
-    unsigned int x:12;
-    unsigned int y:12;
-    char priority:8;
-} COORDS;
+#ifdef WIN32
+    # pragma pack (1)
+    typedef struct COORDS
+    {
+        unsigned long int x:12;
+        unsigned long int y:12;
+        signed long priority:8;
+    } COORDS;
+    # pragma pack ()
+#else
+    typedef struct COORDS
+    {
+        unsigned int x:12;
+        unsigned int y:12;
+        char priority:8;
+    } COORDS;
+#endif
 
 static int width, height;
 static PQ *pq = NULL;
