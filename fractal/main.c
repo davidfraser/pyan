@@ -302,6 +302,16 @@ static void parse_args(int argc, char *argv[])
                 exit(1);
             }
         }
+        else if (strcmp(argv[i], "--depth") == 0)
+        {
+            i++;
+            if (i >= argc)
+            {
+                fprintf(stderr, "--depth argument needs to be followed by a natural number\n");
+                exit(1);
+            }
+			max_iterations = atoi(argv[i]);
+        }
         else
         {
             fprintf(stderr, "Unrecognised command: %s\n", argv[i]);
@@ -326,8 +336,6 @@ void do_benchmark(void)
     width = screen_width*2;
     height = screen_height*2;
     scale = 1.5/screen_height;
-    max = 0;
-    max_iterations = 256;    
 
     display = SDL_CreateRGBSurface(SDL_SWSURFACE, screen_width, screen_height, 32, 0, 0, 0, 0);
     
@@ -376,6 +384,9 @@ int main(int argc, char *argv[])
     const SDL_VideoInfo* video_info;
     int save_num = 0;
     
+    max = 0;
+    max_iterations = 256;
+
     parse_args(argc, argv);
     
 	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -415,8 +426,6 @@ int main(int argc, char *argv[])
     width = screen_width*2;
     height = screen_height*2;
     scale = 1.5/screen_height;
-    max = 0;
-    max_iterations = 256;    
 
 	buffer = (float *) malloc(sizeof(int) * width * height);
 	memset(buffer, 0, sizeof(int) * width * height);
