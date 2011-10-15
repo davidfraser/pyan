@@ -249,7 +249,9 @@ restart:
         if (pixels_done < width*height)
         {
             catch_remaining();
-            goto restart;
+            x_slots[slot] = -1;
+            y_slots[slot] = -1;
+            return 0;
         }
         state = WAITING;
         x_slots[slot] = -1;
