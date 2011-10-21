@@ -36,16 +36,17 @@ static int analyse_block(FUNCTION *func, BLOCK *block)
             VARIABLE *fvar = tree_get_child(expr, 0);
             if (strcmp(fvar->name, CAST_TO_DECLARATION(func)->name))
                 continue;
+            int source_line = CAST_TO_AST(stmt)->source_line;
             EXPRESSION *args = tree_get_child(expr, 1);
-            STATEMENT *new_assign = make_assignment(get_input_tuple(func), args);
-            STATEMENT *new_restart = make_restart();
-            list_insert_before(block->node.children, new_assign, stmt);
-            block->node.children->items[i+1] = new_restart;
+            STATEMENT *new_assign = make_assignment(get_input_tuple(func), args, source_line);
+            STATEMENT *new_restart = make_restart(source_line);
+            list_insert_before(CAST_TO_NODE(block)->children, new_assign, stmt);
+            CAST_TO_NODE(block)->children->items[i+1] = new_restart;
             ((DECLARATION *) func)->use_count--;
             fprintf(stderr, "Tail call in '%s' optimised\n", CAST_TO_DECLARATION(func)->name);        
         }
     }
-    
+
     return changed;
 }
 

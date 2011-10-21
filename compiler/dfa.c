@@ -41,7 +41,7 @@ restart:
         {
             int j;
             HASH_ITERATOR iter;
-            NODE *join = CAST_TO_NODE(make_join());
+            NODE *join = CAST_TO_NODE(make_join(CAST_TO_AST(vertex)->source_line));
             add_vertex(graph, join);
             for (j = 0, hash_iterator(predecessor_hash, &iter); j < 2 && hash_iterator_valid(&iter); j++, hash_iterator_next(&iter))
             {

@@ -211,7 +211,7 @@ static int verify_expression(EXPRESSION *expr, DAA_SET *set, int num, char *name
         if (find_in_hash(set->set, var->name, strlen(var->name)))
             return 1;
         
-        fprintf(stderr, "Variable '%s' may not be defined at vertex %d in '%s'\n", var->name, num, name);
+        fprintf(stderr, "Variable '%s' may not be defined on line %d in '%s'\n", var->name, CAST_TO_AST(expr)->source_line, name);
     }
     else if (tree_is_type(expr, EXPR_CALL))
         return verify_expression(tree_get_child(expr, 1), set, num, name);

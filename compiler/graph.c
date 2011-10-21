@@ -6,6 +6,17 @@
 #include "dfa.h"
 
 
+GRAPH *make_graph(FUNCTION *func)
+{
+    GRAPH *graph = CAST_TO_GRAPH(tree_create_node(GRAPH_NODE));
+    graph->forward = create_hash(10, key_type_direct);
+    graph->backward = create_hash(10, key_type_direct);
+    graph->labels = create_hash(10, key_type_direct);
+    
+    return graph;
+}
+
+
 void add_vertex(GRAPH *graph, NODE *vertex)
 {
     if (!vertex)
@@ -187,7 +198,7 @@ restart:
 
 char *get_escaped_op_symbol(EXPRESSION *expr)
 {
-    switch (expr->node.type)
+    switch (tree_type(expr))
     {
         case EXPR_LEQ:
             return "&lt;=";
@@ -471,8 +482,8 @@ void print_graph(GRAPH *graph, char *name, void *data)
             while (next_vertex)
             {
                 vertex = next_vertex;
-                int pos = get_from_hash(graph->labels, vertex, sizeof(void *));
-                printf("<tr><td>%d. ", i);
+                int pos = (int) get_from_hash(graph->labels, vertex, sizeof(void *));
+                printf("<tr><td>%d. ", pos);
                 vertex_printer(vertex, data);
                 printf("</td></tr>\n");
                 next_vertex = get_bb_next(graph, vertex, 1);

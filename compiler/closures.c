@@ -45,24 +45,25 @@ static EXPRESSION *analyse_expression(MODULE *module, FUNCTION *func, EXPRESSION
     {
         FUNCTION *closure = tree_get_child(expr, 0);
         DECLARATION *args = build_closure_args(closure);
+        int source_line = CAST_TO_AST(expr)->source_line;
         
         /* Replace closure expression with call expression. */
-        VARIABLE *fvar = CAST_TO_VARIABLE(make_variable("make_closure"));
+        VARIABLE *fvar = CAST_TO_VARIABLE(make_variable("make_closure", source_line));
         fvar->super.type = closure->decl.type;
         EXPRESSION *closure_args = CAST_TO_EXPRESSION(tree_create_node(EXPR_TUPLE));
-        tree_add_child(closure_args, make_integer_direct(4 * tree_num_children(args)));
+        tree_add_child(closure_args, make_integer_direct(4 * tree_num_children(args), source_line));
         int i;
         for (i = 0; i < tree_num_children(args); i++)
         {
             DECLARATION *arg = tree_get_child(args, i);
-            VARIABLE *mcvar = CAST_TO_VARIABLE(make_variable(arg->name));
+            VARIABLE *mcvar = CAST_TO_VARIABLE(make_variable(arg->name, source_line));
             mcvar->decl = arg;
             tree_add_child(closure_args, mcvar);
         }
-        VARIABLE *clos_var = CAST_TO_VARIABLE(make_variable(closure->decl.name));
+        VARIABLE *clos_var = CAST_TO_VARIABLE(make_variable(closure->decl.name, source_line));
         clos_var->decl = CAST_TO_DECLARATION(closure);
         tree_add_child(closure_args, clos_var);
-        EXPRESSION *new_expr = CAST_TO_EXPRESSION(make_call(CAST_TO_EXPRESSION(fvar), closure_args));
+        EXPRESSION *new_expr = CAST_TO_EXPRESSION(make_call(CAST_TO_EXPRESSION(fvar), closure_args, source_line));
         closure->decl.use_count++;
         return new_expr;
     }

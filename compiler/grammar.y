@@ -162,25 +162,25 @@ def:
     
 function:
       type NAME '(' arg_list ')' 
-        { $$ = CAST_TO_DECLARATION(make_function($1, $2, $4)); }
+        { $$ = CAST_TO_DECLARATION(make_function($1, $2, $4, @1.first_line)); }
     | PUBLIC_KEYWORD type NAME '(' arg_list ')'
-        { $$ = CAST_TO_DECLARATION(make_function($2, $3, $5)); $$->flags |= DECL_PUBLIC; }
+        { $$ = CAST_TO_DECLARATION(make_function($2, $3, $5, @3.first_line)); $$->flags |= DECL_PUBLIC; }
     ;
     
 var_def:
       type NAME ';'
-        { $$ = make_declaration($1, $2);  add_declaration(parser->scope, $$); }
+        { $$ = make_declaration($1, $2, @1.first_line);  add_declaration(parser->scope, $$); }
     ;
 
 var_def_and_assign:
       type NAME '=' expression ';'
         {
-            DECLARATION *decl = make_declaration($1, $2);
+            DECLARATION *decl = make_declaration($1, $2, @1.first_line);
             add_declaration(parser->scope, decl);
-            EXPRESSION *var = make_variable($2);
+            EXPRESSION *var = make_variable($2, @2.first_line);
             if (!resolve_reference(parser, (VARIABLE *) var, &@1))
                 YYERROR; 
-            $$ = make_assignment(var, $4);
+            $$ = make_assignment(var, $4, @2.first_line);
         }
     ;
 
@@ -192,7 +192,7 @@ arg_list:
     
 arg_def:
       type NAME
-        { $$ = make_declaration($1, $2); $$->flags |= DECL_ARGUMENT; }
+        { $$ = make_declaration($1, $2, @1.first_line); $$->flags |= DECL_ARGUMENT; }
     ;
 
 type:
@@ -202,13 +202,13 @@ type:
     ;
 
 map_type:
-    '(' type  MAP_KEYWORD type ')' { $$ = make_map_type($2, $4); }
+    '(' type  MAP_KEYWORD type ')' { $$ = make_map_type($2, $4, @1.first_line); }
     ;
 
 primitive_type:
-      VOID_KEYWORD { $$ = make_primitive_type(TYPE_VOID); }
-    | INT_KEYWORD { $$ = make_primitive_type(TYPE_INT); }
-    | FLOAT_KEYWORD { $$ = make_primitive_type(TYPE_FLOAT); }
+      VOID_KEYWORD { $$ = make_primitive_type(TYPE_VOID, @1.first_line); }
+    | INT_KEYWORD { $$ = make_primitive_type(TYPE_INT, @1.first_line); }
+    | FLOAT_KEYWORD { $$ = make_primitive_type(TYPE_FLOAT, @1.first_line); }
 /*    | name
         {
             $$ = NULL;
@@ -221,7 +221,7 @@ tuple_type:
 
 type_list:
       type
-    | type_list ',' type { $$ = make_tuple_type($1, $3); }
+    | type_list ',' type { $$ = make_tuple_type($1, $3, @1.first_line); }
     ;
 
 /*name_list:
@@ -236,14 +236,14 @@ block:
     ;
 
 block_inner:
-      statements { $$ = make_block(parser->scope, $1); }
+      statements { $$ = make_block(parser->scope, $1, @1.first_line); }
     | /* empty */ { $$ = NULL; }
     ;
 
 statements:
       statement
     | statements statement
-        { $$ = make_statements($1, $2);}
+        { $$ = make_statements($1, $2, @1.first_line);}
     ;
 
 statement:
@@ -256,40 +256,40 @@ matched:
     | var_def { $$ = NULL; }
     | var_def_and_assign
     | IF_KEYWORD '(' expression ')' matched ELSE_KEYWORD matched
-        { $$ = make_if($3, $5, $7); }
+        { $$ = make_if($3, $5, $7, @1.first_line); }
     | for_stmt
     | WHILE_KEYWORD '(' expression ')' matched
-        { $$ = make_while($3, $5); }
-    | CONTINUE_KEYWORD ';' { $$ = make_continue(); }
-    | BREAK_KEYWORD ';' { $$ = make_break(); }
+        { $$ = make_while($3, $5, @1.first_line); }
+    | CONTINUE_KEYWORD ';' { $$ = make_continue(@1.first_line); }
+    | BREAK_KEYWORD ';' { $$ = make_break(@1.first_line); }
     | return_stmt
     | '{' block '}' { $$ = $2; }
     ;
 
 unmatched:
       IF_KEYWORD '(' expression ')' statement
-        { $$ = make_if($3, $5, NULL); }
+        { $$ = make_if($3, $5, NULL, @1.first_line); }
     | IF_KEYWORD '(' expression ')' matched ELSE_KEYWORD unmatched
-        { $$ = make_if($3, $5, $7); }
+        { $$ = make_if($3, $5, $7, @1.first_line); }
     | WHILE_KEYWORD '(' expression ')' IF_KEYWORD '(' expression ')' statement
-        { $$ = make_while($3, make_if($7, $9, NULL)); }
+        { $$ = make_while($3, make_if($7, $9, NULL, @5.first_line), @1.first_line); }
     ;
 
 assignment_stmt:
-      call ';' { $$ = make_assignment(NULL, $1); }
+      call ';' { $$ = make_assignment(NULL, $1, @1.first_line); }
     | expression '=' expression ';'
-        { $$ = make_assignment($1, $3); }
+        { $$ = make_assignment($1, $3, @1.first_line); }
     ;
     
 for_stmt:
       FOR_KEYWORD '(' statement ';' expression ';'
           statement ')' '{' block '}'
-        { $$ = make_for($3, $5, $7, $10); }
+        { $$ = make_for($3, $5, $7, $10, @1.first_line); }
     ;
 
 return_stmt:
     RETURN_KEYWORD expression ';'
-        { $$ = make_return($2); }
+        { $$ = make_return($2, @1.first_line); }
     ;
     
 expression:
@@ -299,59 +299,59 @@ expression:
 disjunction:
       conjunction
     | disjunction OR_KEYWORD conjunction
-        { $$ = make_binary_expression(EXPR_OR, $1, $3); }
+        { $$ = make_binary_expression(EXPR_OR, $1, $3, @1.first_line); }
     ;
     
 conjunction:
       comparison
     | conjunction AND_KEYWORD comparison
-        { $$ = make_binary_expression(EXPR_AND, $1, $3); }
+        { $$ = make_binary_expression(EXPR_AND, $1, $3, @1.first_line); }
     ;
     
 comparison:
       sum
     | sum EQ_KEYWORD sum
-        { $$ = make_binary_expression(EXPR_EQ, $1, $3); }
+        { $$ = make_binary_expression(EXPR_EQ, $1, $3, @1.first_line); }
     | sum NEQ_KEYWORD sum
-        { $$ = make_binary_expression(EXPR_NEQ, $1, $3); }
+        { $$ = make_binary_expression(EXPR_NEQ, $1, $3, @1.first_line); }
     | sum '<' sum
-        { $$ = make_binary_expression(EXPR_LT, $1, $3); }
+        { $$ = make_binary_expression(EXPR_LT, $1, $3, @1.first_line); }
     | sum '>' sum
-        { $$ = make_binary_expression(EXPR_GT, $1, $3); }
+        { $$ = make_binary_expression(EXPR_GT, $1, $3, @1.first_line); }
     | sum LEQ_KEYWORD sum
-        { $$ = make_binary_expression(EXPR_LEQ, $1, $3); }
+        { $$ = make_binary_expression(EXPR_LEQ, $1, $3, @1.first_line); }
     | sum GEQ_KEYWORD sum
-        { $$ = make_binary_expression(EXPR_EQ, $1, $3); }
+        { $$ = make_binary_expression(EXPR_EQ, $1, $3, @1.first_line); }
     ;
     
 sum:
       difference
     | sum '+' difference
-        { $$ = make_binary_expression(EXPR_SUM, $1, $3); }
+        { $$ = make_binary_expression(EXPR_SUM, $1, $3, @1.first_line); }
     ;
     
 difference:
       product
     | difference '-' product
-        { $$ = make_binary_expression(EXPR_DIFFERENCE, $1, $3); }
+        { $$ = make_binary_expression(EXPR_DIFFERENCE, $1, $3, @1.first_line); }
     ;
      
 product:
       ratio
     | product '*' ratio
-        { $$ = make_binary_expression(EXPR_PRODUCT, $1, $3); }
+        { $$ = make_binary_expression(EXPR_PRODUCT, $1, $3, @1.first_line); }
     ;
     
 ratio:
       negation
     | ratio '/' negation
-        { $$ = make_binary_expression(EXPR_RATIO, $1, $3); }
+        { $$ = make_binary_expression(EXPR_RATIO, $1, $3, @1.first_line); }
     ;
 
 negation:
       atom
     | '-' atom
-        { $$ = make_unary_expression(EXPR_NEGATION, $2); }
+        { $$ = make_unary_expression(EXPR_NEGATION, $2, @1.first_line); }
     ;
 
 atom:
@@ -365,30 +365,30 @@ atom:
     ;
 
 tuple_content:
-      /* empty*/ { $$ = make_empty_tuple(); }
+      /* empty*/ { $$ = make_empty_tuple(@0.first_line); }
     | expr_list
     ;
 
 expr_list:
       expression
-    | tuple_content ',' expression { $$ = make_tuple($1, $3); }
+    | tuple_content ',' expression { $$ = make_tuple($1, $3, @1.first_line); }
     ;
 
 call: name '(' tuple_content ')'
-        { $$ = make_call($1, $3); }
+        { $$ = make_call($1, $3, @1.first_line); }
     ;
 
 closure:
     type LAMBDA_KEYWORD '(' arg_list ')' '{' block '}'
-        { $$ = make_closure(parser->module, $1, $4, CAST_TO_BLOCK($7)); }
+        { $$ = make_closure(parser->module, $1, $4, CAST_TO_BLOCK($7), @1.first_line); }
     ;
 
 name:
-      NAME { $$ = make_variable($1); if (!resolve_reference(parser, CAST_TO_VARIABLE($$), &@1)) YYERROR; }
+      NAME { $$ = make_variable($1, @1.first_line); if (!resolve_reference(parser, CAST_TO_VARIABLE($$), &@1)) YYERROR; }
     ;
     
 integer:
-      INT_CONSTANT { $$ = make_integer($1); }
+      INT_CONSTANT { $$ = make_integer($1, @1.first_line); }
     ;
     
 float:
@@ -396,7 +396,7 @@ float:
     ;
         
 string:
-      STRING_CONSTANT { $$ = make_string($1); }
+      STRING_CONSTANT { $$ = make_string($1, @1.first_line); }
     ;
     
 %%

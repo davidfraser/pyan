@@ -37,7 +37,7 @@ static int i386ify_unary_operation(MODULE *module, FUNCTION *func, NODE *vertex)
     if (is_same_var(CAST_TO_EXPRESSION(dest), arg0))
         return 0;
     
-    STATEMENT *new_assign = make_assignment(CAST_TO_EXPRESSION(tree_copy(dest)), arg0);
+    STATEMENT *new_assign = make_assignment(CAST_TO_EXPRESSION(tree_copy(dest)), arg0, CAST_TO_AST(vertex)->source_line);
     tree_get_child(expr, 0) = tree_copy(dest);
     add_vertex(graph, CAST_TO_NODE(new_assign));
     replace_backward(graph, vertex, CAST_TO_NODE(new_assign), 0);
@@ -73,6 +73,8 @@ static int i386ify_binary_operation(MODULE *module, FUNCTION *func, NODE *vertex
     EXPRESSION *arg0 = tree_get_child(expr, 0);
     EXPRESSION *arg1 = tree_get_child(expr, 1);
     
+    int source_line = CAST_TO_AST(vertex)->source_line;
+    
     /* First deal with special cases, where the first argument is not the
        destination but the second argument is. */
     if (!is_same_var(CAST_TO_EXPRESSION(dest), arg0) && is_same_var(CAST_TO_EXPRESSION(dest), arg1))
@@ -85,8 +87,8 @@ static int i386ify_binary_operation(MODULE *module, FUNCTION *func, NODE *vertex
         else
         {
             TYPE *new_temp_type = arg1->type;
-            EXPRESSION *new_temp = make_new_temp(module, func, new_temp_type);
-            STATEMENT *new_assign = make_assignment(new_temp, arg1);
+            EXPRESSION *new_temp = make_new_temp(module, func, new_temp_type, source_line);
+            STATEMENT *new_assign = make_assignment(new_temp, arg1, source_line);
             tree_get_child(expr, 1) = tree_copy(new_temp);
             add_vertex(graph, CAST_TO_NODE(new_assign));
             replace_backward(graph, vertex, CAST_TO_NODE(new_assign), 0);
@@ -103,7 +105,7 @@ static int i386ify_binary_operation(MODULE *module, FUNCTION *func, NODE *vertex
         return 0;
     
     /* Otherwise, translate a = b # c to a = b; a = a # c. */
-    STATEMENT *new_assign = make_assignment(CAST_TO_EXPRESSION(tree_copy(dest)), arg0);
+    STATEMENT *new_assign = make_assignment(CAST_TO_EXPRESSION(tree_copy(dest)), arg0, source_line);
     tree_get_child(expr, 0) = tree_copy(dest);
     add_vertex(graph, CAST_TO_NODE(new_assign));
     replace_backward(graph, vertex, CAST_TO_NODE(new_assign), 0);
@@ -119,6 +121,8 @@ static int i386ify_assignment(MODULE *module, FUNCTION *func, NODE *vertex)
     GRAPH *graph = func->graph;
     VARIABLE *dest = tree_get_child(vertex, 0);
     EXPRESSION *expr = tree_get_child(vertex, 1);
+    
+    int source_line = CAST_TO_AST(vertex)->source_line;
     
     if (is_unary_op(expr))
         changed |= i386ify_unary_operation(module, func, vertex);
@@ -137,7 +141,7 @@ static int i386ify_assignment(MODULE *module, FUNCTION *func, NODE *vertex)
         {
             VARIABLE *dest2 = tree_get_child(dest, i);
             VARIABLE *src2 = tree_get_child(expr, i);
-            STATEMENT *new_assign = make_assignment(CAST_TO_EXPRESSION(dest2), CAST_TO_EXPRESSION(src2));
+            STATEMENT *new_assign = make_assignment(CAST_TO_EXPRESSION(dest2), CAST_TO_EXPRESSION(src2), source_line);
             add_vertex(graph, CAST_TO_NODE(new_assign));
             if (last)
                 add_edge(graph, last, CAST_TO_NODE(new_assign), 0);

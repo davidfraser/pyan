@@ -114,7 +114,7 @@ static void emit_load(FUNCTION *func, EXPRESSION *expr, char *regname)
     {
         VARIABLE *var = CAST_TO_VARIABLE(expr);
         char loc[100];
-        get_location(func, var, loc);
+        get_location(func, CAST_TO_EXPRESSION(var), loc);
         printf("    movl %s, %s\n", loc, regname);
     }
     else if (tree_is_type(expr, EXPR_INTEGER))

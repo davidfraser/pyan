@@ -21,7 +21,7 @@ static EXPRESSION *optimise_binary_expression(MODULE *module, FUNCTION *func, EX
     
     fprintf(stderr, "optimised %s operation!\n", tree_get_name(expr));
 
-    EXPRESSION *e = make_integer_direct(v);
+    EXPRESSION *e = make_integer_direct(v, CAST_TO_AST(expr)->source_line);
     return e;    
 }
 

@@ -170,8 +170,8 @@ static void replace_child_with_temporary(MODULE *module, FUNCTION *func, NODE *v
     GRAPH *graph = func->graph;
     EXPRESSION *child = tree_get_child(expr, child_num);
     TYPE *new_temp_type = child->type;
-    EXPRESSION *new_temp = make_new_temp(module, func, new_temp_type);
-    STATEMENT *new_assign = make_assignment(new_temp, child);
+    EXPRESSION *new_temp = make_new_temp(module, func, new_temp_type, CAST_TO_AST(child)->source_line);
+    STATEMENT *new_assign = make_assignment(new_temp, child, CAST_TO_AST(child)->source_line);
     tree_get_child(expr, child_num) = tree_copy(new_temp);
     add_vertex(graph, CAST_TO_NODE(new_assign));
     replace_backward(graph, vertex, CAST_TO_NODE(new_assign), 0);

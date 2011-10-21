@@ -74,17 +74,19 @@ static EXPRESSION *simplify_expression(MODULE *module, FUNCTION *func, BLOCK *bl
 {
     int i;
     
+    int source_line = CAST_TO_AST(expr)->source_line;
+    
     if (!has_graph(func) && is_short_circuit(expr))
     {
         TYPE *new_temp_type = CAST_TO_EXPRESSION(tree_get_child(expr, 0))->type;
-        EXPRESSION *new_temp = make_new_temp(module, func, new_temp_type);
-        STATEMENT *new_assign = make_assignment(new_temp, tree_get_child(expr, 0));
+        EXPRESSION *new_temp = make_new_temp(module, func, new_temp_type, source_line);
+        STATEMENT *new_assign = make_assignment(new_temp, tree_get_child(expr, 0), source_line);
         tree_add_before(CAST_TO_NODE(block), CAST_TO_NODE(new_assign), CAST_TO_NODE(before));
-        STATEMENT *new_assign2 = make_assignment(new_temp, tree_get_child(expr, 1));
+        STATEMENT *new_assign2 = make_assignment(new_temp, tree_get_child(expr, 1), source_line);
         EXPRESSION *new_cond = new_temp;
         if (tree_is_type(expr, EXPR_OR))
-            new_cond = make_unary_expression(EXPR_NOT, new_cond);
-        STATEMENT *new_if = make_if(new_cond, make_block(NULL, new_assign2), NULL);
+            new_cond = make_unary_expression(EXPR_NOT, new_cond, source_line);
+        STATEMENT *new_if = make_if(new_cond, make_block(NULL, new_assign2, 0), NULL, 0);
         tree_add_before(CAST_TO_NODE(block), CAST_TO_NODE(new_if), CAST_TO_NODE(before));
         return new_temp;
     }
@@ -96,7 +98,7 @@ static EXPRESSION *simplify_expression(MODULE *module, FUNCTION *func, BLOCK *bl
         EXPRESSION *sub0 = tree_get_child(expr, 0);
         EXPRESSION *sub1 = tree_get_child(expr, 1);
         
-        STATEMENT *new_test = make_test(sub0);
+        STATEMENT *new_test = make_test(sub0, source_line);
         
         EDGE_TYPE inner_type = tree_is_type(expr, EXPR_OR) ? EDGE_NO : EDGE_YES;
         EDGE_TYPE outer_type = tree_is_type(expr, EXPR_OR) ? EDGE_YES : EDGE_NO;
@@ -129,11 +131,13 @@ static EXPRESSION *simplify_expression(MODULE *module, FUNCTION *func, BLOCK *bl
     }
     
     for (i = 0; i < tree_num_children(expr); i++)
-        if (!is_atomic(tree_get_child(expr, i)))
+    {
+        EXPRESSION *child = tree_get_child(expr, i);
+        if (!is_atomic(child))
         {
-            TYPE *new_temp_type = CAST_TO_EXPRESSION(tree_get_child(expr, i))->type;
-            EXPRESSION *new_temp = make_new_temp(module, func, new_temp_type);
-            STATEMENT *new_assign = make_assignment(new_temp, tree_get_child(expr, i));
+            TYPE *new_temp_type = CAST_TO_EXPRESSION(child)->type;
+            EXPRESSION *new_temp = make_new_temp(module, func, new_temp_type, CAST_TO_AST(child)->source_line);
+            STATEMENT *new_assign = make_assignment(new_temp, child, CAST_TO_AST(child)->source_line);
             
             if (has_graph(func))
             {
@@ -146,6 +150,7 @@ static EXPRESSION *simplify_expression(MODULE *module, FUNCTION *func, BLOCK *bl
             
             tree_get_child(expr, i) = new_temp;
         }
+    }
     
     return expr;
 }
@@ -158,15 +163,15 @@ EXPRESSION *atomise_expression(MODULE *module, FUNCTION *func, BLOCK *block, EXP
     
     if (tree_is_type(expr, EXPR_TUPLE))
     {
-        EXPRESSION *new_temp = make_empty_tuple();
+        EXPRESSION *new_temp = make_empty_tuple(CAST_TO_AST(expr)->source_line);
         int i;
         for (i = 0; i < tree_num_children(expr); i++)
             tree_add_child(new_temp, atomise_expression(module, func, block, tree_get_child(expr, i), before));
         return new_temp;
     }
     
-    EXPRESSION *new_temp = make_new_temp(module, func, expr->type);
-    STATEMENT *new_assign = make_assignment(new_temp, expr);
+    EXPRESSION *new_temp = make_new_temp(module, func, expr->type, CAST_TO_AST(expr)->source_line);
+    STATEMENT *new_assign = make_assignment(new_temp, expr, CAST_TO_AST(expr)->source_line);
     
     if (has_graph(func))
     {
@@ -212,7 +217,7 @@ static STATEMENT *reduce_statement(MODULE *module, FUNCTION *func, BLOCK *block,
             EXPRESSION *old_cond = cond;
             cond = atomise_expression(module, func, block, cond, stmt);
             tree_get_child(stmt, 0) = cond;
-            STATEMENT *new_assign = make_assignment(cond, CAST_TO_EXPRESSION(tree_copy(old_cond)));
+            STATEMENT *new_assign = make_assignment(cond, CAST_TO_EXPRESSION(tree_copy(old_cond)), CAST_TO_AST(cond)->source_line);
             tree_add_child(body, new_assign);
         }
         reduce_block(module, func, body);
@@ -228,7 +233,7 @@ static STATEMENT *reduce_statement(MODULE *module, FUNCTION *func, BLOCK *block,
         /* Do nothing. */
     }
     else
-        error("Not sure how to reduce statement of type %d\n", stmt->node.type);
+        error("Not sure how to reduce statement of type %d\n", tree_type(stmt));
     
     return stmt;
 }

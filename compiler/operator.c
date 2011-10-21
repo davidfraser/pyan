@@ -116,7 +116,7 @@ NODE_TYPE negate_comparison(NODE_TYPE type)
 
 char *get_op_symbol(EXPRESSION *expr)
 {
-    switch (expr->node.type)
+    switch (tree_type(expr))
     {
         case EXPR_EQ:
             return "==";

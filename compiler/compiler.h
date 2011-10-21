@@ -29,14 +29,22 @@ typedef struct MODULE
     int max_registers;
 } MODULE;
 
-typedef struct STATEMENT
+
+typedef struct AST
 {
     NODE node;
+    int source_line;
+} AST;
+
+
+typedef struct STATEMENT
+{
+    AST ast_node;
 } STATEMENT;
 
 typedef struct BLOCK
 {
-    NODE node;
+    STATEMENT stmt;
     HASH *table;
 } BLOCK;
 
@@ -51,7 +59,7 @@ typedef enum
 
 typedef struct DECLARATION
 {
-    NODE node;
+    AST ast_node;
     char *name;
     int use_count;
     int stack_position;
@@ -82,7 +90,7 @@ typedef struct GRAPH
 
 typedef struct EXPRESSION
 {
-    NODE node;
+    AST ast_node;
     struct TYPE *type;
 } EXPRESSION;
 
@@ -107,7 +115,7 @@ typedef struct STRING
 
 typedef struct TYPE
 {
-    NODE node;
+    AST ast_node;
     int size;
 } TYPE;
 
@@ -156,39 +164,40 @@ typedef struct EMIT_FUNCTIONS
 
 
 extern char *add_string(MODULE *module, char *str, size_t len);
-extern STATEMENT *make_block(HASH *table, STATEMENT *stmt);
-extern STATEMENT *make_if(EXPRESSION *c, STATEMENT *s1, STATEMENT *s2);
-extern STATEMENT *make_while(EXPRESSION *c, STATEMENT *s1);
-extern STATEMENT *make_for(STATEMENT *init, EXPRESSION *c, STATEMENT *step, STATEMENT *body);
-extern STATEMENT *make_assignment(EXPRESSION *n, EXPRESSION *v);
-extern STATEMENT *make_return(EXPRESSION *c);
-extern STATEMENT *make_continue();
-extern STATEMENT *make_break();
-extern STATEMENT *make_pass(void);
-extern STATEMENT *make_join(void);
-extern STATEMENT *make_enter(void);
-extern STATEMENT *make_exit(void);
-extern STATEMENT *make_restart(void);
-extern STATEMENT *make_test(EXPRESSION *c);
-extern STATEMENT *make_statements(STATEMENT *s1, STATEMENT *s2);
-extern FUNCTION *make_function(TYPE *type, char *name, DECLARATION *args);
-extern DECLARATION *make_declaration(TYPE *type, char *name);
-extern EXPRESSION *make_binary_expression(NODE_TYPE type, EXPRESSION *a, EXPRESSION *b);
-extern EXPRESSION *make_unary_expression(NODE_TYPE type, EXPRESSION *a);
-extern EXPRESSION *make_call(EXPRESSION *var, EXPRESSION *args);
-extern EXPRESSION *make_closure(MODULE *module, TYPE *type, DECLARATION *args, BLOCK *body);
-extern EXPRESSION *make_integer(char *val);
-extern EXPRESSION *make_integer_direct(int val);
-extern EXPRESSION *make_string(char *str);
-extern EXPRESSION *make_variable(char *name);
-extern TYPE *make_primitive_type(NODE_TYPE type);
-extern TYPE *make_map_type(TYPE *t1, TYPE *t2);
-extern TYPE *make_tuple_type(TYPE *t1, TYPE *t2);
-extern EXPRESSION *make_tuple(EXPRESSION *expr1, EXPRESSION *expr2);
-extern EXPRESSION *make_empty_tuple(void);
 extern GRAPH *make_graph(FUNCTION *func);
+
+extern STATEMENT *make_block(HASH *table, STATEMENT *stmt, int source_line);
+extern STATEMENT *make_if(EXPRESSION *c, STATEMENT *s1, STATEMENT *s2, int source_line);
+extern STATEMENT *make_while(EXPRESSION *c, STATEMENT *s1, int source_line);
+extern STATEMENT *make_for(STATEMENT *init, EXPRESSION *c, STATEMENT *step, STATEMENT *body, int source_line);
+extern STATEMENT *make_assignment(EXPRESSION *n, EXPRESSION *v, int source_line);
+extern STATEMENT *make_return(EXPRESSION *c, int source_line);
+extern STATEMENT *make_continue(int source_line);
+extern STATEMENT *make_break(int source_line);
+extern STATEMENT *make_pass(int source_line);
+extern STATEMENT *make_join(int source_line);
+extern STATEMENT *make_enter(int source_line);
+extern STATEMENT *make_exit(int source_line);
+extern STATEMENT *make_restart(int source_line);
+extern STATEMENT *make_test(EXPRESSION *c, int source_line);
+extern STATEMENT *make_statements(STATEMENT *s1, STATEMENT *s2, int source_line);
+extern FUNCTION *make_function(TYPE *type, char *name, DECLARATION *args, int source_line);
+extern DECLARATION *make_declaration(TYPE *type, char *name, int source_line);
+extern EXPRESSION *make_binary_expression(NODE_TYPE type, EXPRESSION *a, EXPRESSION *b, int source_line);
+extern EXPRESSION *make_unary_expression(NODE_TYPE type, EXPRESSION *a, int source_line);
+extern EXPRESSION *make_call(EXPRESSION *var, EXPRESSION *args, int source_line);
+extern EXPRESSION *make_closure(MODULE *module, TYPE *type, DECLARATION *args, BLOCK *body, int source_line);
+extern EXPRESSION *make_integer(char *val, int source_line);
+extern EXPRESSION *make_integer_direct(int val, int source_line);
+extern EXPRESSION *make_string(char *str, int source_line);
+extern EXPRESSION *make_variable(char *name, int source_line);
+extern TYPE *make_primitive_type(NODE_TYPE type, int source_line);
+extern TYPE *make_map_type(TYPE *t1, TYPE *t2, int source_line);
+extern TYPE *make_tuple_type(TYPE *t1, TYPE *t2, int source_line);
+extern EXPRESSION *make_tuple(EXPRESSION *expr1, EXPRESSION *expr2, int source_line);
+extern EXPRESSION *make_empty_tuple(int source_line);
 extern EXPRESSION *get_input_tuple(FUNCTION *func);
-extern EXPRESSION *make_new_temp(MODULE *module, FUNCTION *func, TYPE *type);
+extern EXPRESSION *make_new_temp(MODULE *module, FUNCTION *func, TYPE *type, int source_line);
 
 extern int evaluate_binary_op(EXPRESSION *expr);
 extern int is_unary_op(EXPRESSION *expr);

@@ -165,6 +165,8 @@ static int analyse_vertex(MODULE *module, FUNCTION *func, NODE *vertex)
     else
         fprintf(stderr, "Call to '%s' in '%s' is inlinable\n", fvar->name, CAST_TO_DECLARATION(func)->name);        
     
+    int source_line = CAST_TO_AST(expr)->source_line;
+    
     /* Perform the inlining! */
     int base = add_cfg(module, func, called_func);
     GRAPH *graph = func->graph;
@@ -179,7 +181,7 @@ static int analyse_vertex(MODULE *module, FUNCTION *func, NODE *vertex)
     
     /* The entry is replaced with an assignment of the call's parameters into the called function's arguments. */
     EXPRESSION *args = tree_get_child(expr, 1);
-    STATEMENT *new_assign = make_assignment(in_tuple, args);
+    STATEMENT *new_assign = make_assignment(in_tuple, args, source_line);
     
     add_vertex(graph, CAST_TO_NODE(new_assign));
     replace_forward(graph, CAST_TO_NODE(entry), CAST_TO_NODE(new_assign), 0);
@@ -205,7 +207,7 @@ static int analyse_vertex(MODULE *module, FUNCTION *func, NODE *vertex)
         
         if (tree_is_type(ret, STMT_RETURN))
         {
-            STATEMENT *new_assign = make_assignment(tree_get_child(vertex, 0), tree_get_child(ret, 0));
+            STATEMENT *new_assign = make_assignment(tree_get_child(vertex, 0), tree_get_child(ret, 0), source_line);
             add_vertex(graph, CAST_TO_NODE(new_assign));
             
             replace_forward(graph, CAST_TO_NODE(ret), CAST_TO_NODE(new_assign), 0);

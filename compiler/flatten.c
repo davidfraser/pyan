@@ -15,7 +15,7 @@ NODE *flatten_block(MODULE *module, FUNCTION *func, GRAPH *graph, BLOCK *block,
         return predecessor;
     
     if (!tree_is_type(block, STMT_BLOCK))
-        error("Attempt to flatten non-block node of type %d", block->node.type);
+        error("Attempt to flatten non-block node of type %s", tree_get_name(block));
     
     base++;
 
@@ -25,17 +25,17 @@ NODE *flatten_block(MODULE *module, FUNCTION *func, GRAPH *graph, BLOCK *block,
         STATEMENT *stmt = tree_get_child(block, i);
         if (stmt == NULL)
         {
-            NODE *vertex = CAST_TO_NODE(make_pass());
+            NODE *vertex = CAST_TO_NODE(make_pass(CAST_TO_AST(block)->source_line));
             add_vertex(graph, vertex);
             add_edge(graph, predecessor, vertex, edge_type);
             predecessor = vertex;
         }
         else if (tree_is_type(stmt, STMT_IF))
         {
-            NODE *test = CAST_TO_NODE(make_test(tree_get_child(stmt, 0)));
+            NODE *test = CAST_TO_NODE(make_test(tree_get_child(stmt, 0), 0));
             add_vertex(graph, test);
             add_edge(graph, predecessor, test, i == 0 ? edge_type : EDGE_NORMAL);
-            NODE *join = CAST_TO_NODE(make_pass());
+            NODE *join = CAST_TO_NODE(make_pass(CAST_TO_AST(stmt)->source_line));
             add_vertex(graph, join);
             predecessor = test;
             predecessor = flatten_block(module, func, graph, tree_get_child(stmt, 1), predecessor, exit_node, loop_start_node, loop_end_node, EDGE_YES);
@@ -48,10 +48,10 @@ NODE *flatten_block(MODULE *module, FUNCTION *func, GRAPH *graph, BLOCK *block,
         }
         else if (tree_is_type(stmt, STMT_WHILE))
         {
-            NODE *test = CAST_TO_NODE(make_test(tree_get_child(stmt, 0)));
+            NODE *test = CAST_TO_NODE(make_test(tree_get_child(stmt, 0), 0));
             add_vertex(graph, test);
             add_edge(graph, predecessor, test, i == 0 ? edge_type : EDGE_NORMAL);
-            NODE *join = CAST_TO_NODE(make_pass());
+            NODE *join = CAST_TO_NODE(make_pass(CAST_TO_AST(stmt)->source_line));
             add_vertex(graph, join);
             predecessor = test;
             predecessor = flatten_block(module, func, graph, tree_get_child(stmt, 1), predecessor, exit_node, test, join, EDGE_YES | EDGE_LOOP);
@@ -69,15 +69,17 @@ NODE *flatten_block(MODULE *module, FUNCTION *func, GRAPH *graph, BLOCK *block,
         else if (tree_is_type(stmt, STMT_CONTINUE))
         {
             if (loop_start_node == NULL)
-                error("Continue outside loop!");
-            add_edge(graph, predecessor, loop_start_node, (i == 0 ? edge_type : EDGE_NORMAL) | EDGE_BACK);
+                fprintf(stderr, "Continue outside loop on line %d in '%s'!", CAST_TO_AST(stmt)->source_line, func->decl.name);
+            else
+                add_edge(graph, predecessor, loop_start_node, (i == 0 ? edge_type : EDGE_NORMAL) | EDGE_BACK);
             predecessor = NULL;
         }
         else if (tree_is_type(stmt, STMT_BREAK))
         {
             if (loop_end_node == NULL)
-                error("Break outside loop!");
-            add_edge(graph, predecessor, loop_end_node, i == 0 ? edge_type : EDGE_NORMAL);
+                fprintf(stderr, "Break outside loop on line %d in '%s'!", CAST_TO_AST(stmt)->source_line, func->decl.name);
+            else
+                add_edge(graph, predecessor, loop_end_node, i == 0 ? edge_type : EDGE_NORMAL);
             predecessor = NULL;
         }
         else if (tree_is_type(stmt, STMT_ASSIGN))
@@ -96,7 +98,7 @@ NODE *flatten_block(MODULE *module, FUNCTION *func, GRAPH *graph, BLOCK *block,
             predecessor = NULL;
         }
         else
-            error("Don't know how to flatten node of type %d!", stmt->node.type);
+            error("Don't know how to flatten node of type %s!", tree_get_name(stmt));
     }
     
     return predecessor;
@@ -108,8 +110,8 @@ int flatten(MODULE *module, FUNCTION *func)
     GRAPH *graph = make_graph(func);
     BLOCK *body = tree_get_child(func, 0);
     
-    NODE *entry_node = CAST_TO_NODE(make_enter());
-    NODE *exit_node = CAST_TO_NODE(make_exit());
+    NODE *entry_node = CAST_TO_NODE(make_enter(CAST_TO_AST(body)->source_line));
+    NODE *exit_node = CAST_TO_NODE(make_exit(CAST_TO_AST(body)->source_line));
     NODE *predecessor = entry_node;
     
     add_vertex(graph, entry_node);

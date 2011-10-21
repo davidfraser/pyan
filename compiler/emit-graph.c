@@ -37,13 +37,11 @@ do_next:
         
         HASH *successor_hash = get_from_hash(graph->forward, vertex, sizeof(void *));
         NODE *successor;
-        EDGE_TYPE successor_type;
         int successor_label;
         if (successor_hash)
         {
             hash_iterator(successor_hash, &iter);
             successor = iter.entry->key;
-            successor_type = (EDGE_TYPE) iter.entry->data;
             successor_label = (int) get_from_hash(graph->labels, successor, sizeof(void *));
         }
         else
