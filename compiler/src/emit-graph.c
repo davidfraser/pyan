@@ -75,7 +75,7 @@ do_next:
             /* Force label on next vertex, in case we jumped to it in the test's branch.
                Fixes a bug where the label is omitted just because the test was before it,
                 by neglecting to notice that the test reaches it by a jump. */
-            continue;
+            vertex = NULL;
         }
         last = vertex;
         if (find_in_hash(done, successor, sizeof(void *)))
