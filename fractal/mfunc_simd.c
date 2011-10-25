@@ -19,9 +19,6 @@ static int check_slot(int slot, int *i, int_union *test, int *in_progress,
         __m128d *cx, __m128d *cy, __m128d *zr, __m128d *zi, __m128d *zero,
         int max_iterations, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output_pixel, BATON *baton)
 {
-    if (*i < max_iterations && !test->ints[slot])
-        return 1;
-    
     union {
         __m128d m128d;
         double doubles[2];
@@ -32,6 +29,9 @@ static int check_slot(int slot, int *i, int_union *test, int *in_progress,
         double doubles[2];
     } pixel_y;
 
+    if (*i < max_iterations && !test->ints[slot])
+        return 1;
+    
     if (*in_progress & (1 << slot))
     {
         pixel_x.m128d = *zr;

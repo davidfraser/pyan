@@ -26,13 +26,13 @@ static int check_slot(int slot, int *i, int_union *test, int *in_progress,
         float_union *cx, float_union *cy, float_union *zr, float_union *zi,
         int max_iterations, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output_pixel, BATON *baton)
 {
-    if (*i < max_iterations && !test->ints[slot])
-        return 1;
-    
     float_union pixel_x, pixel_y;
     
     double px, py;
 
+    if (*i < max_iterations && !test->ints[slot])
+        return 1;
+    
     if (*in_progress & (1 << slot))
     {
         pixel_x.m128 = zr->m128;

@@ -25,12 +25,21 @@
     <ClCompile Include="..\simple.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\mfunc_simd.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mfunc_simd_float.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\pq.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\fractal.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfunc.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

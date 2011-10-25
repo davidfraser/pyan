@@ -13,6 +13,8 @@
   <ItemGroup>
     <ClCompile Include="..\main.c" />
     <ClCompile Include="..\mfunc.c" />
+    <ClCompile Include="..\mfunc_simd.c" />
+    <ClCompile Include="..\mfunc_simd_float.c" />
     <ClCompile Include="..\parallel.c" />
     <ClCompile Include="..\pq.c" />
     <ClCompile Include="..\simple.c" />
@@ -20,6 +22,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\fractal.h" />
+    <ClInclude Include="..\mfunc.h" />
     <ClInclude Include="..\pq.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -70,6 +73,7 @@
       <OpenMPSupport>true</OpenMPSupport>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -77,6 +81,7 @@
       <AdditionalDependencies>SDL.lib;SDLmain.lib;SDL_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>
       </EntryPointSymbol>
+      <IgnoreSpecificDefaultLibraries>msvcrt</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -88,6 +93,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
+      <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -95,7 +101,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>SDL.lib;SDLmain.lib;SDL_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <EntryPointSymbol>SDL_main</EntryPointSymbol>
+      <EntryPointSymbol>
+      </EntryPointSymbol>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

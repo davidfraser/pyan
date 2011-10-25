@@ -5,7 +5,11 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#include <omp.h>
+#ifdef WIN32
+    extern int omp_get_num_procs(void);
+#else
+    #include <omp.h>
+#endif
 
 static int frame;
 static int num_frames;
@@ -101,10 +105,12 @@ void parallel_allocate_slots(int num_slots, BATON *baton)
 
 int parallel_next_pixel(int slot, double *cx, double *cy, BATON *baton)
 {
+    int a;
+
     if (baton->i_slots[slot] >= baton->pixels_per_job)
         return 0;
 
-    int a = (baton->i_slots[slot] * num_jobs + baton->j) * num_frames + ((frame + frame_offset) % num_frames);
+    a = (baton->i_slots[slot] * num_jobs + baton->j) * num_frames + ((frame + frame_offset) % num_frames);
     if (a >= baton->num_pixels)
         return 0;
     
