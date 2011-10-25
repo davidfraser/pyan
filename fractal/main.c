@@ -29,6 +29,7 @@ static struct {
     { "TRACE", trace_init, trace_restart, trace_update },
     { NULL }
 };
+static int num_modes;
 
 static struct {
     char *name;
@@ -38,6 +39,7 @@ static struct {
     { "SIMD", mfunc_simd },
     { NULL }
 };
+static int num_mfunc_modes;
 
 
 void DrawPixel(SDL_Surface *screen, Uint8 R, Uint8 G, Uint8 B, int x, int y)
@@ -399,6 +401,14 @@ int main(int argc, char *argv[])
     TTF_Font *font;
     const SDL_VideoInfo* video_info;
     int save_num = 0;
+
+    num_modes = 0;
+    while (modes[num_modes].name != NULL)
+        num_modes++;
+    
+    num_mfunc_modes = 0;
+    while (mfunc_modes[num_mfunc_modes].name != NULL)
+        num_mfunc_modes++;
     
     max = 0;
     max_iterations = 256;
@@ -467,18 +477,36 @@ int main(int argc, char *argv[])
             else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_2)
             {
                 fade_screen();
-                current_mode++;
-                if (modes[current_mode].name == NULL)
-                    current_mode = 0;
+                if (evt.key.keysym.mod & KMOD_SHIFT)
+                {
+                    current_mode--;
+                    if (current_mode < 0)
+                        current_mode = num_modes - 1;
+                }
+                else
+                {
+                    current_mode++;
+                    if (current_mode >= num_modes)
+                        current_mode = 0;
+                }
                 modes[current_mode].init(width, height);
                 restart();
             }
             else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_3)
             {
                 fade_screen();
-                current_mfunc_mode++;
-                if (mfunc_modes[current_mfunc_mode].name == NULL)
-                    current_mfunc_mode = 0;
+                if (evt.key.keysym.mod & KMOD_SHIFT)
+                {
+                    current_mfunc_mode--;
+                    if (mfunc_modes[current_mfunc_mode].name < 0)
+                        current_mfunc_mode = num_mfunc_modes - 1;
+                }
+                else
+                {
+                    current_mfunc_mode++;
+                    if (current_mfunc_mode >= num_mfunc_modes)
+                        current_mfunc_mode = 0;
+                }
                 modes[current_mode].init(width, height);
                 restart();
             }
