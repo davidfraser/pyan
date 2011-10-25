@@ -105,4 +105,6 @@ extern void mfunc_loop_int(int max_iterations, ALLOCATE_SLOTS allocate_slots, PI
  */
 extern void mfunc_simd(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output_pixel, BATON *baton);
 
+extern void mfunc_simd_float(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output_pixel, BATON *baton);
+
 #endif

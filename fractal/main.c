@@ -39,6 +39,7 @@ static struct {
     { "LOOP_FLOAT", mfunc_loop_float },
     { "LOOP_INT", mfunc_loop_int },
     { "SIMD", mfunc_simd },
+    { "SIMD_FLOAT", mfunc_simd },
     { NULL }
 };
 static int num_mfunc_modes;
