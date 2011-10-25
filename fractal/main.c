@@ -269,6 +269,7 @@ void restart()
 }
 
 static int benchmark = 0;
+static int benchmark_loops = 1;
 
 static void parse_args(int argc, char *argv[])
 {
@@ -330,6 +331,16 @@ static void parse_args(int argc, char *argv[])
             }
             max_iterations = atoi(argv[i]);
         }
+        else if (strcmp(argv[i], "--loops") == 0)
+        {
+            i++;
+            if (i >= argc)
+            {
+                fprintf(stderr, "--loops argument needs to be followed by a natural number\n");
+                exit(1);
+            }
+            benchmark_loops = atoi(argv[i]);
+        }
         else
         {
             fprintf(stderr, "Unrecognised command: %s\n", argv[i]);
@@ -339,7 +350,6 @@ static void parse_args(int argc, char *argv[])
 }
 
 
-#define BENCHMARK_LOOPS 5
 #define BENCHMARK_SIZE 1000
 
 
@@ -366,7 +376,7 @@ void do_benchmark(void)
     printf("Starting benchmark of mode %s, size %dx%d, max depth %d\n", modes[current_mode].name, width, height, max_iterations);
     
     average_pps = 0;
-    for (i = 1; i <= BENCHMARK_LOOPS; i++)
+    for (i = 1; i <= benchmark_loops; i++)
     {
         float seconds;
         int pixels_per_second;
@@ -390,7 +400,7 @@ void do_benchmark(void)
     SDL_SaveBMP(display, filename);
     SDL_FreeSurface(display);
 
-    average_pps /= BENCHMARK_LOOPS;
+    average_pps /= benchmark_loops;
     printf("Benchmark finished, average PPS was %d\n", average_pps);
 }
 
