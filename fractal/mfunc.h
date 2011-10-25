@@ -63,6 +63,10 @@ typedef void PIXEL_OUTPUT(int slot, int value, double fx, double fy, BATON *mfun
  */
 extern int mfunc_direct(double cx, double cy, int max_iterations, double *fx, double *fy);
 
+extern int mfunc_direct_float(double cx, double cy, int max_iterations, double *fx, double *fy);
+
+extern int mfunc_direct_int(double cx, double cy, int max_iterations, double *fx, double *fy);
+
 /** Mandelbrot loop function.  This function performs the same calculation as
  * mfunc, but has undergone a certain "inversion of control": it will call
  * the next_pixel callback to obtain a pixel coordinate pair to work on, and
@@ -86,6 +90,11 @@ typedef void MFUNC(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_SOUR
  * See MFUNC for further documentation.
  */
 extern void mfunc_loop(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output_pixel, BATON *baton);
+
+extern void mfunc_loop_float(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output_pixel, BATON *baton);
+
+extern void mfunc_loop_int(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output_pixel, BATON *baton);
+
 
 /** SIMD version of Mandelbrot loop function.  Will use up to 2 slots.  Note
  * that it is the calling module's responsibility to ensure that the same

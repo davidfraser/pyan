@@ -36,6 +36,8 @@ static struct {
     MFUNC *mfunc;
 } mfunc_modes[] = {
     { "LOOP", mfunc_loop },
+    { "LOOP_FLOAT", mfunc_loop_float },
+    { "LOOP_INT", mfunc_loop_int },
     { "SIMD", mfunc_simd },
     { NULL }
 };
