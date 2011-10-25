@@ -5,11 +5,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#ifdef WIN32
-    extern int omp_get_num_procs(void);
-#else
-    #include <omp.h>
-#endif
+#include <omp.h>
 
 static int frame;
 static int num_frames;
@@ -24,9 +20,10 @@ typedef struct BATON
     int num_pixels;
     int pixels_per_job;
     int j;
+    int done;
     int *x_slots;
     int *y_slots;
-    int *i_slots;
+    int i;
 } BATON;
 
 
@@ -92,25 +89,17 @@ void parallel_update_direct(void)
 
 void parallel_allocate_slots(int num_slots, BATON *baton)
 {
-    int i;
-    
     baton->x_slots = malloc(sizeof(int) * num_slots);
     baton->y_slots = malloc(sizeof(int) * num_slots);
-    baton->i_slots = malloc(sizeof(int) * num_slots);
-    
-    for (i = 0; i < num_slots; i++)
-        baton->i_slots[i] = 0;    
 }
 
 
 int parallel_next_pixel(int slot, double *cx, double *cy, BATON *baton)
 {
-    int a;
-
-    if (baton->i_slots[slot] >= baton->pixels_per_job)
+    if (baton->i >= baton->pixels_per_job)
         return 0;
 
-    a = (baton->i_slots[slot] * num_jobs + baton->j) * num_frames + ((frame + frame_offset) % num_frames);
+    int a = (baton->i * num_jobs + baton->j) * num_frames + ((frame + frame_offset) % num_frames);
     if (a >= baton->num_pixels)
         return 0;
     
@@ -120,7 +109,9 @@ int parallel_next_pixel(int slot, double *cx, double *cy, BATON *baton)
     *cx = (baton->x_slots[slot] - width/2.0)*scale + centrex;
     *cy = (baton->y_slots[slot] - height/2.0)*scale + centrey;
     
-    baton->i_slots[slot]++;
+    baton->i++;
+    
+    baton->done++;
 
     return 1;
 }
@@ -150,6 +141,7 @@ void parallel_update(void)
     int j;
     int old_pixels_done = pixels_done;
     int thread_done[16];
+    BATON baton[16];
     
     memset(thread_done, 0, sizeof(thread_done));
 
@@ -159,12 +151,14 @@ void parallel_update(void)
     #pragma omp parallel for
     for (j = 0; j < num_jobs; j++)
     {
-        BATON baton;
-        baton.mfunc = baton_mfunc;
-        baton.num_pixels = width*height;
-        baton.pixels_per_job = pixels_per_job;
-        baton.j = j;
-        baton_mfunc(max_iterations, parallel_allocate_slots, parallel_next_pixel, parallel_output_pixel, &baton);
+        baton[j].mfunc = baton_mfunc;
+        baton[j].num_pixels = num_pixels;
+        baton[j].pixels_per_job = pixels_per_job;
+        baton[j].j = j;
+        baton[j].done = 0;
+        baton[j].i = 0;    
+        baton_mfunc(max_iterations, parallel_allocate_slots, parallel_next_pixel, parallel_output_pixel, &baton[j]);
+        thread_done[j] = baton[j].done;
     }
     pixels_done = old_pixels_done;
     for (j = 0; j < num_jobs; j++)
