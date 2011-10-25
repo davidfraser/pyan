@@ -13,4 +13,16 @@ extern int pixels_done;
 
 extern char *status;
 
+extern void simple_init(int w, int h);
+extern void simple_restart(MFUNC mfunc);
+extern void simple_update(void);
+
+extern void parallel_init(int w, int h);
+extern void parallel_restart(MFUNC mfunc);
+extern void parallel_update(void);
+
+extern void trace_init(int w, int h);
+extern void trace_restart(MFUNC mfunc);
+extern void trace_update(void);
+
 #endif

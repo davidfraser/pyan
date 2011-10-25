@@ -26,12 +26,22 @@
     } COORDS;
 #endif
 
+
+typedef struct BATON
+{
+    MFUNC *mfunc;
+    int num_slots;
+    int *x_slots;
+    int *y_slots;
+} BATON;
+
+
 static int width, height;
 static PQ *pq = NULL;
 static int *done;
 static enum { SEEDING, TRACING, EDGING, FILLING, WAITING } state;
+static BATON baton;
 
-void trace_restart(void);
 
 void trace_init(int w, int h)
 {
@@ -53,7 +63,7 @@ void trace_init(int w, int h)
 #define QUOTA_SIZE 500000
 
 
-void trace_restart(void)
+void trace_restart(MFUNC mfunc)
 {
     int i;
     pq->num_items = 0;
@@ -68,6 +78,8 @@ void trace_restart(void)
 
     memset(done, 0, sizeof(int)*width*height);
     state = SEEDING;
+    
+    baton.mfunc = mfunc;
 }
 
 
@@ -145,7 +157,7 @@ static void catch_remaining(void)
 }
 
 
-void trace_update(void)
+void trace_update_direct(void)
 {
     int quota = QUOTA_SIZE;
 
@@ -191,6 +203,7 @@ void trace_update(void)
         else
         {
             val = do_pixel(c.x, c.y);
+
             quota -= ((val == 0) ? max_iterations : val) + PIXEL_COST;
         }
         done[c.y*width + c.x] = 1;
@@ -229,17 +242,34 @@ void trace_update(void)
 
 
 static int quota;
-static int x_slots[2];
-static int y_slots[2];
 
-int trace_next_pixel(int slot, double *cx, double *cy)
+
+static void trace_allocate_slots(int num_slots, BATON *baton)
+{
+    int i;
+    
+    baton->num_slots = num_slots;
+    
+    baton->x_slots = malloc(sizeof(int) * num_slots);
+    baton->y_slots = malloc(sizeof(int) * num_slots);
+    
+    for (i = 0; i < num_slots; i++)
+    {
+        baton->x_slots[i] = -1;
+        baton->y_slots[i] = -1;
+    }
+}
+
+
+int trace_next_pixel(int slot, double *cx, double *cy, BATON *baton)
 {
     COORDS c;
+    int i;
 
     if (quota <= 0)
     {
-        x_slots[slot] = -1;
-        y_slots[slot] = -1;
+        baton->x_slots[slot] = -1;
+        baton->y_slots[slot] = -1;
         return 0;
     }
 
@@ -249,13 +279,13 @@ restart:
         if (pixels_done < width*height)
         {
             catch_remaining();
-            x_slots[slot] = -1;
-            y_slots[slot] = -1;
+            baton->x_slots[slot] = -1;
+            baton->y_slots[slot] = -1;
             return 0;
         }
         state = WAITING;
-        x_slots[slot] = -1;
-        y_slots[slot] = -1;
+        baton->x_slots[slot] = -1;
+        baton->y_slots[slot] = -1;
         return 0;
     }
 
@@ -281,21 +311,27 @@ restart:
         quota -= PIXEL_COST;
         goto restart;
     }
-
-    if (c.x == x_slots[1-slot] && c.y == y_slots[1-slot])
-        goto restart;
+    
+    for (i = 0; i < baton->num_slots; i++)
+    {
+        if (i == slot)
+            continue;
+        
+        if (c.x == baton->x_slots[i] && c.y == baton->y_slots[i])
+            goto restart;
+    }
 
     *cx = (c.x - width/2.0)*scale + centrex;
     *cy = (c.y - height/2.0)*scale + centrey;
 
-    x_slots[slot] = c.x;
-    y_slots[slot] = c.y;
+    baton->x_slots[slot] = c.x;
+    baton->y_slots[slot] = c.y;
 
     return 1;
 }
 
 
-void trace_output_pixel(int slot, int k, double fx, double fy)
+void trace_output_pixel(int slot, int k, double fx, double fy, BATON *baton)
 {
     static int dx[] = { -1, -1, -1, 0, 1, 1, 1, 0 };
     static int dy[] = { -1, 0, 1, 1, 1, 0, -1, -1 };
@@ -312,16 +348,16 @@ void trace_output_pixel(int slot, int k, double fx, double fy)
         val = (float) k - log(log(z))/log(2.0);
     }
     
-    set_pixel(x_slots[slot], y_slots[slot], val);
-    done[y_slots[slot]*width + x_slots[slot]] = 1;
+    set_pixel(baton->x_slots[slot], baton->y_slots[slot], val);
+    done[baton->y_slots[slot]*width + baton->x_slots[slot]] = 1;
     quota -= ((val == 0) ? max_iterations : val) + PIXEL_COST;
 
     for (i = 0; i < 8; i++)
     {
         COORDS c2;
         int priority;
-        c2.x = x_slots[slot] + dx[i];
-        c2.y = y_slots[slot] + dy[i];
+        c2.x = baton->x_slots[slot] + dx[i];
+        c2.y = baton->y_slots[slot] + dy[i];
         if (c2.x < 0 || c2.y < 0 || c2.x >= width || c2.y >= height)
             continue;
         priority = (val == 0) ? 0 : (-10-val-((c2.x ^ c2.y ^ quota) & 15));
@@ -335,42 +371,11 @@ void trace_output_pixel(int slot, int k, double fx, double fy)
 }
 
 
-void trace_update_loop(void)
+void trace_update(void)
 {
     quota = QUOTA_SIZE;
 
-    x_slots[0] = -1;
-    x_slots[1] = -1;
-    y_slots[0] = -1;
-    y_slots[1] = -1;
-
-    mfunc_loop(max_iterations, trace_next_pixel, trace_output_pixel);
-
-    if (state == SEEDING)
-        status = "SEEDING";
-    else if (state == TRACING)
-        status = "TRACING";
-    else if (state == EDGING)
-        status = "EDGING";
-    else if (state == FILLING)
-        status = "FILLING";
-    else if (state == WAITING)
-        status = "WAITING";
-    else
-        status = "UNKNOWN";
-}
-
-
-void trace_update_simd(void)
-{
-    quota = QUOTA_SIZE;
-
-    x_slots[0] = -1;
-    x_slots[1] = -1;
-    y_slots[0] = -1;
-    y_slots[1] = -1;
-
-    mfunc_simd(max_iterations, trace_next_pixel, trace_output_pixel);
+    baton.mfunc(max_iterations, trace_allocate_slots, trace_next_pixel, trace_output_pixel, &baton);
 
     if (state == SEEDING)
         status = "SEEDING";

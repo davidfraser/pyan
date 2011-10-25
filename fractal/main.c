@@ -18,35 +18,24 @@
 #endif
 
 
-extern void simple_init(int w, int h);
-extern void simple_restart(void);
-extern void simple_update(void);
-extern void simple_update_loop(void);
-extern void simple_update_simd(void);
-
-extern void parallel_init(int w, int h);
-extern void parallel_restart(void);
-extern void parallel_update(void);
-
-extern void trace_init(int w, int h);
-extern void trace_restart(void);
-extern void trace_update(void);
-extern void trace_update_loop(void);
-extern void trace_update_simd(void);
-
 static struct {
     char *name;
     void (* init)(int w, int h);
-    void (* restart)();
-    void (* update)();
+    void (* restart)(MFUNC mfunc);
+    void (* update)(void);
 } modes[] = {
     { "SIMPLE", simple_init, simple_restart, simple_update },
-    { "SIMPLE_LOOP", simple_init, simple_restart, simple_update_loop },
-    { "SIMPLE_SIMD", simple_init, simple_restart, simple_update_simd },
     { "PARALLEL", parallel_init, parallel_restart, parallel_update },
     { "TRACE", trace_init, trace_restart, trace_update },
-    { "TRACE_LOOP", trace_init, trace_restart, trace_update_loop },
-    { "TRACE_SIMD", trace_init, trace_restart, trace_update_simd },
+    { NULL }
+};
+
+static struct {
+    char *name;
+    MFUNC *mfunc;
+} mfunc_modes[] = {
+    { "LOOP", mfunc_loop },
+    { "SIMD", mfunc_simd },
     { NULL }
 };
 
@@ -205,6 +194,7 @@ static float *buffer;
 char *status = "?";
 static clock_t start_time, end_time;
 static int current_mode = 0;
+static int current_mfunc_mode = 0;
 
 
 void set_pixel(int x, int y, float val)
@@ -237,7 +227,7 @@ float do_pixel(int x, int y)
     double fx, fy;
     float val;
 
-    int k = mfunc(px, py, max_iterations, &fx, &fy);
+    int k = mfunc_direct(px, py, max_iterations, &fx, &fy);
 
     if (k == 0)
     {
@@ -269,7 +259,7 @@ void fade_screen()
 
 void restart()
 {
-    modes[current_mode].restart();
+    modes[current_mode].restart(mfunc_modes[current_mfunc_mode].mfunc);
     pixels_done = 0;
     start_time = clock();
 }
@@ -303,6 +293,26 @@ static void parse_args(int argc, char *argv[])
             if (!modes[current_mode].name)
             {
                 fprintf(stderr, "No such mode: %s\n", argv[i]);
+                exit(1);
+            }
+        }
+        else if (strcmp(argv[i], "--mfunc") == 0)
+        {
+            i++;
+            if (i >= argc)
+            {
+                fprintf(stderr, "--mfunc argument needs to be followed by a mfunc mode name\n");
+                exit(1);
+            }
+            while (mfunc_modes[current_mfunc_mode].name)
+            {
+                if (strcmp(mfunc_modes[current_mfunc_mode].name, argv[i]) == 0)
+                    break;
+                current_mfunc_mode++;
+            }
+            if (!mfunc_modes[current_mfunc_mode].name)
+            {
+                fprintf(stderr, "No such mfunc mode: %s\n", argv[i]);
                 exit(1);
             }
         }
@@ -463,6 +473,15 @@ int main(int argc, char *argv[])
                 modes[current_mode].init(width, height);
                 restart();
             }
+            else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_3)
+            {
+                fade_screen();
+                current_mfunc_mode++;
+                if (mfunc_modes[current_mfunc_mode].name == NULL)
+                    current_mfunc_mode = 0;
+                modes[current_mode].init(width, height);
+                restart();
+            }
             else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_F12)
             {
                 char buffer[100];
@@ -510,7 +529,8 @@ int main(int argc, char *argv[])
             seconds = (end_time - start_time) / (float) CLOCKS_PER_SEC;
             pixels_per_second = (seconds > 0) ? pixels_done/seconds : 0;
 
-            snprintf(buffer, sizeof(buffer), "mode=%s, depth=%d, done=%d/%d, PPS=%d, cx,cy=%f,%f, scale=%f, status=%s     ", modes[current_mode].name, max_iterations, pixels_done, width*height, pixels_per_second, centrex, centrey, scale*screen_height, status);
+            snprintf(buffer, sizeof(buffer), "mode=%s, mfunc=%s, depth=%d, done=%d/%d, PPS=%d, cx,cy=%f,%f, scale=%f, status=%s     ",
+                    modes[current_mode].name, mfunc_modes[current_mfunc_mode].name, max_iterations, pixels_done, width*height, pixels_per_second, centrex, centrey, scale*screen_height, status);
             txt = TTF_RenderText(font, buffer, white, black);
             dest.w = txt->w;
             dest.h = txt->h;

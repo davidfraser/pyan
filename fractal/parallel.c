@@ -24,14 +24,14 @@ void parallel_init(int w, int h)
 }
 
 
-void parallel_restart(void)
+void parallel_restart(MFUNC mfunc)
 {
     frame_offset = frame;
     frame = 0;
 }
 
 
-void parallel_update(void)
+void parallel_update_direct(void)
 {
     int num_pixels = width*height;
     int pixels_per_job = (int) ceil((double) num_pixels / num_frames / num_jobs);
@@ -66,4 +66,10 @@ void parallel_update(void)
         pixels_done += thread_done[j];
 
     frame++;
+}
+
+
+void parallel_update(void)
+{
+    parallel_update_direct();
 }

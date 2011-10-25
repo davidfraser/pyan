@@ -4,7 +4,7 @@
 #include <math.h>
 
 
-int mfunc(double cx, double cy, int max_iterations, double *fx, double *fy)
+int mfunc_direct(double cx, double cy, int max_iterations, double *fx, double *fy)
 {
     int i = 0;
     double zr = 0.0, zi = 0.0;
@@ -32,13 +32,15 @@ int mfunc(double cx, double cy, int max_iterations, double *fx, double *fy)
 }
 
 
-void mfunc_loop(int max_iterations, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output_pixel)
+void mfunc_loop(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output_pixel, BATON *baton)
 {
     int i = max_iterations;
     double cx, cy;
     double zr, zi;
     double zr2, zi2;
     int done = 0;
+    
+    allocate_slots(1, baton);
     
     while (1)
     {
@@ -50,12 +52,12 @@ void mfunc_loop(int max_iterations, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output
             if (done != 0)
             {
                 if (zr2 + zi2 <= 2.0*2.0)
-                    output_pixel(0, 0, zr, zi);
+                    output_pixel(0, 0, zr, zi, baton);
                 else
-                    output_pixel(0, i, zr, zi);
+                    output_pixel(0, i, zr, zi, baton);
             }
             
-            if (!next_pixel(0, &cx, &cy))
+            if (!next_pixel(0, &cx, &cy, baton))
                 break;
             
             done += 1;
@@ -82,8 +84,11 @@ void mfunc_loop(int max_iterations, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output
 #define ENABLE_SLOT0 1
 #define ENABLE_SLOT1 1
 
-void mfunc_simd(int max_iterations, PIXEL_SOURCE next_pixel,
-PIXEL_OUTPUT output_pixel)
+#if (!ENABLE_SLOT0) && (!ENABLE_SLOT1)
+#error At least one slot must by enabled!
+#endif
+
+void mfunc_simd(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output_pixel, BATON *baton)
 {
     int i0 = max_iterations;
     int i1 = max_iterations;
@@ -103,6 +108,8 @@ PIXEL_OUTPUT output_pixel)
         __m128d m128d;
         unsigned long long int ints[2];
     } test;
+    
+    allocate_slots(ENABLE_SLOT1 ? 2 : 1, baton);
     
     boundary = _mm_set1_pd(2.0*2.0);
     zero = _mm_set1_pd(0.0);
@@ -131,14 +138,14 @@ new one. */
             {
                 pixel_x.m128d = zr;
                 pixel_y.m128d = zi;
-                output_pixel(0, test.ints[0] ? i0 : 0, pixel_x.doubles[0], pixel_y.doubles[0]);
+                output_pixel(0, test.ints[0] ? i0 : 0, pixel_x.doubles[0], pixel_y.doubles[0], baton);
             }
             else
             {
                 in_progress |= 1;
             }
 
-            if (next_pixel(0, &pixel_x.doubles[0], &pixel_y.doubles[0]))
+            if (next_pixel(0, &pixel_x.doubles[0], &pixel_y.doubles[0], baton))
             {
                 cx = _mm_move_sd(cx, pixel_x.m128d);
                 cy = _mm_move_sd(cy, pixel_y.m128d);
@@ -173,14 +180,14 @@ a new one. */
             {
                 pixel_x.m128d = zr;
                 pixel_y.m128d = zi;
-                output_pixel(1, test.ints[1] ? i1 : 0, pixel_x.doubles[1], pixel_y.doubles[1]);
+                output_pixel(1, test.ints[1] ? i1 : 0, pixel_x.doubles[1], pixel_y.doubles[1], baton);
             }
             else
             {
                 in_progress |= 2;
             }
 
-            if (next_pixel(1, &pixel_x.doubles[1], &pixel_y.doubles[1]))
+            if (next_pixel(1, &pixel_x.doubles[1], &pixel_y.doubles[1], baton))
             {
                 cx = _mm_move_sd(pixel_x.m128d, cx);
                 cy = _mm_move_sd(pixel_y.m128d, cy);
