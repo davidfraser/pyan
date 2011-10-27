@@ -511,7 +511,7 @@ int main(int argc, char *argv[])
                 if (evt.key.keysym.mod & KMOD_SHIFT)
                 {
                     current_mfunc_mode--;
-                    if (mfunc_modes[current_mfunc_mode].name < 0)
+                    if (current_mfunc_mode < 0)
                         current_mfunc_mode = num_mfunc_modes - 1;
                 }
                 else
