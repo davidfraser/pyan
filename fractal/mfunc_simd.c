@@ -85,12 +85,15 @@ void mfunc_simd(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_SOURCE 
     __m128d zi;
     __m128d zr2;
     __m128d zi2;
-    __m128d t;
+    __m128d t, t2;
     __m128d boundary;
     __m128d zero;
 
     int_union test;
     
+	int countdown_from;
+	int countdown;
+
     allocate_slots(ENABLE_SLOT1 ? 2 : 1, baton);
     
     boundary = _mm_set1_pd(2.0*2.0);
@@ -110,22 +113,35 @@ void mfunc_simd(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_SOURCE 
         if (ENABLE_SLOT1 && !check_slot(1, &i1, &test, &in_progress, &cx, &cy, &zr, &zi, &zero, max_iterations, next_pixel, output_pixel, baton))
             break;
 
-        /* Do some work on the current pixel. */
-        zr2 = _mm_mul_pd(zr, zr);
-        zi2 = _mm_mul_pd(zi, zi);
-        t = _mm_mul_pd(zr, zi);
-        zr = _mm_sub_pd(zr2, zi2);
-        zr = _mm_add_pd(zr, cx);
-        zi = _mm_add_pd(t, t);
-        zi = _mm_add_pd(zi, cy);
+#define MAX(a,b) (((a) > (b)) ? (a) : (b))
 
-        /* Check against the boundary. */
-        t = _mm_add_pd(zr2, zi2);
-        test.m128d = _mm_cmpgt_pd(t, boundary);
+		countdown_from = max_iterations - MAX(i0, i1);
+		if (countdown_from <= 0)
+			countdown_from = 1;
+		countdown = countdown_from;
 
-        if (ENABLE_SLOT0)
-            i0++;
-        if (ENABLE_SLOT1)
-            i1++;
+        while (1)
+        {
+			/* Do some work on the current pixel. */
+			zr2 = _mm_mul_pd(zr, zr);
+			zi2 = _mm_mul_pd(zi, zi);
+			t = _mm_mul_pd(zr, zi);
+			zr = _mm_sub_pd(zr2, zi2);
+			zr = _mm_add_pd(zr, cx);
+			zi = _mm_add_pd(t, t);
+			zi = _mm_add_pd(zi, cy);
+
+			countdown--;
+
+			/* Check against the boundary. */
+			t2 = _mm_add_pd(zr2, zi2);
+			t2 = _mm_cmpgt_pd(t2, boundary);
+
+			if (countdown == 0 || _mm_movemask_pd(t2))
+				break;
+        }
+		test.m128d = t2;
+		i0 += (countdown_from - countdown);
+		i1 += (countdown_from - countdown);
     }
 }

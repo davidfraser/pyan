@@ -83,12 +83,15 @@ void mfunc_simd_float(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_S
     __m128 zi;
     __m128 zr2;
     __m128 zi2;
-    __m128 t;
+    __m128 t, t2;
     __m128 boundary;
     __m128 zero;
 
     int_union test;
     
+	int countdown_from;
+	int countdown;
+
     allocate_slots(ENABLE_SLOT3 ? 4 : (ENABLE_SLOT2 ? 3 : (ENABLE_SLOT1 ? 2 : 1)), baton);
     
     boundary = _mm_set1_ps(2.0*2.0);
@@ -116,26 +119,38 @@ void mfunc_simd_float(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_S
         if (ENABLE_SLOT3 && !check_slot(3, &i3, &test, &in_progress, (float_union*) &cx, (float_union*) &cy, (float_union*) &zr, (float_union*) &zi, max_iterations, next_pixel, output_pixel, baton))
             break;
 
-        /* Do some work on the current pixel. */
-        zr2 = _mm_mul_ps(zr, zr);
-        zi2 = _mm_mul_ps(zi, zi);
-        t = _mm_mul_ps(zr, zi);
-        zr = _mm_sub_ps(zr2, zi2);
-        zr = _mm_add_ps(zr, cx);
-        zi = _mm_add_ps(t, t);
-        zi = _mm_add_ps(zi, cy);
+#define MAX(a,b) (((a) > (b)) ? (a) : (b))
 
-        /* Check against the boundary. */
-        t = _mm_add_ps(zr2, zi2);
-        test.m128 = _mm_cmpgt_ps(t, boundary);
+		countdown_from = max_iterations - MAX(MAX(i0, i1), MAX(i2, i3));
+		if (countdown_from <= 0)
+			countdown_from = 1;
+		countdown = countdown_from;
 
-        if (ENABLE_SLOT0)
-            i0++;
-        if (ENABLE_SLOT1)
-            i1++;
-        if (ENABLE_SLOT2)
-            i2++;
-        if (ENABLE_SLOT3)
-            i3++;
+        while (1)
+        {
+            /* Do some work on the current pixel. */
+            zr2 = _mm_mul_ps(zr, zr);
+            zi2 = _mm_mul_ps(zi, zi);
+            t = _mm_mul_ps(zr, zi);
+            zr = _mm_sub_ps(zr2, zi2);
+            zr = _mm_add_ps(zr, cx);
+            zi = _mm_add_ps(t, t);
+            zi = _mm_add_ps(zi, cy);
+
+            countdown--;
+
+            /* Check against the boundary. */
+            t2 = _mm_add_ps(zr2, zi2);
+            t2 = _mm_cmpgt_ps(t2, boundary);
+
+			if (countdown == 0 || _mm_movemask_ps(t2))
+				break;
+        }
+
+		test.m128 = t2;
+		i0 += (countdown_from - countdown);
+		i1 += (countdown_from - countdown);
+		i2 += (countdown_from - countdown);
+		i3 += (countdown_from - countdown);
     }
 }
