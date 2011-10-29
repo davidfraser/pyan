@@ -262,6 +262,30 @@ void fade_screen()
 
 }
 
+#define MAP_SIZE 256
+
+void colourise()
+{
+    int i, j;
+    float map[MAP_SIZE];
+
+    build_colour_map(buffer, width * height, map, MAP_SIZE);
+
+    for (i = 0; i < screen_height; i++)
+        for (j = 0; j < screen_width; j++)
+        {
+            float val = (buffer[i*2*width + j*2] + buffer[i*2*width + j*2+1]
+                    + buffer[(i*2+1)*width + j*2] + buffer[(i*2+1)*width + j*2+1]) / 4.0;
+            unsigned int c = map_colour(val, map, MAP_SIZE);
+
+            SDL_Color col;
+            col.r = c;
+            col.g = 255-c;
+            col.b = 0;
+            DrawPixel(display, col.r, col.g, col.b, j, i);
+        }
+}
+
 void restart()
 {
     modes[current_mode].restart(mfunc_modes[current_mfunc_mode].mfunc);
@@ -466,8 +490,8 @@ int main(int argc, char *argv[])
     height = screen_height*2;
     scale = 1.5/screen_height;
 
-    buffer = (float *) malloc(sizeof(int) * width * height);
-    memset(buffer, 0, sizeof(int) * width * height);
+    buffer = malloc(sizeof(float) * width * height);
+    memset(buffer, 0, sizeof(float) * width * height);
 
     modes[current_mode].init(width, height);
     restart();
@@ -522,6 +546,10 @@ int main(int argc, char *argv[])
                 }
                 modes[current_mode].init(width, height);
                 restart();
+            }
+            else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_c)
+            {
+                colourise();
             }
             else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_F12)
             {

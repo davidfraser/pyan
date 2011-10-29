@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\colour.c" />
     <ClCompile Include="..\main.c" />
     <ClCompile Include="..\mfunc.c" />
     <ClCompile Include="..\mfunc_simd.c" />
