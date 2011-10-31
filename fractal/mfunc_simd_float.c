@@ -89,8 +89,8 @@ void mfunc_simd_float(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_S
 
     int_union test;
     
-	int countdown_from;
-	int countdown;
+    int countdown_from;
+    int countdown;
 
     allocate_slots(ENABLE_SLOT3 ? 4 : (ENABLE_SLOT2 ? 3 : (ENABLE_SLOT1 ? 2 : 1)), baton);
     
@@ -121,10 +121,10 @@ void mfunc_simd_float(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_S
 
 #define MAX(a,b) (((a) > (b)) ? (a) : (b))
 
-		countdown_from = max_iterations - MAX(MAX(i0, i1), MAX(i2, i3));
-		if (countdown_from <= 0)
-			countdown_from = 1;
-		countdown = countdown_from;
+        countdown_from = max_iterations - MAX(MAX(i0, i1), MAX(i2, i3));
+        if (countdown_from <= 0)
+            countdown_from = 1;
+        countdown = countdown_from;
 
         while (1)
         {
@@ -143,14 +143,14 @@ void mfunc_simd_float(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_S
             t2 = _mm_add_ps(zr2, zi2);
             t2 = _mm_cmpgt_ps(t2, boundary);
 
-			if (countdown == 0 || _mm_movemask_ps(t2))
-				break;
+            if (countdown == 0 || _mm_movemask_ps(t2))
+                break;
         }
 
-		test.m128 = t2;
-		i0 += (countdown_from - countdown);
-		i1 += (countdown_from - countdown);
-		i2 += (countdown_from - countdown);
-		i3 += (countdown_from - countdown);
+        test.m128 = t2;
+        i0 += (countdown_from - countdown);
+        i1 += (countdown_from - countdown);
+        i2 += (countdown_from - countdown);
+        i3 += (countdown_from - countdown);
     }
 }
