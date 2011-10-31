@@ -4,10 +4,10 @@
 #include <math.h>
 
 
-int mfunc_direct(double cx, double cy, int max_iterations, double *fx, double *fy)
+int mfunc_direct(double zx, double zy, double cx, double cy, int max_iterations, double *fx, double *fy)
 {
     int i = 0;
-    double zr = 0.0, zi = 0.0;
+    double zr = zx, zi = zy;
     double zr2 = 0.0, zi2 = 0.0;
 
     while (i < max_iterations && zr2 + zi2 < 2.0*2.0)
@@ -32,10 +32,10 @@ int mfunc_direct(double cx, double cy, int max_iterations, double *fx, double *f
 }
 
 
-int mfunc_direct_float(double cx, double cy, int max_iterations, double *fx, double *fy)
+int mfunc_direct_float(double zx, double zy, double cx, double cy, int max_iterations, double *fx, double *fy)
 {
     int i = 0;
-    float zr = 0.0, zi = 0.0;
+    float zr = zx, zi = zy;
     float zr2 = 0.0, zi2 = 0.0;
 
     while (i < max_iterations && zr2 + zi2 < 2.0*2.0)
@@ -67,10 +67,10 @@ int mfunc_direct_float(double cx, double cy, int max_iterations, double *fx, dou
 #define FROM_FIX(x) ((x) / (double) FIX_SCALE)
 
 
-int mfunc_direct_int(double cx, double cy, int max_iterations, double *fx, double *fy)
+int mfunc_direct_int(double zx, double zy, double cx, double cy, int max_iterations, double *fx, double *fy)
 {
     int i = 0;
-    long int zr = 0, zi = 0;
+    long int zr = zx, zi = zy;
     long int zr2 = 0, zi2 = 0;
 
     long int boundary = TO_FIX(2.0*2.0);
@@ -125,13 +125,11 @@ void mfunc_loop(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_SOURCE 
                     output_pixel(0, i, zr, zi, baton);
             }
             
-            if (!next_pixel(0, &cx, &cy, baton))
+            if (!next_pixel(0, &zr, &zi, &cx, &cy, baton))
                 break;
             
             done += 1;
             
-            zr = 0.0;
-            zi = 0.0;
             i = 0;
         }
     
@@ -153,14 +151,15 @@ void mfunc_loop_float(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_S
 
     while (1)
     {
+        double zx, zy;
         double px, py;
         int k;
         double fx, fy;
 
-        if (!next_pixel(0, &px, &py, baton))
+        if (!next_pixel(0, &zx, &zy, &px, &py, baton))
             break;
 
-        k = mfunc_direct_float(px, py, max_iterations, &fx, &fy);
+        k = mfunc_direct_float(zx, zy, px, py, max_iterations, &fx, &fy);
 
         output_pixel(0, k, fx, fy, baton);
     }
@@ -173,14 +172,15 @@ void mfunc_loop_int(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_SOU
 
     while (1)
     {
+        double zx, zy;
         double px, py;
         int k;
         double fx, fy;
 
-        if (!next_pixel(0, &px, &py, baton))
+        if (!next_pixel(0, &zx, &zy, &px, &py, baton))
             break;
 
-        k = mfunc_direct_int(px, py, max_iterations, &fx, &fy);
+        k = mfunc_direct_int(zx, zy, px, py, max_iterations, &fx, &fy);
 
         output_pixel(0, k, fx, fy, baton);
     }

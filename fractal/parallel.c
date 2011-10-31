@@ -98,7 +98,7 @@ void parallel_allocate_slots(int num_slots, BATON *baton)
 }
 
 
-int parallel_next_pixel(int slot, double *cx, double *cy, BATON *baton)
+int parallel_next_pixel(int slot, double *zx, double *zy, double *cx, double *cy, BATON *baton)
 {
     int a;
 
@@ -112,6 +112,8 @@ int parallel_next_pixel(int slot, double *cx, double *cy, BATON *baton)
     baton->x_slots[slot] = a % width;
     baton->y_slots[slot] = a / width;
 
+    *zx = 0.0;
+    *zy = 0.0;
     *cx = (baton->x_slots[slot] - width/2.0)*scale + centrex;
     *cy = (baton->y_slots[slot] - height/2.0)*scale + centrey;
     

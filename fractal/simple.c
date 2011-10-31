@@ -71,11 +71,13 @@ void simple_allocate_slots(int num_slots, BATON *baton)
 }
 
 
-int simple_next_pixel(int slot, double *cx, double *cy, BATON *baton)
+int simple_next_pixel(int slot, double *zx, double *zy, double *cx, double *cy, BATON *baton)
 {
     if (quota <= 0 || i >= height)
         return 0;
     
+    *zx = 0.0;
+    *zy = 0.0;
     *cx = (j - width/2.0)*scale + centrex;
     *cy = (i - height/2.0)*scale + centrey;
 

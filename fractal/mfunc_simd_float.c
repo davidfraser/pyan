@@ -28,6 +28,7 @@ static int check_slot(int slot, int *i, int_union *test, int *in_progress,
 {
     float_union pixel_x, pixel_y;
     
+    double zx, zy;
     double px, py;
 
     if (*i < max_iterations && !test->ints[slot])
@@ -44,15 +45,12 @@ static int check_slot(int slot, int *i, int_union *test, int *in_progress,
         *in_progress |= (1 << slot);
     }
 
-    if (next_pixel(slot, &px, &py, baton))
+    if (next_pixel(slot, &zx, &zy, &px, &py, baton))
     {
-        pixel_x.floats[slot] = px;
-        pixel_y.floats[slot] = py;
-        
         cx->floats[slot] = px;
         cy->floats[slot] = py;
-        zr->floats[slot] = 0.0;
-        zi->floats[slot] = 0.0;
+        zr->floats[slot] = zx;
+        zi->floats[slot] = zy;
     }
     else
     {

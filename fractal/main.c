@@ -227,12 +227,14 @@ void set_pixel(int x, int y, float val)
 
 float do_pixel(int x, int y)
 {
+    double zx = 0.0;
+    double zy = 0.0;
     double px = (x - width/2.0)*scale + centrex;
     double py = (y - height/2.0)*scale + centrey;
     double fx, fy;
     float val;
 
-    int k = mfunc_direct(px, py, max_iterations, &fx, &fy);
+    int k = mfunc_direct(zx, zy, px, py, max_iterations, &fx, &fy);
 
     if (k == 0)
     {

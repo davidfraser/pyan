@@ -261,7 +261,7 @@ static void trace_allocate_slots(int num_slots, BATON *baton)
 }
 
 
-int trace_next_pixel(int slot, double *cx, double *cy, BATON *baton)
+int trace_next_pixel(int slot, double *zx, double *zy, double *cx, double *cy, BATON *baton)
 {
     COORDS c;
     int i;
@@ -321,6 +321,8 @@ restart:
             goto restart;
     }
 
+    *zx = 0.0;
+    *zy = 0.0;
     *cx = (c.x - width/2.0)*scale + centrex;
     *cy = (c.y - height/2.0)*scale + centrey;
 

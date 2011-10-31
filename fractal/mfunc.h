@@ -38,7 +38,7 @@ typedef void ALLOCATE_SLOTS(int num_slots, BATON *baton);
  * use to store slot information.
  * @return Non-zero if a pixel was provided, or zero if there are no more pixels to work on.
  */
-typedef int PIXEL_SOURCE(int slot, double *cx, double *cy, BATON *mfunc_baton);
+typedef int PIXEL_SOURCE(int slot, double *zx, double *zy, double *cx, double *cy, BATON *mfunc_baton);
 
 /** Pixel output is a callback that the Mandelbrot loop function uses to
  * indicate a pixel computation has finished.  This callback is called for
@@ -61,11 +61,11 @@ typedef void PIXEL_OUTPUT(int slot, int value, double fx, double fy, BATON *mfun
  * @param fx,fy Pointers to where last calculated position will be output.
  * @return The number of iterations run, or 0 if the pixel was still in the set after max_iterations.
  */
-extern int mfunc_direct(double cx, double cy, int max_iterations, double *fx, double *fy);
+extern int mfunc_direct(double zx, double zy, double cx, double cy, int max_iterations, double *fx, double *fy);
 
-extern int mfunc_direct_float(double cx, double cy, int max_iterations, double *fx, double *fy);
+extern int mfunc_direct_float(double zx, double zy, double cx, double cy, int max_iterations, double *fx, double *fy);
 
-extern int mfunc_direct_int(double cx, double cy, int max_iterations, double *fx, double *fy);
+extern int mfunc_direct_int(double zx, double zy, double cx, double cy, int max_iterations, double *fx, double *fy);
 
 /** Mandelbrot loop function.  This function performs the same calculation as
  * mfunc, but has undergone a certain "inversion of control": it will call
