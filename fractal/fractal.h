@@ -25,6 +25,10 @@ extern void trace_init(int w, int h);
 extern void trace_restart(MFUNC mfunc);
 extern void trace_update(void);
 
+extern void iterative_init(int w, int h);
+extern void iterative_restart(MFUNC mfunc);
+extern void iterative_update(void);
+
 /** Build a colour map based on a distribution of values.  The map is an
  * ordered sequence of values; a value x will be mapped to i where map[i] is
  * the greatest element <= x.  This function builds the map using a uniform

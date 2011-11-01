@@ -27,6 +27,7 @@ static struct {
     { "SIMPLE", simple_init, simple_restart, simple_update },
     { "PARALLEL", parallel_init, parallel_restart, parallel_update },
     { "TRACE", trace_init, trace_restart, trace_update },
+    { "ITERATIVE", iterative_init, iterative_restart, iterative_update },
     { NULL }
 };
 static int num_modes;
