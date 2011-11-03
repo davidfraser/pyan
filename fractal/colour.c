@@ -15,6 +15,17 @@ static int compare_values(const void *va, const void *vb)
 }
 
 
+/** Build a colour map based on a distribution of values.  The map is an
+ * ordered sequence of values; a value x will be mapped to i where map[i] is
+ * the greatest element <= x.  This function builds the map using a uniform
+ * distribution of the input, i.e. a similar number of items will be mapped
+ * to each index.
+ *
+ * @param values array of values
+ * @param num_values number of elements in @a values
+ * @param map destination for map (allocated by caller)
+ * @param map_size size of the @a map -- this is how many entries will be in it.
+ */
 void build_colour_map(float *values, int num_values, float *map, int map_size)
 {
     int i;
@@ -36,9 +47,16 @@ void build_colour_map(float *values, int num_values, float *map, int map_size)
 }
 
 
+/** Map a value to an index in the colour map.
+ *
+ * @param x value to map
+ * @param map the colour map (e.g. built by @a build_colour map)
+ * @param map_size the size of the map
+ * @return the index of this value in the map, an integer between 0 and @a map_size - 1.
+ */
 unsigned int map_colour(float x, float *map, unsigned int map_size)
 {
-    unsigned int p = 0, q = map_size-1;
+    unsigned int p = 0, q = map_size - 1;
     
     /* What a pity that bsearch doesn't do range searches!  It's bound to be
        better code than my off-the-cuff binary search... */
@@ -48,19 +66,39 @@ unsigned int map_colour(float x, float *map, unsigned int map_size)
         
         /* mp and mp+1 are valid indices here, because p < q and mp is
            rounded down, hence the greatest mp can be is q-1. */
-        if (map[mp] <= x && map[mp+1] > x)
-            return mp;
-        else if (map[mp] > x)
+        if (map[mp] > x)
+        {
             q = mp;
-        else
+        }
+        else if (map[mp+1] <= x)
+        {
             p = mp+1;
+        }
+        else
+        {
+            return mp;
+        }
     }
     
-    return 0;   //TODO not sure if this is the best thing to return!
+    return p;  /* Can reach here p is the last index in the map. */
 }
 
 
 #ifdef RUN_TEST
+/**
+ * Alternative version of map_colour with a linear algorithm; used for testing. */
+ */
+static unsigned int map_colour2(float x, float *map, unsigned int map_size)
+{
+    unsigned int p = 0;
+    
+    while (p < map_size-1 && map[p+1] <= x)
+        p++;
+    
+    return p;
+}
+
+
 void test(void)
 {
     unsigned int i;
