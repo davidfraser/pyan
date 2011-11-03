@@ -27,314 +27,231 @@
 #endif
 
 
-typedef struct BATON
-{
-    MFUNC *mfunc;
-    int num_slots;
-    int *x_slots;
-    int *y_slots;
-} BATON;
-
-
-static int width, height;
-static PQ *pq = NULL;
-static int *done;
-static enum { SEEDING, TRACING, EDGING, FILLING, WAITING } state;
-static BATON baton;
-
-
-void trace_init(int w, int h)
-{
-    width = w;
-    height = h;
-    if (!pq)
-        pq = pq_create(0, width*height*5);
-    if (!pq)
-    {
-        fprintf(stderr, "Can't allocate PQ for %d items!", width*height*5);
-        exit(1);
-    }
-    done = malloc(sizeof(int) * width * height);
-}
-
-
 #define NUM_SEEDS 1000
 #define PIXEL_COST 50
 #define QUOTA_SIZE 500000
 
 
-void trace_restart(MFUNC mfunc)
+typedef struct DRAWING
+{
+    WINDOW *window;
+    FRACTAL *fractal;
+    MFUNC *mfunc;
+    GET_POINT *get_point;
+    int num_slots;
+    int *x_slots;
+    int *y_slots;
+    int quota;
+    int width, height;
+    PQ *pq;
+    int *done;
+    enum { SEEDING, TRACING, EDGING, FILLING, WAITING } state;
+} DRAWING;
+
+
+DRAWING *trace_create(WINDOW *window, FRACTAL *fractal, GET_POINT get_point, MFUNC *mfunc)
 {
     int i;
-    pq->num_items = 0;
+    DRAWING *drawing = malloc(sizeof(DRAWING));
+    
+    drawing->window = window;
+    drawing->fractal = fractal;
+    drawing->mfunc = mfunc;
+    drawing->get_point = get_point;
+    drawing->width = window->width;
+    drawing->height = window->height;
+    drawing->x_slots = NULL;
+    drawing->y_slots = NULL;
+    drawing->pq = pq_create(0, drawing->width*drawing->height*5);
+    if (!drawing->pq)
+    {
+        fprintf(stderr, "Can't allocate PQ for %d items!", drawing->width*drawing->height*5);
+        exit(1);
+    }
+    
+    drawing->done = malloc(sizeof(int) * drawing->width * drawing->height);
+    memset(drawing->done, 0, sizeof(int) * drawing->width * drawing->height);
+    
     for (i = 0; i < NUM_SEEDS; i++)
     {
         COORDS c;
-        c.x = rand() % width;
-        c.y = rand() % height;
+        c.x = rand() % drawing->width;
+        c.y = rand() % drawing->height;
         c.priority = -(i & 15);
-        pq_push(pq, *(int *) &c, NULL);
+        pq_push(drawing->pq, *(int *) &c, NULL);
     }
 
-    memset(done, 0, sizeof(int)*width*height);
-    state = SEEDING;
+    drawing->state = SEEDING;
     
-    baton.mfunc = mfunc;
+    return drawing;
 }
 
 
-static void push_edges(void)
+static void push_edges(DRAWING *drawing)
 {
     int i;
 
-    for (i = 0; i < width; i++)
+    for (i = 0; i < drawing->width; i++)
     {
         COORDS c2;
 
-        if (!done[i])
+        if (!drawing->done[i])
         {
             c2.x = i;
             c2.y = 0;
             c2.priority = -10;
-            pq_push(pq, *(int *) &c2, NULL);
+            pq_push(drawing->pq, *(int *) &c2, NULL);
         }
 
-        if (!done[(height-1)*width + i])
+        if (!drawing->done[(drawing->height-1)*drawing->width + i])
         {
             c2.x = i;
-            c2.y = height-1;
+            c2.y = drawing->height-1;
             c2.priority = -10;
-            pq_push(pq, *(int *) &c2, NULL);
+            pq_push(drawing->pq, *(int *) &c2, NULL);
         }
     }
 
-    for (i = 0; i < height; i++)
+    for (i = 0; i < drawing->height; i++)
     {
         COORDS c2;
 
-        if (!done[i*width])
+        if (!drawing->done[i*drawing->width])
         {
             c2.x = 0;
             c2.y = i;
             c2.priority = -10;
-            pq_push(pq, *(int *) &c2, NULL);
+            pq_push(drawing->pq, *(int *) &c2, NULL);
         }
 
-        if (!done[i*width + width - 1])
+        if (!drawing->done[i*drawing->width + drawing->width - 1])
         {
-            c2.x = width - 1;
+            c2.x = drawing->width - 1;
             c2.y = i;
             c2.priority = -10;
-            pq_push(pq, *(int *) &c2, NULL);
+            pq_push(drawing->pq, *(int *) &c2, NULL);
         }
     }
 
-    state = EDGING;
+    drawing->state = EDGING;
 }
 
 
-static void catch_remaining(void)
+static void catch_remaining(DRAWING *drawing)
 {
     int i, j;
 
-    for (i = 0; i < height; i++)
+    for (i = 0; i < drawing->height; i++)
     {
-        for (j = 0; j < width; j++)
+        for (j = 0; j < drawing->width; j++)
         {
             COORDS c2;
 
-            if (!done[i*width + j])
+            if (!drawing->done[i*drawing->width + j])
             {
                 c2.x = j;
                 c2.y = i;
                 c2.priority = -10;
-                pq_push(pq, *(int *) &c2, NULL);
+                pq_push(drawing->pq, *(int *) &c2, NULL);
             }
         }
     }
 
-    state = TRACING;
+    drawing->state = TRACING;
 }
-
-
-void trace_update_direct(void)
-{
-    int quota = QUOTA_SIZE;
-
-    while (quota > 0)
-    {
-        COORDS c;
-        static int dx[] = { -1, -1, -1, 0, 1, 1, 1, 0 };
-        static int dy[] = { -1, 0, 1, 1, 1, 0, -1, -1 };
-        int i;
-        int val;
-
-        if (pq->num_items <= 0)
-        {
-            if (pixels_done < width*height)
-            {
-                catch_remaining();
-                continue;
-            }
-            state = WAITING;
-            break;
-        }
-
-        pq_pop(pq, (int *) &c, NULL);
-        if (done[c.y*width + c.x])
-            continue;
-        
-        if (c.priority == 0)
-        {
-            if (state == TRACING || state == SEEDING)
-                push_edges();
-            else if (state == EDGING)
-                state = FILLING;
-        }
-        else if (state == SEEDING)
-            state = TRACING;
-
-        if (state == FILLING)
-        {
-            val = 0;
-            set_pixel(c.x, c.y, val);
-            quota -= PIXEL_COST;
-        }
-        else
-        {
-            val = do_pixel(c.x, c.y);
-
-            quota -= ((val == 0) ? max_iterations : val) + PIXEL_COST;
-        }
-        done[c.y*width + c.x] = 1;
-
-        for (i = 0; i < 8; i++)
-        {
-            COORDS c2;
-            int priority;
-            c2.x = c.x + dx[i];
-            c2.y = c.y + dy[i];
-            if (c2.x < 0 || c2.y < 0 || c2.x >= width || c2.y >= height)
-                continue;
-            priority = (val == 0) ? 0 : (-10-val-((c2.x ^ c2.y ^ quota) & 15));
-            if (priority < -128)
-                priority = -128;
-            else if (priority > 127)
-                priority = 127;
-            c2.priority = priority;
-            pq_push(pq, *(int *) &c2, NULL);
-        }
-    }
-
-    if (state == SEEDING)
-        status = "SEEDING";
-    else if (state == TRACING)
-        status = "TRACING";
-    else if (state == EDGING)
-        status = "EDGING";
-    else if (state == FILLING)
-        status = "FILLING";
-    else if (state == WAITING)
-        status = "WAITING";
-    else
-        status = "UNKNOWN";
-}
-
-
-static int quota;
 
 
 static void trace_allocate_slots(int num_slots, BATON *baton)
 {
+    DRAWING *drawing = (DRAWING *) baton;
     int i;
     
-    baton->num_slots = num_slots;
+    drawing->num_slots = num_slots;
     
-    baton->x_slots = malloc(sizeof(int) * num_slots);
-    baton->y_slots = malloc(sizeof(int) * num_slots);
+    drawing->x_slots = malloc(sizeof(int) * num_slots);
+    drawing->y_slots = malloc(sizeof(int) * num_slots);
     
     for (i = 0; i < num_slots; i++)
     {
-        baton->x_slots[i] = -1;
-        baton->y_slots[i] = -1;
+        drawing->x_slots[i] = -1;
+        drawing->y_slots[i] = -1;
     }
 }
 
 
-int trace_next_pixel(int slot, double *zx, double *zy, double *cx, double *cy, BATON *baton)
+static int trace_next_pixel(int slot, double *zx, double *zy, double *cx, double *cy, BATON *baton)
 {
+    DRAWING *drawing = (DRAWING *) baton;
     COORDS c;
     int i;
 
-    if (quota <= 0)
+    if (drawing->quota <= 0)
     {
-        baton->x_slots[slot] = -1;
-        baton->y_slots[slot] = -1;
+        drawing->x_slots[slot] = -1;
+        drawing->y_slots[slot] = -1;
         return 0;
     }
 
 restart:
-    if (pq->num_items <= 0)
+    if (drawing->pq->num_items <= 0)
     {
-        if (pixels_done < width*height)
+        if (pixels_done < drawing->width*drawing->height)
         {
-            catch_remaining();
-            baton->x_slots[slot] = -1;
-            baton->y_slots[slot] = -1;
+            catch_remaining(drawing);
+            drawing->x_slots[slot] = -1;
+            drawing->y_slots[slot] = -1;
             return 0;
         }
-        state = WAITING;
-        baton->x_slots[slot] = -1;
-        baton->y_slots[slot] = -1;
+        drawing->state = WAITING;
+        drawing->x_slots[slot] = -1;
+        drawing->y_slots[slot] = -1;
         return 0;
     }
 
-    pq_pop(pq, (int *) &c, NULL);
-    if (done[c.y*width + c.x])
+    pq_pop(drawing->pq, (int *) &c, NULL);
+    if (drawing->done[c.y*drawing->width + c.x])
         goto restart;
         
     if (c.priority == 0)
     {
-        if (state == TRACING || state == SEEDING)
-            push_edges();
-        else if (state == EDGING)
-            state = FILLING;
+        if (drawing->state == TRACING || drawing->state == SEEDING)
+            push_edges(drawing);
+        else if (drawing->state == EDGING)
+            drawing->state = FILLING;
     }
-    else if (state == SEEDING)
-        state = TRACING;
+    else if (drawing->state == SEEDING)
+        drawing->state = TRACING;
 
-    if (state == FILLING)
+    if (drawing->state == FILLING)
     {
         int val = 0;
         set_pixel(c.x, c.y, val);
-        done[c.y*width + c.x] = 1;
-        quota -= PIXEL_COST;
+        drawing->done[c.y*drawing->width + c.x] = 1;
+        drawing->quota -= PIXEL_COST;
         goto restart;
     }
     
-    for (i = 0; i < baton->num_slots; i++)
+    for (i = 0; i < drawing->num_slots; i++)
     {
         if (i == slot)
             continue;
         
-        if (c.x == baton->x_slots[i] && c.y == baton->y_slots[i])
+        if (c.x == drawing->x_slots[i] && c.y == drawing->y_slots[i])
             goto restart;
     }
+        
+    drawing->get_point(drawing->fractal, c.x, c.y, zx, zy, cx, cy);
 
-    *zx = 0.0;
-    *zy = 0.0;
-    *cx = (c.x - width/2.0)*scale + centrex;
-    *cy = (c.y - height/2.0)*scale + centrey;
-
-    baton->x_slots[slot] = c.x;
-    baton->y_slots[slot] = c.y;
+    drawing->x_slots[slot] = c.x;
+    drawing->y_slots[slot] = c.y;
 
     return 1;
 }
 
 
-void trace_output_pixel(int slot, int k, double fx, double fy, BATON *baton)
+static void trace_output_pixel(int slot, int k, double fx, double fy, BATON *baton)
 {
+    DRAWING *drawing = (DRAWING *) baton;    
     static int dx[] = { -1, -1, -1, 0, 1, 1, 1, 0 };
     static int dy[] = { -1, 0, 1, 1, 1, 0, -1, -1 };
     int i;
@@ -350,45 +267,55 @@ void trace_output_pixel(int slot, int k, double fx, double fy, BATON *baton)
         val = (float) k - log(log(z))/log(2.0);
     }
     
-    set_pixel(baton->x_slots[slot], baton->y_slots[slot], val);
-    done[baton->y_slots[slot]*width + baton->x_slots[slot]] = 1;
-    quota -= ((val == 0) ? max_iterations : val) + PIXEL_COST;
+    set_pixel(drawing->x_slots[slot], drawing->y_slots[slot], val);
+    drawing->done[drawing->y_slots[slot]*drawing->width + drawing->x_slots[slot]] = 1;
+    drawing->quota -= ((val == 0) ? max_iterations : val) + PIXEL_COST;
 
     for (i = 0; i < 8; i++)
     {
         COORDS c2;
         int priority;
-        c2.x = baton->x_slots[slot] + dx[i];
-        c2.y = baton->y_slots[slot] + dy[i];
-        if (c2.x < 0 || c2.y < 0 || c2.x >= width || c2.y >= height)
+        c2.x = drawing->x_slots[slot] + dx[i];
+        c2.y = drawing->y_slots[slot] + dy[i];
+        if (c2.x < 0 || c2.y < 0 || c2.x >= drawing->width || c2.y >= drawing->height)
             continue;
-        priority = (val == 0) ? 0 : (-10-val-((c2.x ^ c2.y ^ quota) & 15));
+        priority = (val == 0) ? 0 : (-10-val-((c2.x ^ c2.y ^ drawing->quota) & 15));
         if (priority < -128)
             priority = -128;
         else if (priority > 127)
             priority = 127;
         c2.priority = priority;
-        pq_push(pq, *(int *) &c2, NULL);
+        pq_push(drawing->pq, *(int *) &c2, NULL);
     }
 }
 
 
-void trace_update(void)
+void trace_update(DRAWING *drawing)
 {
-    quota = QUOTA_SIZE;
+    drawing->quota = QUOTA_SIZE;
 
-    baton.mfunc(max_iterations, trace_allocate_slots, trace_next_pixel, trace_output_pixel, &baton);
+    drawing->mfunc(max_iterations, trace_allocate_slots, trace_next_pixel, trace_output_pixel, (BATON *) drawing);
 
-    if (state == SEEDING)
+    if (drawing->state == SEEDING)
         status = "SEEDING";
-    else if (state == TRACING)
+    else if (drawing->state == TRACING)
         status = "TRACING";
-    else if (state == EDGING)
+    else if (drawing->state == EDGING)
         status = "EDGING";
-    else if (state == FILLING)
+    else if (drawing->state == FILLING)
         status = "FILLING";
-    else if (state == WAITING)
+    else if (drawing->state == WAITING)
         status = "WAITING";
     else
         status = "UNKNOWN";
+}
+
+
+void trace_destroy(DRAWING *drawing)
+{
+    free(drawing->x_slots);
+    free(drawing->y_slots);
+    free(drawing->done);
+    pq_destroy(drawing->pq);
+    free(drawing);
 }

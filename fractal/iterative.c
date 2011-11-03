@@ -12,102 +12,108 @@
 #define ITERATION_DEPTH_FACTOR M_SQRT2
 
 
-typedef struct BATON
+typedef struct DRAWING
 {
+    WINDOW *window;
+    FRACTAL *fractal;
     MFUNC *mfunc;
+    GET_POINT *get_point;
     int *x_slots;
     int *y_slots;
     int *done;
     double *point_x;
     double *point_y;
-} BATON;
+    int width, height;
+    int i, j;
+    int quota;
+    int iteration_depth;
+} DRAWING;
 
 
-static int width, height;
-static int i, j;
-static int quota;
-static BATON baton;
-static int iteration_depth;
-
-
-void iterative_init(int w, int h)
+DRAWING *iterative_create(WINDOW *window, FRACTAL *fractal, GET_POINT get_point, MFUNC *mfunc)
 {
-    width = w;
-    height = h;
-    i = 0;
-    j = 0;
-    baton.done = malloc(w * h * sizeof(int));
-    baton.point_x = malloc(w * h * sizeof(double));
-    baton.point_y = malloc(w * h * sizeof(double));
-}
-
-
-void iterative_restart(MFUNC mfunc)
-{
-    for (i = 0; i < width*height; i++)
+    int i;
+    
+    DRAWING *drawing = malloc(sizeof(DRAWING));
+    drawing->window = window;
+    drawing->fractal = fractal;
+    drawing->mfunc = mfunc;
+    drawing->get_point = get_point;
+    drawing->width = window->width;
+    drawing->height = window->height;
+    drawing->i = 0;
+    drawing->j = 0;
+    drawing->x_slots = NULL;
+    drawing->y_slots = NULL;
+    drawing->done = malloc(drawing->width * drawing->height * sizeof(int));
+    drawing->point_x = malloc(drawing->width * drawing->height * sizeof(double));
+    drawing->point_y = malloc(drawing->width * drawing->height * sizeof(double));
+    drawing->iteration_depth = ITERATION_DEPTH_START;
+    
+    for (i = 0; i < drawing->width * drawing->height; i++)
     {
-        baton.point_x[i] = 0.0;
-        baton.point_y[i] = 0.0;
-        baton.done[i] = 0;
+        drawing->point_x[i] = 0.0;
+        drawing->point_y[i] = 0.0;
+        drawing->done[i] = 0;
     }
     
-    i = 0;
-    j = 0;
-    baton.mfunc = mfunc;    
-    iteration_depth = ITERATION_DEPTH_START;
+    return drawing;
 }
 
 
-void iterative_allocate_slots(int num_slots, BATON *baton)
+static void iterative_allocate_slots(int num_slots, BATON *baton)
 {
-    baton->x_slots = malloc(sizeof(int) * num_slots);
-    baton->y_slots = malloc(sizeof(int) * num_slots);
+    DRAWING *drawing = (DRAWING *) baton;
+    
+    drawing->x_slots = malloc(sizeof(int) * num_slots);
+    drawing->y_slots = malloc(sizeof(int) * num_slots);
 }
 
 
-int iterative_next_pixel(int slot, double *zx, double *zy, double *cx, double *cy, BATON *baton)
+static int iterative_next_pixel(int slot, double *zx, double *zy, double *cx, double *cy, BATON *baton)
 {
+    DRAWING *drawing = (DRAWING *) baton;
+    
 restart:
-    if (i >= height)
+    if (drawing->i >= drawing->height)
     {
-        if (iteration_depth >= max_iterations)
+        if (drawing->iteration_depth >= max_iterations)
             return 0;
         
-        i = 0;
-        j = 0;
-        iteration_depth *= ITERATION_DEPTH_FACTOR;
+        drawing->i = 0;
+        drawing->j = 0;
+        drawing->iteration_depth *= ITERATION_DEPTH_FACTOR;
         pixels_done = 0;
     }
     
-    if (quota <= 0 || i >= height)
+    if (drawing->quota <= 0 || drawing->i >= drawing->height)
         return 0;
     
-    *zx = 0.0;
-    *zy = 0.0;
-    *cx = (j - width/2.0)*scale + centrex;
-    *cy = (i - height/2.0)*scale + centrey;
+    drawing->get_point(drawing->fractal, drawing->j, drawing->i, zx, zy, cx, cy);
 
-    baton->x_slots[slot] = j;
-    baton->y_slots[slot] = i;
+    drawing->x_slots[slot] = drawing->j;
+    drawing->y_slots[slot] = drawing->i;
     
-    j++;
+    drawing->j++;
 
-    if (j >= width)
+    if (drawing->j >= drawing->width)
     {
-        j = 0;
-        i++;
+        drawing->j = 0;
+        drawing->i++;
     }
 
-    if (baton->done[i*width + j])
+    if (drawing->done[drawing->i*drawing->width + drawing->j])
         goto restart;
     
     return 1;
 }
 
 
-void iterative_output_pixel(int slot, int k, double fx, double fy, BATON *baton)
+static void iterative_output_pixel(int slot, int k, double fx, double fy, BATON *baton)
 {
+    DRAWING *drawing = (DRAWING *) baton;
     float val = 0.0;
+    
     if (k == 0)
     {
         val = 0.0;
@@ -120,26 +126,37 @@ void iterative_output_pixel(int slot, int k, double fx, double fy, BATON *baton)
     
     if (k == 0)
     {
-        baton->point_x[baton->y_slots[slot] * width + baton->x_slots[slot]] = fx;
-        baton->point_y[baton->y_slots[slot] * width + baton->x_slots[slot]] = fy;
+        drawing->point_x[drawing->y_slots[slot] * drawing->width + drawing->x_slots[slot]] = fx;
+        drawing->point_y[drawing->y_slots[slot] * drawing->width + drawing->x_slots[slot]] = fy;
     }
     else
     {
-        baton->done[i*width + j] = 1;
+        drawing->done[drawing->i*drawing->width + drawing->j] = 1;
     }    
     
-    quota -= val;
+    drawing->quota -= val;
     
-    set_pixel(baton->x_slots[slot], baton->y_slots[slot], val);
-    quota -= ((val == 0) ? max_iterations : val) + PIXEL_COST;
+    set_pixel(drawing->x_slots[slot], drawing->y_slots[slot], val);
+    drawing->quota -= ((val == 0) ? max_iterations : val) + PIXEL_COST;
 }
 
 
-void iterative_update()
+void iterative_update(DRAWING *drawing)
 {
-    quota = QUOTA_SIZE;
+    drawing->quota = QUOTA_SIZE;
 
-    baton.mfunc(iteration_depth, iterative_allocate_slots, iterative_next_pixel, iterative_output_pixel, &baton);
+    drawing->mfunc(drawing->iteration_depth, iterative_allocate_slots, iterative_next_pixel, iterative_output_pixel, (BATON *) drawing);
     
     status = "ITERATING";
+}
+
+
+void iterative_destroy(DRAWING *drawing)
+{
+    free(drawing->x_slots);
+    free(drawing->y_slots);
+    free(drawing->done);
+    free(drawing->point_x);
+    free(drawing->point_y);
+    free(drawing);
 }

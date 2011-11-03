@@ -3,6 +3,41 @@
 
 #include "mfunc.h"
 
+
+typedef struct WINDOW
+{
+    double centrex;
+    double centrey;
+    double scale;
+    int width;
+    int height;
+} WINDOW;
+
+/** Translate from a point in the Mandelbrot set to a pixel, using the given window.
+ *
+ * @param win The window specifing the centre of zoom, scale, and window dimensions.
+ * @param x, y Coordinates of a pixel in the window
+ * @param px, py Pointers to where to save the point coordinates
+ */
+extern void pixel_to_point(WINDOW *win, int x, int y, double *px, double *py);
+
+/** Translate from a pixel to a point in the Mandelbrot set to a pixel, using the given window.
+ *
+ * @param win The window specifing the centre of zoom, scale, and window dimensions.
+ * @param px, py Coordinates of a point in the set
+ * @param x, y Pointers to where to save the pixel coordinates.
+ */
+extern void point_to_pixel(WINDOW *win, double px, double py, int *x, int *y);
+
+
+typedef struct FRACTAL FRACTAL;
+
+typedef void GET_POINT(FRACTAL *fractal, int px, int py, double *zx, double *zy, double *cx, double *cy);
+
+
+typedef struct DRAWING DRAWING;
+
+
 extern float do_pixel(int x, int y);
 extern void set_pixel(int x, int y, float k);
 
@@ -13,21 +48,25 @@ extern int pixels_done;
 
 extern char *status;
 
-extern void simple_init(int w, int h);
-extern void simple_restart(MFUNC mfunc);
-extern void simple_update(void);
+extern FRACTAL *mandelbrot_create(WINDOW *win);
+extern void mandelbrot_get_point(FRACTAL *fractal, int px, int py, double *zx, double *zy, double *cx, double *cy);
 
-extern void parallel_init(int w, int h);
-extern void parallel_restart(MFUNC mfunc);
-extern void parallel_update(void);
 
-extern void trace_init(int w, int h);
-extern void trace_restart(MFUNC mfunc);
-extern void trace_update(void);
+extern DRAWING *simple_create(WINDOW *window, FRACTAL *fractal, GET_POINT get_point, MFUNC *mfunc);
+extern void simple_update(DRAWING *drawing);
+extern void simple_destroy(DRAWING *drawing);
 
-extern void iterative_init(int w, int h);
-extern void iterative_restart(MFUNC mfunc);
-extern void iterative_update(void);
+extern DRAWING *parallel_create(WINDOW *window, FRACTAL *fractal, GET_POINT get_point, MFUNC *mfunc);
+extern void parallel_update(DRAWING *drawing);
+extern void parallel_destroy(DRAWING *drawing);
+
+extern DRAWING *trace_create(WINDOW *window, FRACTAL *fractal, GET_POINT get_point, MFUNC *mfunc);
+extern void trace_update(DRAWING *drawing);
+extern void trace_destroy(DRAWING *drawing);
+
+extern DRAWING *iterative_create(WINDOW *window, FRACTAL *fractal, GET_POINT get_point, MFUNC *mfunc);
+extern void iterative_update(DRAWING *drawing);
+extern void iterative_destroy(DRAWING *drawing);
 
 /** Build a colour map based on a distribution of values.  The map is an
  * ordered sequence of values; a value x will be mapped to i where map[i] is

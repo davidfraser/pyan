@@ -20,14 +20,14 @@
 
 static struct {
     char *name;
-    void (* init)(int w, int h);
-    void (* restart)(MFUNC mfunc);
-    void (* update)(void);
+    DRAWING *(* create) (WINDOW *window, FRACTAL *fractal, GET_POINT get_point, MFUNC *mfunc);
+    void (* update)(DRAWING *drawing);
+    void (* destroy)(DRAWING *drawing);
 } modes[] = {
-    { "SIMPLE", simple_init, simple_restart, simple_update },
-    { "PARALLEL", parallel_init, parallel_restart, parallel_update },
-    { "TRACE", trace_init, trace_restart, trace_update },
-    { "ITERATIVE", iterative_init, iterative_restart, iterative_update },
+    { "SIMPLE", simple_create, simple_update, simple_destroy },
+    { "PARALLEL", parallel_create, parallel_update, parallel_destroy },
+    { "TRACE", trace_create, trace_update, trace_destroy },
+    { "ITERATIVE", iterative_create, iterative_update, iterative_destroy },
     { NULL }
 };
 static int num_modes;
@@ -186,12 +186,8 @@ void error()
 }
 
 
-double centrex, centrey;
-double scale;
 static int screen_width;
 static int screen_height;
-static int width;
-static int height;
 static int max;
 int max_iterations;
 int pixels_done;
@@ -201,6 +197,9 @@ char *status = "?";
 static clock_t start_time, end_time;
 static int current_mode = 0;
 static int current_mfunc_mode = 0;
+static WINDOW window;
+static FRACTAL *fractal = NULL;
+static DRAWING *drawing = NULL;
 
 
 void set_pixel(int x, int y, float val)
@@ -210,8 +209,8 @@ void set_pixel(int x, int y, float val)
     int y1 = y/2;
     double f, g;
 
-    buffer[y*width + x] = val;
-    val = buffer[y*width + x] + buffer[(y^1)*width + x] + buffer[y*width + (x^1)] + buffer[(y^1)*width + (x^1)];
+    buffer[y*window.width + x] = val;
+    val = buffer[y*window.width + x] + buffer[(y^1)*window.width + x] + buffer[y*window.width + (x^1)] + buffer[(y^1)*window.width + (x^1)];
     val /= 4.0;
 
     //f = sqrt(val) / sqrt((double) max_iterations);
@@ -228,10 +227,9 @@ void set_pixel(int x, int y, float val)
 
 float do_pixel(int x, int y)
 {
-    double zx = 0.0;
-    double zy = 0.0;
-    double px = (x - width/2.0)*scale + centrex;
-    double py = (y - height/2.0)*scale + centrey;
+    double zx = 0.0, zy = 0.0;
+    double px, py;
+    pixel_to_point(&window, x, y, &px, &py);
     double fx, fy;
     float val;
 
@@ -272,13 +270,13 @@ void colourise()
     int i, j;
     float map[MAP_SIZE];
 
-    build_colour_map(buffer, width * height, map, MAP_SIZE);
+    build_colour_map(buffer, window.width * window.height, map, MAP_SIZE);
 
     for (i = 0; i < screen_height; i++)
         for (j = 0; j < screen_width; j++)
         {
-            float val = (buffer[i*2*width + j*2] + buffer[i*2*width + j*2+1]
-                    + buffer[(i*2+1)*width + j*2] + buffer[(i*2+1)*width + j*2+1]) / 4.0;
+            float val = (buffer[i*2*window.width + j*2] + buffer[i*2*window.width + j*2+1]
+                    + buffer[(i*2+1)*window.width + j*2] + buffer[(i*2+1)*window.width + j*2+1]) / 4.0;
             unsigned int c = map_colour(val, map, MAP_SIZE);
 
             SDL_Color col;
@@ -289,11 +287,19 @@ void colourise()
         }
 }
 
-void restart()
+void restart(int new_mode)
 {
-    modes[current_mode].restart(mfunc_modes[current_mfunc_mode].mfunc);
+    if (drawing != NULL)
+        modes[current_mode].destroy(drawing);
+    current_mode = new_mode;
+        drawing = modes[current_mode].create(&window, fractal, mandelbrot_get_point, mfunc_modes[current_mfunc_mode].mfunc);
     pixels_done = 0;
     start_time = clock();
+}
+
+void update()
+{
+    modes[current_mode].update(drawing);
 }
 
 static int benchmark = 0;
@@ -387,21 +393,23 @@ void do_benchmark(void)
     int average_pps;
     char filename[1000];
     
-    centrex = -0.754682, centrey = 0.055260;
+    window.centrex = -0.754682, window.centrey = 0.055260;
     screen_width = BENCHMARK_SIZE;
     screen_height = BENCHMARK_SIZE;
-    width = screen_width*2;
-    height = screen_height*2;
-    scale = 0.000732/screen_height;
+    window.width = screen_width*2;
+    window.height = screen_height*2;
+    window.scale = 0.000732/screen_height;
 
+    fractal = mandelbrot_create(&window);
+    
     display = SDL_CreateRGBSurface(SDL_SWSURFACE, screen_width, screen_height, 32, 0, 0, 0, 0);
     
-    buffer = (float *) malloc(sizeof(int) * width * height);
-    memset(buffer, 0, sizeof(int) * width * height);
+    buffer = (float *) malloc(sizeof(int) * window.width * window.height);
+    memset(buffer, 0, sizeof(int) * window.width * window.height);
 
-    modes[current_mode].init(width, height);
+    drawing = modes[current_mode].create(&window, fractal, mandelbrot_get_point, mfunc_modes[current_mfunc_mode].mfunc);
     
-    printf("Starting benchmark of mode %s, size %dx%d, max depth %d\n", modes[current_mode].name, width, height, max_iterations);
+    printf("Starting benchmark of mode %s, size %dx%d, max depth %d\n", modes[current_mode].name, window.width, window.height, max_iterations);
     
     average_pps = 0;
     for (i = 1; i <= benchmark_loops; i++)
@@ -409,11 +417,11 @@ void do_benchmark(void)
         float seconds;
         int pixels_per_second;
         
-        restart();
+        restart(current_mode);
 
-        while (pixels_done < width*height)
+        while (pixels_done < window.width*window.height)
         {
-            modes[current_mode].update();
+            modes[current_mode].update(drawing);
         }
 
         end_time = clock();
@@ -424,7 +432,7 @@ void do_benchmark(void)
         average_pps += pixels_per_second;
     }
 
-    snprintf(filename, sizeof(filename), "%s_%dx%d_%d.bmp", modes[current_mode].name, width, height, max_iterations);
+    snprintf(filename, sizeof(filename), "%s_%dx%d_%d.bmp", modes[current_mode].name, window.width, window.height, max_iterations);
     SDL_SaveBMP(display, filename);
     SDL_FreeSurface(display);
 
@@ -432,7 +440,7 @@ void do_benchmark(void)
     printf("Benchmark finished, average PPS was %d\n", average_pps);
 }
 
-#define FULL_SCREEN 1
+#define FULL_SCREEN 0
 
 int main(int argc, char *argv[])
 {
@@ -486,18 +494,19 @@ int main(int argc, char *argv[])
     
     video_info = SDL_GetVideoInfo();
     
-    centrex = 0.0, centrey = 0.0;
+    window.centrex = 0.0, window.centrey = 0.0;
     screen_width = video_info->current_w;
     screen_height = video_info->current_h;
-    width = screen_width*2;
-    height = screen_height*2;
-    scale = 1.5/screen_height;
+    window.width = screen_width*2;
+    window.height = screen_height*2;
+    window.scale = 1.5/screen_height;
+    
+    fractal = mandelbrot_create(&window);
 
-    buffer = malloc(sizeof(float) * width * height);
-    memset(buffer, 0, sizeof(float) * width * height);
+    buffer = malloc(sizeof(float) * window.width * window.height);
+    memset(buffer, 0, sizeof(float) * window.width * window.height);
 
-    modes[current_mode].init(width, height);
-    restart();
+    restart(current_mode);
 
     while (running)
     {
@@ -512,25 +521,25 @@ int main(int argc, char *argv[])
                 max = !max;
                 max_iterations = max ? (256*256) : 256;
                 fade_screen();
-                restart();
+                restart(current_mode);
             }
             else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_2)
             {
+                int new_mode;
                 fade_screen();
                 if (evt.key.keysym.mod & KMOD_SHIFT)
                 {
-                    current_mode--;
-                    if (current_mode < 0)
-                        current_mode = num_modes - 1;
+                    new_mode = current_mode - 1;
+                    if (new_mode < 0)
+                        new_mode = num_modes - 1;
                 }
                 else
                 {
-                    current_mode++;
-                    if (current_mode >= num_modes)
-                        current_mode = 0;
+                    new_mode = current_mode + 1;
+                    if (new_mode >= num_modes)
+                        new_mode = 0;
                 }
-                modes[current_mode].init(width, height);
-                restart();
+                restart(new_mode);
             }
             else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_3)
             {
@@ -547,8 +556,7 @@ int main(int argc, char *argv[])
                     if (current_mfunc_mode >= num_mfunc_modes)
                         current_mfunc_mode = 0;
                 }
-                modes[current_mode].init(width, height);
-                restart();
+                restart(current_mode);
             }
             else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_c)
             {
@@ -563,19 +571,17 @@ int main(int argc, char *argv[])
             }
             else if (evt.type == SDL_MOUSEBUTTONDOWN && evt.button.button == 1)
             {
-                centrex = (evt.button.x - screen_width/2.0)*scale*2 + centrex;
-                centrey = (evt.button.y - screen_height/2.0)*scale*2 + centrey;
-                scale = scale * M_SQRT1_2;
+                pixel_to_point(&window, evt.button.x, evt.button.y, &window.centrex, &window.centrey);
+                window.scale *= M_SQRT1_2;
                 fade_screen();
-                restart();
+                restart(current_mode);
             }
             else if (evt.type == SDL_MOUSEBUTTONDOWN && evt.button.button == 3)
             {
-                centrex = (evt.button.x - screen_width/2.0)*scale*2 + centrex;
-                centrey = (evt.button.y - screen_height/2.0)*scale*2 + centrey;
-                scale = scale / M_SQRT1_2;
+                pixel_to_point(&window, evt.button.x, evt.button.y, &window.centrex, &window.centrey);
+                window.scale /= M_SQRT1_2;
                 fade_screen();
-                restart();
+                restart(current_mode);
             }
         }
 
@@ -585,7 +591,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        modes[current_mode].update();
+        update();
 
         {
             SDL_Color white = { 255, 255, 255 };
@@ -596,13 +602,13 @@ int main(int argc, char *argv[])
             float seconds;
             int pixels_per_second;
 
-            if (pixels_done < width*height)
+            if (pixels_done < window.width*window.height)
                 end_time = clock();
             seconds = (end_time - start_time) / (float) CLOCKS_PER_SEC;
             pixels_per_second = (seconds > 0) ? pixels_done/seconds : 0;
 
             snprintf(buffer, sizeof(buffer), "mode=%s, mfunc=%s, depth=%d, done=%d/%d, PPS=%d, cx,cy=%f,%f, scale=%f, status=%s     ",
-                    modes[current_mode].name, mfunc_modes[current_mfunc_mode].name, max_iterations, pixels_done, width*height, pixels_per_second, centrex, centrey, scale*screen_height, status);
+                    modes[current_mode].name, mfunc_modes[current_mfunc_mode].name, max_iterations, pixels_done, window.width*window.height, pixels_per_second, window.centrex, window.centrey, window.scale*screen_height, status);
             txt = TTF_RenderText(font, buffer, white, black);
             dest.w = txt->w;
             dest.h = txt->h;
@@ -617,7 +623,7 @@ int main(int argc, char *argv[])
 
         SDL_UpdateRect(display, 0, 0, screen_width, screen_height);
 
-        if (pixels_done >= width*height)
+        if (pixels_done >= window.width*window.height)
             SDL_Delay(100);
     }
 
