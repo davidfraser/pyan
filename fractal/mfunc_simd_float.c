@@ -83,7 +83,6 @@ void mfunc_simd_float(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_S
     __m128 zi2;
     __m128 t, t2;
     __m128 boundary;
-    __m128 zero;
 
     int_union test;
     
@@ -93,7 +92,6 @@ void mfunc_simd_float(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_S
     allocate_slots(ENABLE_SLOT3 ? 4 : (ENABLE_SLOT2 ? 3 : (ENABLE_SLOT1 ? 2 : 1)), baton);
     
     boundary = _mm_set1_ps(2.0*2.0);
-    zero = _mm_set1_ps(0.0);
     cx = _mm_set1_ps(0.0);
     cy = _mm_set1_ps(0.0);
     zr = _mm_set1_ps(0.0);
