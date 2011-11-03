@@ -571,14 +571,14 @@ int main(int argc, char *argv[])
             }
             else if (evt.type == SDL_MOUSEBUTTONDOWN && evt.button.button == 1)
             {
-                pixel_to_point(&window, evt.button.x, evt.button.y, &window.centrex, &window.centrey);
+                pixel_to_point(&window, evt.button.x*2, evt.button.y*2, &window.centrex, &window.centrey);
                 window.scale *= M_SQRT1_2;
                 fade_screen();
                 restart(current_mode);
             }
             else if (evt.type == SDL_MOUSEBUTTONDOWN && evt.button.button == 3)
             {
-                pixel_to_point(&window, evt.button.x, evt.button.y, &window.centrex, &window.centrey);
+                pixel_to_point(&window, evt.button.x*2, evt.button.y*2, &window.centrex, &window.centrey);
                 window.scale /= M_SQRT1_2;
                 fade_screen();
                 restart(current_mode);
