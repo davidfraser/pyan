@@ -31,6 +31,10 @@
 #define PIXEL_COST 50
 #define QUOTA_SIZE 500000
 
+#define HIGHEST_PRIORITY (-128)
+#define LOWEST_PRIORITY 127
+
+typedef enum { SEEDING, TRACING, EDGING, FILLING, WAITING } STATE;
 
 typedef struct DRAWING
 {
@@ -45,8 +49,12 @@ typedef struct DRAWING
     int width, height;
     PQ *pq;
     int *done;
-    enum { SEEDING, TRACING, EDGING, FILLING, WAITING } state;
+    STATE state;
 } DRAWING;
+
+
+static const int dx[] = { -1, -1, -1, 0, 1, 1, 1, 0 };
+static const int dy[] = { -1, 0, 1, 1, 1, 0, -1, -1 };
 
 
 DRAWING *trace_create(WINDOW *window, FRACTAL *fractal, GET_POINT get_point, MFUNC *mfunc)
@@ -77,7 +85,7 @@ DRAWING *trace_create(WINDOW *window, FRACTAL *fractal, GET_POINT get_point, MFU
         COORDS c;
         c.x = rand() % drawing->width;
         c.y = rand() % drawing->height;
-        c.priority = -(i & 15);
+        c.priority = HIGHEST_PRIORITY;
         pq_push(drawing->pq, *(int *) &c, NULL);
     }
 
@@ -99,7 +107,7 @@ static void push_edges(DRAWING *drawing)
         {
             c2.x = i;
             c2.y = 0;
-            c2.priority = -10;
+            c2.priority = HIGHEST_PRIORITY;
             pq_push(drawing->pq, *(int *) &c2, NULL);
         }
 
@@ -107,7 +115,7 @@ static void push_edges(DRAWING *drawing)
         {
             c2.x = i;
             c2.y = drawing->height-1;
-            c2.priority = -10;
+            c2.priority = HIGHEST_PRIORITY;
             pq_push(drawing->pq, *(int *) &c2, NULL);
         }
     }
@@ -120,7 +128,7 @@ static void push_edges(DRAWING *drawing)
         {
             c2.x = 0;
             c2.y = i;
-            c2.priority = -10;
+            c2.priority = HIGHEST_PRIORITY;
             pq_push(drawing->pq, *(int *) &c2, NULL);
         }
 
@@ -128,7 +136,7 @@ static void push_edges(DRAWING *drawing)
         {
             c2.x = drawing->width - 1;
             c2.y = i;
-            c2.priority = -10;
+            c2.priority = HIGHEST_PRIORITY;
             pq_push(drawing->pq, *(int *) &c2, NULL);
         }
     }
@@ -151,7 +159,7 @@ static void catch_remaining(DRAWING *drawing)
             {
                 c2.x = j;
                 c2.y = i;
-                c2.priority = -10;
+                c2.priority = HIGHEST_PRIORITY;
                 pq_push(drawing->pq, *(int *) &c2, NULL);
             }
         }
@@ -212,7 +220,7 @@ restart:
     if (drawing->done[c.y*drawing->width + c.x])
         goto restart;
         
-    if (c.priority == 0)
+    if (c.priority == LOWEST_PRIORITY)
     {
         if (drawing->state == TRACING || drawing->state == SEEDING)
             push_edges(drawing);
@@ -228,6 +236,24 @@ restart:
         set_pixel(c.x, c.y, val);
         drawing->done[c.y*drawing->width + c.x] = 1;
         drawing->quota -= PIXEL_COST;
+
+        for (i = 0; i < 8; i++)
+        {
+            COORDS c2;
+            int priority;
+            int new_x, new_y;
+            new_x = c.x + dx[i];
+            new_y = c.y + dy[i];
+            if (new_x < 0 || new_y < 0 || new_x >= drawing->width || new_y >= drawing->height)
+                continue;
+            c2.x = new_x;
+            c2.y = new_y;
+            c2.priority = LOWEST_PRIORITY - ((new_x ^ new_y ^ drawing->quota) & 0x15);
+            pq_push(drawing->pq, *(int *) &c2, NULL);
+        }
+
+        if (drawing->quota <= 0)
+            return 0;
         goto restart;
     }
     
@@ -252,8 +278,6 @@ restart:
 static void trace_output_pixel(int slot, int k, double fx, double fy, BATON *baton)
 {
     DRAWING *drawing = (DRAWING *) baton;    
-    static int dx[] = { -1, -1, -1, 0, 1, 1, 1, 0 };
-    static int dy[] = { -1, 0, 1, 1, 1, 0, -1, -1 };
     int i;
     float val = 0.0;
 
@@ -275,15 +299,19 @@ static void trace_output_pixel(int slot, int k, double fx, double fy, BATON *bat
     {
         COORDS c2;
         int priority;
-        c2.x = drawing->x_slots[slot] + dx[i];
-        c2.y = drawing->y_slots[slot] + dy[i];
-        if (c2.x < 0 || c2.y < 0 || c2.x >= drawing->width || c2.y >= drawing->height)
+        int new_x, new_y;
+
+        new_x = drawing->x_slots[slot] + dx[i];
+        new_y = drawing->y_slots[slot] + dy[i];
+        if (new_x < 0 || new_y < 0 || new_x >= drawing->width || new_y >= drawing->height)
             continue;
-        priority = (val == 0) ? 0 : (-10-val-((c2.x ^ c2.y ^ drawing->quota) & 15));
-        if (priority < -128)
-            priority = -128;
-        else if (priority > 127)
-            priority = 127;
+        c2.x = new_x;
+        c2.y = new_y;
+        priority = (k == 0) ? LOWEST_PRIORITY : (HIGHEST_PRIORITY*log(val)/log(max_iterations) + ((new_x ^ new_y ^ drawing->quota) & 0x15));
+        if (priority < HIGHEST_PRIORITY)
+            priority = HIGHEST_PRIORITY;
+        else if (priority > LOWEST_PRIORITY)
+            priority = LOWEST_PRIORITY;
         c2.priority = priority;
         pq_push(drawing->pq, *(int *) &c2, NULL);
     }
