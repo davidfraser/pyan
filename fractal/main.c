@@ -40,7 +40,7 @@ static struct {
     { "LOOP_FLOAT", mfunc_loop_float },
     { "LOOP_INT", mfunc_loop_int },
     { "SIMD", mfunc_simd },
-    { "SIMD_FLOAT", mfunc_simd },
+    { "SIMD_FLOAT", mfunc_simd_float },
     { NULL }
 };
 static int num_mfunc_modes;
@@ -217,7 +217,7 @@ void set_pixel(int x, int y, float val)
     //hsl_to_colour(0, 0, f, &col);
     //col.r = (int) val % 256;
     //col.g = 255;
-    f = log(val) / log((double) max_iterations);
+    f = log(val+1) / log((double) max_iterations);
     g = sqrt(val) / sqrt((double) max_iterations);
     hsl_to_colour(g, 0.5, f, &col);
 
@@ -229,11 +229,13 @@ float do_pixel(int x, int y)
 {
     double zx = 0.0, zy = 0.0;
     double px, py;
-    pixel_to_point(&window, x, y, &px, &py);
     double fx, fy;
+    int k;
     float val;
 
-    int k = mfunc_direct(zx, zy, px, py, max_iterations, &fx, &fy);
+    pixel_to_point(&window, x, y, &px, &py);
+
+    k = mfunc_direct(zx, zy, px, py, max_iterations, &fx, &fy);
 
     if (k == 0)
     {
@@ -440,7 +442,7 @@ void do_benchmark(void)
     printf("Benchmark finished, average PPS was %d\n", average_pps);
 }
 
-#define FULL_SCREEN 0
+#define FULL_SCREEN 1
 
 int main(int argc, char *argv[])
 {

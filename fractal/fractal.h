@@ -4,6 +4,10 @@
 #include "mfunc.h"
 
 
+/**
+ * Holds information about the current view, such as the size of the window,
+ * and the coordinates zoomed in (and how zoomed in they are).
+ */
 typedef struct WINDOW
 {
     double centrex;
@@ -30,19 +34,34 @@ extern void pixel_to_point(WINDOW *win, int x, int y, double *px, double *py);
 extern void point_to_pixel(WINDOW *win, double px, double py, int *x, int *y);
 
 
+/**
+ * Opaque fractal object, containing fractal-specific information.  Example
+ * implementations are Mandelbrot and Julia fractals; they have distinct ways
+ * of giving initial input to mfunc, and Julia fractals have a "Mandelbrot point".
+ */
 typedef struct FRACTAL FRACTAL;
 
+/**
+ * A callback that is defined by a fractal implementation.  It translates a
+ * pixel to initial input, using the fractal's definition, including the window.
+ *
+ * @param fractal Fractal object to call this method on.
+ * @param px,py Pixel coordinates, within the fractal's window.
+ * @param zx,zy Pointers to "zero" point, the initial value of Z.
+ * @param cx,cy Pointers to the coordinate, the initial value of C.
+ */
 typedef void GET_POINT(FRACTAL *fractal, int px, int py, double *zx, double *zy, double *cx, double *cy);
 
 
+/**
+ * Opaque type of a drawing mode object.
+ */
 typedef struct DRAWING DRAWING;
 
 
 extern float do_pixel(int x, int y);
 extern void set_pixel(int x, int y, float k);
 
-extern double centrex, centrey;
-extern double scale;
 extern int max_iterations;
 extern int pixels_done;
 

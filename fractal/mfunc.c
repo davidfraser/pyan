@@ -62,7 +62,7 @@ int mfunc_direct_float(double zx, double zy, double cx, double cy, int max_itera
 
 #define FIX_SEMI_SCALE 8192
 #define FIX_SCALE (FIX_SEMI_SCALE*FIX_SEMI_SCALE)
-#define TO_FIX(x) ((x) * FIX_SCALE)
+#define TO_FIX(x) ((long int) ((x) * FIX_SCALE))
 #define FIX_TIMES(x, y) ((x) / FIX_SEMI_SCALE) * ((y) / FIX_SEMI_SCALE)
 #define FROM_FIX(x) ((x) / (double) FIX_SCALE)
 
@@ -70,7 +70,7 @@ int mfunc_direct_float(double zx, double zy, double cx, double cy, int max_itera
 int mfunc_direct_int(double zx, double zy, double cx, double cy, int max_iterations, double *fx, double *fy)
 {
     int i = 0;
-    long int zr = zx, zi = zy;
+    long int zr = TO_FIX(zx), zi = TO_FIX(zy);
     long int zr2 = 0, zi2 = 0;
 
     long int boundary = TO_FIX(2.0*2.0);
@@ -80,7 +80,7 @@ int mfunc_direct_int(double zx, double zy, double cx, double cy, int max_iterati
 
     while (i < max_iterations && zr2 + zi2 < boundary)
     {
-        double t;
+        long int t;
 
         zr2 = FIX_TIMES(zr, zr);
         zi2 = FIX_TIMES(zi, zi);

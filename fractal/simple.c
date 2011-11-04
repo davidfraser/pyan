@@ -88,10 +88,8 @@ static void simple_output_pixel(int slot, int k, double fx, double fy, BATON *ba
         val = (float) k - log(log(z))/log(2.0);
     }
     
-    drawing->quota -= val;
-    
     set_pixel(drawing->x_slots[slot], drawing->y_slots[slot], val);
-    drawing->quota -= ((val == 0) ? max_iterations : val) + PIXEL_COST;
+    drawing->quota -= ((k == 0) ? max_iterations : k) + PIXEL_COST;
 }
 
 

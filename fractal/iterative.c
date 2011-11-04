@@ -134,10 +134,8 @@ static void iterative_output_pixel(int slot, int k, double fx, double fy, BATON 
         drawing->done[drawing->i*drawing->width + drawing->j] = 1;
     }    
     
-    drawing->quota -= val;
-    
     set_pixel(drawing->x_slots[slot], drawing->y_slots[slot], val);
-    drawing->quota -= ((val == 0) ? max_iterations : val) + PIXEL_COST;
+    drawing->quota -= ((k == 0) ? max_iterations : k) + PIXEL_COST;
 }
 
 

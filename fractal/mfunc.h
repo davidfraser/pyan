@@ -55,7 +55,7 @@ typedef int PIXEL_SOURCE(int slot, double *zx, double *zy, double *cx, double *c
  */
 typedef void PIXEL_OUTPUT(int slot, int value, double fx, double fy, BATON *mfunc_baton);
 
-/** Original Mandelbrot function, that works on one pixel at a time.
+/** Direct Mandelbrot function, that works on one pixel at a time.
  * @param cx,cy Coordinates of pixel to work on.
  * @param max_iterations Maximum number of iterations before assuming pixel is inside the set.
  * @param fx,fy Pointers to where last calculated position will be output.
@@ -63,8 +63,14 @@ typedef void PIXEL_OUTPUT(int slot, int value, double fx, double fy, BATON *mfun
  */
 extern int mfunc_direct(double zx, double zy, double cx, double cy, int max_iterations, double *fx, double *fy);
 
+/**
+ * Direct Mandelbrot function using 32-bnit floats.
+ */
 extern int mfunc_direct_float(double zx, double zy, double cx, double cy, int max_iterations, double *fx, double *fy);
 
+/**
+ * Direct Mandelbrot function using fixed point arithmetic.
+ */
 extern int mfunc_direct_int(double zx, double zy, double cx, double cy, int max_iterations, double *fx, double *fy);
 
 /** Mandelbrot loop function.  This function performs the same calculation as
@@ -105,6 +111,11 @@ extern void mfunc_loop_int(int max_iterations, ALLOCATE_SLOTS allocate_slots, PI
  */
 extern void mfunc_simd(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output_pixel, BATON *baton);
 
+/**
+ * SIMD version using 32-bit floating point.  Will use up to 4 slots.
+ *
+ * See MFUNC for further documentation.
+ */
 extern void mfunc_simd_float(int max_iterations, ALLOCATE_SLOTS allocate_slots, PIXEL_SOURCE next_pixel, PIXEL_OUTPUT output_pixel, BATON *baton);
 
 #endif

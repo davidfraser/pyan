@@ -12,7 +12,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\colour.c" />
+    <ClCompile Include="..\fractal.c" />
+    <ClCompile Include="..\iterative.c" />
     <ClCompile Include="..\main.c" />
+    <ClCompile Include="..\mandelbrot.c" />
     <ClCompile Include="..\mfunc.c" />
     <ClCompile Include="..\mfunc_simd.c" />
     <ClCompile Include="..\mfunc_simd_float.c" />
@@ -97,7 +100,7 @@
       <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>

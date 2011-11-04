@@ -8,6 +8,6 @@ void pixel_to_point(WINDOW *win, int x, int y, double *px, double *py)
 
 void point_to_pixel(WINDOW *win, double px, double py, int *x, int *y)
 {
-    *x = (px - win->centrex)/win->scale + win->width/2.0;
-    *y = (px - win->centrex)/win->scale + win->width/2.0;
+    *x = (int) ((px - win->centrex)/win->scale + win->width/2.0);
+    *y = (int) ((px - win->centrex)/win->scale + win->width/2.0);
 }

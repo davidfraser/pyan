@@ -34,6 +34,15 @@
     <ClCompile Include="..\colour.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\iterative.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mandelbrot.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fractal.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\pq.h">
