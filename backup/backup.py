@@ -36,15 +36,18 @@ import os
 import os.path
 import cPickle
 import struct
+import hashlib
 import win32file
 import winioctlcon
 
 
 BUFFER_SIZE = 1024*1024
+MAX_BUFFERS = 512
 
 JOURNAL_FILENAME = "journal"
 PREVIOUS_FILENAME = "previous"
 EXCLUSIONS_FILENAME = "exclusions"
+MANIFEST_FILENAME = "manifest"
 
 ALLOW_JOURNAL = True
 
@@ -86,7 +89,6 @@ class ConsoleNotifier(object):
 
 # Reference: http://msdn.microsoft.com/en-us/library/cc232007%28PROT.13%29.aspx
 def make_reparse_point(dest, link):
-    print dest, link
     if dest[-1] == '/' or dest[-1] == '\\':
         dest = dest[:len(dest)-1]
     if link[-1] == '/' or link[-1] == '\\':
@@ -120,26 +122,102 @@ class Backup(object):
         drive = os.path.splitdrive(self.source)[0]
         new_paths = set()
         for p in paths:
-            components = p.split('/')
+            subpath = os.path.normcase(os.path.join(drive, p))
+            subpath = subpath.replace('\\', '/')
+            subpath = subpath.replace('//', '/')
+            new_paths.add(subpath)
+            """components = p.split('/')
             subpath = drive
             for c in components:
                 subpath = subpath + '/' + c
                 subpath = subpath.replace('//', '/')
-                new_paths.add(subpath)
+                new_paths.add(os.path.normcase(subpath))"""
         self.notifier.notice('Fleshed out %d paths' % len(new_paths))
         return new_paths
 
-    def copy_item(self, item_path):
-        source_path = os.path.join(self.source, item_path)
-        dest_path = os.path.join(self.target, self.name, item_path)
+    def get_md5(self, source_path):
         f = open(source_path, 'rb')
-        f2 = open(dest_path, 'wb')
+        big_buf = []
+        m = hashlib.md5()
+        total = 0
+        while len(big_buf) < MAX_BUFFERS:
+            buf = f.read(BUFFER_SIZE)
+            if len(buf) == 0:
+                f.close()
+                return m.hexdigest(), total, big_buf
+            total += len(buf)
+            m.update(buf)
+            big_buf.append(buf)
+        big_buf = None
         while True:
             buf = f.read(BUFFER_SIZE)
             if len(buf) == 0:
                 break
-            f2.write(buf)
+            total += len(buf)
+            m.update(buf)           
         f.close()
+        return m.hexdigest(), total, big_buf
+    
+    def reuse_from_manifest(self, md5, size, item_path):
+        if size == 0:
+            return False
+        
+        new_path = os.path.join(self.name, item_path)
+        if md5 not in self.manifest:
+            self.manifest[md5] = [new_path]
+            return False
+        
+        l = self.manifest[md5]
+        size_list = []
+        s = None
+        while len(l) > 0:
+            n = l.pop()
+            try:
+                link_path = os.path.join(self.target, n)
+                s = os.path.getsize(link_path)
+            except (IOError, WindowsError):
+                self.notifier.warning('Unable to find in manifest: %s' % n)
+                n = None
+                continue
+                
+            if s != size:
+                self.notifier.warning('Unable to reuse from manifest due to size (expected %d, was %d): %s' % n,  size, s)
+                size_list.push(n)
+                n = None
+            else:
+                break
+        l.extend(size_list)
+        
+        l.append(new_path)
+        
+        if n is None:
+            return False
+    
+        link_path = os.path.join(self.target, n)
+        dest_path = os.path.join(self.target, new_path)
+        win32file.CreateHardLink(dest_path, link_path)
+        return True
+        
+    def copy_item(self, item_path):
+        source_path = os.path.join(self.source, item_path)
+        md5, size, big_buf = self.get_md5(source_path)
+        if self.reuse_from_manifest(md5, size, item_path):
+            self.notifier.notice('Reused (from manifest): %s' % item_path)
+            return
+        dest_path = os.path.join(self.target, self.name, item_path)
+        
+        f2 = open(dest_path, 'wb')
+        if big_buf is not None:
+            for buf in big_buf:
+                f2.write(buf)
+        else:
+            f = open(source_path, 'rb')
+            while True:
+                buf = f.read(BUFFER_SIZE)
+                if len(buf) == 0:
+                    break
+                f2.write(buf)
+            f.close()
         f2.close()
         self.notifier.notice('Copied: %s' % item_path)
 
@@ -148,7 +226,11 @@ class Backup(object):
         dest_path = os.path.join(self.target, self.name, item_path)
         link_path = os.path.join(self.target, self.previous_name, item_path)
         if os.path.isfile(source_path):
-            win32file.CreateHardLink(dest_path, link_path)
+            try:
+                win32file.CreateHardLink(dest_path, link_path)
+            except Exception, ex:
+                self.notifier.error('Unable to make hard link from %s to %s' % (dest_path, link_path), ex)
+                raise ex
         else:
             try:    
                 win32file.CreateSymbolicLink(dest_path, link_path, 1)   # SYMBOLIC_LINK_FLAG_DIRECTORY
@@ -179,15 +261,26 @@ class Backup(object):
         source_path = os.path.join(self.source, item_path)
         if os.path.isdir(source_path) and not self.enable_dir_reuse:
             return False
-        if source_path[-1] == '/' or source_path[-1] == '\\':
-            source_path = source_path[:len(source_path)-1]
         source_path = source_path.replace('\\', '/')
-        self.notifier.notice('Checking for %s in changed paths' % source_path)
+        if source_path[-1] == '/':
+            source_path = source_path[:len(source_path)-1]
+        #self.notifier.notice('Checking for %s in changed paths' % source_path)
         #print self.changed_paths
-        if source_path in self.changed_paths:
-            self.notifier.notice('Found')
-            return False
-        self.notifier.notice('Not found')
+        components = source_path.split('/')
+        subpath = ''
+        for c in components:
+            if subpath == '':
+                subpath = c
+            else:
+                subpath = subpath + '/' + c
+            subpath = os.path.normcase(subpath)
+            subpath = subpath.replace('\\', '/')
+            subpath = subpath.replace('//', '/')
+            #self.notifier.notice('Checking for %s' % subpath)
+            if subpath in self.changed_paths:
+                #self.notifier.notice('Found')
+                return False
+        #self.notifier.notice('Not found')
         return True
     
     def backup_item(self, item_path):
@@ -244,6 +337,18 @@ class Backup(object):
         pickle_to_file(self.journal_state, journal_filename)
         self.notifier.notice('Closed journal')
     
+    def load_manifest(self):
+        manifest_filename = os.path.join(self.target, MANIFEST_FILENAME)
+        f = open(manifest_filename, 'rb')
+        self.manifest = cPickle.load(f)
+        f.close()
+    
+    def save_manifest(self):
+        manifest_filename = os.path.join(self.target, MANIFEST_FILENAME)
+        f = open(manifest_filename, 'wb')
+        cPickle.dump(self.manifest, f)
+        f.close()        
+
     def run(self):
         self.check_target()
         
@@ -267,7 +372,14 @@ class Backup(object):
         else:
             self.changed_paths = None      
         
+        try:
+            self.load_manifest()
+        except IOError:
+            self.manifest = {}
+        
         self.backup_item('')
+        
+        self.save_manifest()
         
         if self.enable_journal:
             self.close_journal()
