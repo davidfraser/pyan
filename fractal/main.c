@@ -18,19 +18,21 @@
 #endif
 
 
-typedef enum FRACTAL_MODE_ID
+typedef enum FRACTAL_MODE_TYPE
 {
-    MANDELBROT
-} FRACTAL_MODE_ID;
+    MANDELBROT,
+    JULIA
+} FRACTAL_MODE_TYPE;
 
 
 static struct {
     char *name;
-    FRACTAL_MODE_ID id;
+    FRACTAL_MODE_TYPE type;
     GET_POINT *get_point;
     void (* destroy)(FRACTAL *drawing);
 } fractal_modes[] = {
     { "MANDELBROT", MANDELBROT, mandelbrot_get_point, mandelbrot_destroy },
+    { "JULIA", JULIA, julia_get_point, julia_destroy },
     { NULL }
 };
 static int num_fractal_modes;
@@ -66,7 +68,7 @@ static int num_mfunc_modes;
 typedef struct OPTIONS
 {
     WINDOW window;
-    double mandelbrot_x, mandelbrot_y;
+    double mandelbrot_x, mandelbrot_y, mandelbrot_scale;
     FRACTAL *fractal;
     MFUNC *mfunc;
     DRAWING *drawing;
@@ -328,7 +330,10 @@ void restart(OPTIONS *options, int new_mode)
     
     options->window.depth = options->max ? (256*256) : 256;
     
-    options->fractal = mandelbrot_create(&options->window);
+    if (fractal_modes[options->current_fractal_mode].type == JULIA)
+        options->fractal = julia_create(&options->window, options->mandelbrot_x, options->mandelbrot_y);
+    else
+        options->fractal = mandelbrot_create(&options->window);
     
     options->current_draw_mode = new_mode;
     options->drawing = draw_modes[options->current_draw_mode].create(&options->window,
@@ -353,6 +358,9 @@ void finish(OPTIONS *options)
     
     if (options->fractal != NULL)
         fractal_modes[options->current_fractal_mode].destroy(options->fractal);
+    
+    options->drawing = NULL;
+    options->fractal = NULL;
 }
 
 
@@ -519,9 +527,9 @@ int main(int argc, char *argv[])
     int save_num = 0;
     OPTIONS *options;
 
-    num_draw_modes = 0;
-    while (draw_modes[num_draw_modes].name != NULL)
-        num_draw_modes++;
+    num_fractal_modes = 0;
+    while (fractal_modes[num_fractal_modes].name != NULL)
+        num_fractal_modes++;
     
     num_draw_modes = 0;
     while (draw_modes[num_draw_modes].name != NULL)
@@ -625,6 +633,32 @@ int main(int argc, char *argv[])
                     options->current_mfunc_mode++;
                     if (options->current_mfunc_mode >= num_mfunc_modes)
                         options->current_mfunc_mode = 0;
+                }
+                restart(options, options->current_draw_mode);
+            }
+            else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_4)
+            {
+                int new_mode;
+                fade_screen(options);
+                finish(options);
+                new_mode = options->current_fractal_mode + 1;
+                if (new_mode >= num_fractal_modes)
+                    new_mode = 0;
+                options->current_fractal_mode = new_mode;
+                if (fractal_modes[options->current_fractal_mode].type == JULIA)
+                {
+                    options->mandelbrot_x = options->window.centrex;
+                    options->mandelbrot_y = options->window.centrey;
+                    options->mandelbrot_scale = options->window.scale;
+                    options->window.centrex = 0.0;
+                    options->window.centrey = 0.0;
+                    options->window.scale = 1.5 / options->screen_height;
+                }
+                else
+                {
+                    options->window.centrex = options->mandelbrot_x;
+                    options->window.centrey = options->mandelbrot_y;
+                    options->window.scale = options->mandelbrot_scale;
                 }
                 restart(options, options->current_draw_mode);
             }

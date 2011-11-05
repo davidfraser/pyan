@@ -57,6 +57,10 @@ extern FRACTAL *mandelbrot_create(WINDOW *win);
 extern void mandelbrot_get_point(FRACTAL *fractal, int px, int py, double *zx, double *zy, double *cx, double *cy);
 extern void mandelbrot_destroy(FRACTAL *fractal);
 
+extern FRACTAL *julia_create(WINDOW *win, double mandelbrot_x, double mandelbrot_y);
+extern void julia_get_point(FRACTAL *fractal, int px, int py, double *zx, double *zy, double *cx, double *cy);
+extern void julia_destroy(FRACTAL *fractal);
+
 
 extern float do_pixel(WINDOW *window, int x, int y);
 extern void set_pixel(WINDOW *window, int x, int y, float k);
