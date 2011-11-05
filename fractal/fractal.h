@@ -15,6 +15,7 @@ typedef struct WINDOW
     double scale;
     int width;
     int height;
+    int depth;
 } WINDOW;
 
 /** Translate from a point in the Mandelbrot set to a pixel, using the given window.
@@ -52,23 +53,23 @@ typedef struct FRACTAL FRACTAL;
  */
 typedef void GET_POINT(FRACTAL *fractal, int px, int py, double *zx, double *zy, double *cx, double *cy);
 
+extern FRACTAL *mandelbrot_create(WINDOW *win);
+extern void mandelbrot_get_point(FRACTAL *fractal, int px, int py, double *zx, double *zy, double *cx, double *cy);
+extern void mandelbrot_destroy(FRACTAL *fractal);
+
+
+extern float do_pixel(WINDOW *window, int x, int y);
+extern void set_pixel(WINDOW *window, int x, int y, float k);
+
+extern int pixels_done;
+
+extern char *status;
+
 
 /**
  * Opaque type of a drawing mode object.
  */
 typedef struct DRAWING DRAWING;
-
-
-extern float do_pixel(int x, int y);
-extern void set_pixel(int x, int y, float k);
-
-extern int max_iterations;
-extern int pixels_done;
-
-extern char *status;
-
-extern FRACTAL *mandelbrot_create(WINDOW *win);
-extern void mandelbrot_get_point(FRACTAL *fractal, int px, int py, double *zx, double *zy, double *cx, double *cy);
 
 
 extern DRAWING *simple_create(WINDOW *window, FRACTAL *fractal, GET_POINT get_point, MFUNC *mfunc);

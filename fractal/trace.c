@@ -233,7 +233,7 @@ restart:
     if (drawing->state == FILLING)
     {
         float val = 0;
-        set_pixel(c.x, c.y, val);
+        set_pixel(drawing->window, c.x, c.y, val);
         drawing->done[c.y*drawing->width + c.x] = 1;
         drawing->quota -= PIXEL_COST;
 
@@ -290,9 +290,9 @@ static void trace_output_pixel(int slot, int k, double fx, double fy, BATON *bat
         val = (float) k - log(log(z))/log(2.0);
     }
     
-    set_pixel(drawing->x_slots[slot], drawing->y_slots[slot], val);
+    set_pixel(drawing->window, drawing->x_slots[slot], drawing->y_slots[slot], val);
     drawing->done[drawing->y_slots[slot]*drawing->width + drawing->x_slots[slot]] = 1;
-    drawing->quota -= ((k == 0) ? max_iterations : k) + PIXEL_COST;
+    drawing->quota -= ((k == 0) ? drawing->window->depth : k) + PIXEL_COST;
 
     for (i = 0; i < 8; i++)
     {
@@ -306,7 +306,7 @@ static void trace_output_pixel(int slot, int k, double fx, double fy, BATON *bat
             continue;
         c2.x = new_x;
         c2.y = new_y;
-        priority = (k == 0) ? LOWEST_PRIORITY : (int) (HIGHEST_PRIORITY*log(val)/log(max_iterations) + ((new_x ^ new_y ^ drawing->quota) & 0x15));
+        priority = (k == 0) ? LOWEST_PRIORITY : (int) (HIGHEST_PRIORITY*log(val)/log(drawing->window->depth) + ((new_x ^ new_y ^ drawing->quota) & 0x15));
         if (priority < HIGHEST_PRIORITY)
             priority = HIGHEST_PRIORITY;
         else if (priority > LOWEST_PRIORITY)
@@ -321,7 +321,7 @@ void trace_update(DRAWING *drawing)
 {
     drawing->quota = QUOTA_SIZE;
 
-    drawing->mfunc(max_iterations, trace_allocate_slots, trace_next_pixel, trace_output_pixel, (BATON *) drawing);
+    drawing->mfunc(drawing->window->depth, trace_allocate_slots, trace_next_pixel, trace_output_pixel, (BATON *) drawing);
 
     if (drawing->state == SEEDING)
         status = "SEEDING";

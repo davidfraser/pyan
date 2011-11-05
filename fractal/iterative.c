@@ -77,7 +77,7 @@ static int iterative_next_pixel(int slot, double *zx, double *zy, double *cx, do
 restart:
     if (drawing->i >= drawing->height)
     {
-        if (drawing->iteration_depth >= max_iterations)
+        if (drawing->iteration_depth >= drawing->window->depth)
             return 0;
         
         drawing->i = 0;
@@ -134,8 +134,8 @@ static void iterative_output_pixel(int slot, int k, double fx, double fy, BATON 
         drawing->done[drawing->i*drawing->width + drawing->j] = 1;
     }    
     
-    set_pixel(drawing->x_slots[slot], drawing->y_slots[slot], val);
-    drawing->quota -= ((k == 0) ? max_iterations : k) + PIXEL_COST;
+    set_pixel(drawing->window, drawing->x_slots[slot], drawing->y_slots[slot], val);
+    drawing->quota -= ((k == 0) ? drawing->window->depth : k) + PIXEL_COST;
 }
 
 

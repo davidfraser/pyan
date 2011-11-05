@@ -97,7 +97,9 @@ int parallel_next_pixel(int slot, double *zx, double *zy, double *cx, double *cy
 
 void parallel_output_pixel(int slot, int k, double fx, double fy, BATON *baton)
 {
+    DRAWING *drawing = baton->drawing;
     float val = 0.0;
+    
     if (k == 0)
     {
         val = 0.0;
@@ -108,7 +110,7 @@ void parallel_output_pixel(int slot, int k, double fx, double fy, BATON *baton)
         val = (float) k - log(log(z))/log(2.0);
     }
     
-    set_pixel(baton->x_slots[slot], baton->y_slots[slot], val);
+    set_pixel(drawing->window, baton->x_slots[slot], baton->y_slots[slot], val);
 }
 
 
@@ -131,7 +133,7 @@ void parallel_update(DRAWING *drawing)
         baton.j = j;
         baton.done = 0;
         baton.i = 0;    
-        drawing->mfunc(max_iterations, parallel_allocate_slots, parallel_next_pixel, parallel_output_pixel, &baton);
+        drawing->mfunc(drawing->window->depth, parallel_allocate_slots, parallel_next_pixel, parallel_output_pixel, &baton);
         thread_done[j] = baton.done;
     }
     pixels_done = old_pixels_done;

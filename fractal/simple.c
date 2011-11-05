@@ -88,8 +88,8 @@ static void simple_output_pixel(int slot, int k, double fx, double fy, BATON *ba
         val = (float) k - log(log(z))/log(2.0);
     }
     
-    set_pixel(drawing->x_slots[slot], drawing->y_slots[slot], val);
-    drawing->quota -= ((k == 0) ? max_iterations : k) + PIXEL_COST;
+    set_pixel(drawing->window, drawing->x_slots[slot], drawing->y_slots[slot], val);
+    drawing->quota -= ((k == 0) ? drawing->window->depth : k) + PIXEL_COST;
 }
 
 
@@ -97,7 +97,7 @@ void simple_update(DRAWING *drawing)
 {
     drawing->quota = QUOTA_SIZE;
 
-    drawing->mfunc(max_iterations, simple_allocate_slots, simple_next_pixel, simple_output_pixel, (BATON *) drawing);
+    drawing->mfunc(drawing->window->depth, simple_allocate_slots, simple_next_pixel, simple_output_pixel, (BATON *) drawing);
     
     status = "RENDERING";
 }
