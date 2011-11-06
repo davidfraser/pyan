@@ -102,8 +102,10 @@ restart:
         drawing->i++;
     }
 
-    if (drawing->done[drawing->i*drawing->width + drawing->j])
+    if (drawing->done[drawing->y_slots[slot]*drawing->width + drawing->x_slots[slot]])
+    {
         goto restart;
+    }
     
     return 1;
 }
@@ -131,10 +133,10 @@ static void iterative_output_pixel(int slot, int k, double fx, double fy, BATON 
     }
     else
     {
-        drawing->done[drawing->i*drawing->width + drawing->j] = 1;
-    }    
+        drawing->done[drawing->y_slots[slot]*drawing->width + drawing->x_slots[slot]] = 1;
+        set_pixel(drawing->window, drawing->x_slots[slot], drawing->y_slots[slot], val);
+    }
     
-    set_pixel(drawing->window, drawing->x_slots[slot], drawing->y_slots[slot], val);
     drawing->quota -= ((k == 0) ? drawing->window->depth : k) + PIXEL_COST;
 }
 
