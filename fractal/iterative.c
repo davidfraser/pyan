@@ -1,5 +1,6 @@
 #include "fractal.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -137,7 +138,7 @@ static void iterative_output_pixel(int slot, int k, double fx, double fy, BATON 
         set_pixel(drawing->window, drawing->x_slots[slot], drawing->y_slots[slot], val);
     }
     
-    drawing->quota -= ((k == 0) ? drawing->window->depth : k) + PIXEL_COST;
+    drawing->quota -= ((k == 0) ? drawing->iteration_depth : k) + PIXEL_COST;
 }
 
 
