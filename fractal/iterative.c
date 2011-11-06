@@ -84,6 +84,8 @@ restart:
         drawing->i = 0;
         drawing->j = 0;
         drawing->iteration_depth *= ITERATION_DEPTH_FACTOR;
+        if (drawing->iteration_depth > drawing->window->depth)
+            drawing->iteration_depth = drawing->window->depth;
         pixels_done = 0;
     }
     
@@ -127,7 +129,7 @@ static void iterative_output_pixel(int slot, int k, double fx, double fy, BATON 
         val = (float) k - log(log(z))/log(2.0);
     }
     
-    if (k == 0)
+    if (k == 0 && drawing->iteration_depth < drawing->window->depth)
     {
         drawing->point_x[drawing->y_slots[slot] * drawing->width + drawing->x_slots[slot]] = fx;
         drawing->point_y[drawing->y_slots[slot] * drawing->width + drawing->x_slots[slot]] = fy;
@@ -147,8 +149,10 @@ void iterative_update(DRAWING *drawing)
     drawing->quota = QUOTA_SIZE;
 
     drawing->mfunc(drawing->iteration_depth, iterative_allocate_slots, iterative_next_pixel, iterative_output_pixel, (BATON *) drawing);
-    
-    status = "ITERATING";
+    if (drawing->iteration_depth >= drawing->window->depth)
+        status = "DONE";
+    else
+        status = "ITERATING";
 }
 
 
