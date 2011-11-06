@@ -231,8 +231,17 @@ static OPTIONS *create_options(void)
     
     options->fractal = NULL;
     options->drawing = NULL;
+    
+    options->current_fractal_mode = 0;
+    options->current_draw_mode = 0;
+    options->current_mfunc_mode = 0;
+    options->current_depth_mode = 0;
+
     options->max = 0;
     
+    options->benchmark = 0;
+    options->benchmark_loops = 5;
+
     return options;
 }
 
