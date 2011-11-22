@@ -339,11 +339,15 @@ class Replayer(object):
 
         notify('Completing copies')
         self.cat_pool.finish()
-        notify('Checking sanity of working copy')
-        self.sanity_check()
-        if len(self.actions) > 0:
+        if self.options.skip_check:
+            warn('Skipping sanity check')
+        else:
+            notify('Checking sanity of working copy')
+            self.sanity_check()
+        if not self.options.commit:
+            warn('Not comitting')
+        elif len(self.actions) > 0:
             self.commit(le)
-            pass
         else:
             notify('No actions in revision; skipping commit.')
     
@@ -408,36 +412,44 @@ class Replayer(object):
 
 
 def main(args):
-    usage = """usage: %prog init SOURCE-URL SOURCE-REV [--ignore PATH]...\n       %prog sync"""
+    usage = """usage: %prog init SOURCE-URL SOURCE-REV [--ignore PATH]... [-v]\n       %prog sync [--skip-check] [-c] [-v]"""
     desc = """Initialise a working copy as an import branch; a source url and revision must be specified.
 Or, syncronise an import branch from its source."""
     parser = OptionParser(usage=usage, description=desc)
     parser.add_option("-v", "--verbose",
-                      action="store", dest="verbose", default=False,
+                      action="store_true", dest="verbose", default=False,
                       help="print verbose status messages")
     parser.add_option("--skip-check",
-                      action="store", dest="skip_check", default=False,
+                      action="store_true", dest="skip_check", default=False,
                       help="skip sanity check")
     parser.add_option("-c", "--commit",
-                      action="store", dest="commit", default=False,
+                      action="store_true", dest="commit", default=False,
                       help="commit after replaying each revision")
     parser.add_option("--ignore", metavar="PATH",
                       action="append", dest="ignore_paths",
                       help="specify paths to ignore (should be relative to source url)")
 
     options, args = parser.parse_args()
-    if len(args) == 0 or args[0] not in ('init', 'sync'):
+    if len(args) == 0:
         parser.error('A command such as init or sync must be specified.')
     
     command = args[0]
     if command == 'init':
+        if options.commit:
+            parser.error('init command does not want --commit option')
+        if options.skip_check:
+            parser.error('init command does not want --skip-check option')
         if len(args) != 3:
             parser.error('init command wants exactly 2 arguments')
         source_url = args[1]
         source_rev = int(args[2])
-    else:
+    elif command == 'sync':
+        if options.ignore_paths:
+            parser.error('sync command does not want --ignore option')
         if len(args) != 1:
-            parser.error('sync command wants no arguments')    
+            parser.error('sync command wants no arguments')
+    else:
+        parser.error('Unknown command: %s' % command)
     
     source_client = pysvn.Client()
     dest_client = pysvn.Client()
