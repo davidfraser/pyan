@@ -412,7 +412,7 @@ class Replayer(object):
 
 
 def main(args):
-    usage = """usage: %prog init SOURCE-URL SOURCE-REV [--ignore PATH]... [-v]\n       %prog sync [--skip-check] [-c] [-v]"""
+    usage = """usage: %prog init SOURCE-URL SOURCE-REV [--ignore PATH]... [options]\n       %prog sync [--skip-check] [-c] [options]"""
     desc = """Initialise a working copy as an import branch; a source url and revision must be specified.
 Or, syncronise an import branch from its source."""
     parser = OptionParser(usage=usage, description=desc)
@@ -428,6 +428,12 @@ Or, syncronise an import branch from its source."""
     parser.add_option("--ignore", metavar="PATH",
                       action="append", dest="ignore_paths",
                       help="specify paths to ignore (should be relative to source url)")
+    parser.add_option("--username", metavar="USERNAME",
+                      action="store", dest="username",
+                      help="username for target SVN server")
+    parser.add_option("--password", metavar="PASSWORD",
+                      action="store", dest="password",
+                      help="password for target SVN server")
 
     options, args = parser.parse_args()
     if len(args) == 0:
@@ -454,7 +460,7 @@ Or, syncronise an import branch from its source."""
     source_client = pysvn.Client()
     dest_client = pysvn.Client()
     dest_client.callback_ssl_server_trust_prompt = lambda trust_dict: (True, 0, True)
-    dest_client.callback_get_login = lambda realm, username, may_save: (True,  'ejrh00', password, True)
+    dest_client.callback_get_login = lambda realm, username, may_save: (True,  options.username, options.password, True)
     
     worker_clients = [pysvn.Client() for x in range(NUM_CAT_WORKERS)]
 
