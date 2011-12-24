@@ -38,6 +38,10 @@ class CallGraphVisitor(object):
             tgt_name = import_item[0]
             self.add_uses_edge(self.name_stack[-1], tgt_name)
         
+    def visitFrom(self, node):
+        tgt_name = node.modname
+        self.add_uses_edge(self.name_stack[-1], tgt_name)
+        
     def visitName(self, node):
         tgt_name = node.name
         self.add_uses_edge(self.name_stack[-1], tgt_name)
