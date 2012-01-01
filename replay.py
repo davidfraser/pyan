@@ -109,9 +109,7 @@ class Replayer(object):
         self.ignore_paths = []
         
         self.dest_root = self.get_root(self.dest_url, dest_client)
-        verbose_notify('Dest root: %s' % self.dest_root)
         self.dest_rel_path = self.dest_url[len(self.dest_root):]
-        verbose_notify('Dest rel path: %s' % self.dest_rel_path)
         
         self.name = self.dest_rel_path.replace('/branches/', '')
     
@@ -359,6 +357,8 @@ class Replayer(object):
             notify('No actions in revision; skipping commit.')
     
     def get_replay_config(self):
+        verbose_notify('Getting replay config')
+        
         # Get source URL
         results = self.dest_client.propget(REPLAY_SOURCE, self.dest_url, recurse=False)
         if self.dest_url in results:
@@ -367,15 +367,29 @@ class Replayer(object):
             raise Exception('Destination does not have %s set!' % REPLAY_SOURCE)
         
         self.source_root = self.get_root(self.source_url, self.source_client)
-        verbose_notify('Source root: %s' % self.source_root)
         self.source_rel_path = self.source_url[len(self.source_root):]
-        verbose_notify('Source rel path: %s' % self.source_rel_path)
         
         # Get ignore paths
         results = self.dest_client.propget(REPLAY_IGNORE, self.dest_url, recurse=False)
         if self.dest_url in results:
             self.ignore_paths.extend(results[self.dest_url].split(','))
     
+    def build_rev_map(self):
+        verbose_notify('Building rev map')
+        
+        self.rev_map = {}
+        results = self.dest_client.log(self.dest_url, discover_changed_paths=False, revprops=[REPLAY_SOURCE_REV])
+        for r in results:
+            if r.revprops is None:
+                continue
+            from_rev = int(r.revprops[REPLAY_SOURCE_REV])
+            to_rev = r.revision.number
+            self.rev_map[from_rev] = to_rev
+        
+        last_rev = max(self.rev_map.keys())
+        self.start_rev = pysvn.Revision(pysvn.opt_revision_kind.number, last_rev+1)
+        self.end_rev = pysvn.Revision(pysvn.opt_revision_kind.head)
+
     def init(self, source_url, source_rev):
         # Check it's not already marked as an import branch.
         results = self.dest_client.propget(REPLAY_SOURCE, self.dest_url, recurse=False)
@@ -394,19 +408,7 @@ class Replayer(object):
     def sync(self):
         self.get_replay_config()
         
-        verbose_notify('Building rev map')
-        self.rev_map = {}
-        results = self.dest_client.log(self.dest_url, discover_changed_paths=False, revprops=[REPLAY_SOURCE_REV])
-        for r in results:
-            if r.revprops is None:
-                continue
-            from_rev = int(r.revprops[REPLAY_SOURCE_REV])
-            to_rev = r.revision.number
-            self.rev_map[from_rev] = to_rev
-        
-        last_rev = max(self.rev_map.keys())
-        self.start_rev = pysvn.Revision(pysvn.opt_revision_kind.number, last_rev+1)
-        self.end_rev = pysvn.Revision(pysvn.opt_revision_kind.head)
+        self.build_rev_map()
         
         verbose_notify('Fetching logs for revisions from %d' % self.start_rev.number)
         results = self.source_client.log(self.source_url, revision_start=self.start_rev, revision_end=self.end_rev, discover_changed_paths=True, limit=MAX_REVISIONS)
@@ -416,12 +418,47 @@ class Replayer(object):
             if r.revision.number in self.rev_map:
                 raise Exception('Revision %d appears to already have been replayed here!' % r.revision.number)
             self.replay_log_entry(r)
-
+    
+    def info(self):
+        self.get_replay_config()
+        
+        notify('Source root: %s' % self.source_root)
+        notify('Source rel path: %s' % self.source_rel_path)
+        notify('Dest root: %s' % self.dest_root)
+        notify('Dest rel path: %s' % self.dest_rel_path)
+        
+        notify('Ignore paths: %s' % ', '.join(self.ignore_paths))
+        
+        self.build_rev_map()
+    
+        items = self.rev_map.items()
+        items.sort()
+        prev_from_rev,prev_to_rev = None,None
+        parts = []
+        for from_rev,to_rev in items:
+            if from_rev-1 == prev_from_rev and to_rev-1 == prev_to_rev:
+                start_from_rev,end_from_rev,start_to_rev,end_to_rev = parts.pop()
+                end_from_rev,end_to_rev = from_rev,to_rev
+                parts.append((start_from_rev,end_from_rev,start_to_rev,end_to_rev))
+            else:
+                parts.append((from_rev,from_rev,to_rev,to_rev))
+            prev_from_rev,prev_to_rev = from_rev,to_rev
+        
+        def part_str(p):
+            if p[0] == p[1] and p[2] == p[3]:
+                return '%d->%d' % (p[0], p[2])
+            else:
+                return '%d:%d->%d:%d' % p
+        
+        notify('Revision map: %s' % ', '.join([part_str(p) for p in parts]))
 
 def main(args):
-    usage = """usage: %prog init SOURCE-URL SOURCE-REV [--ignore PATH]... [options]\n       %prog sync [--skip-check] [--commit] [options]"""
+    usage = """usage: %prog init SOURCE-URL SOURCE-REV [--ignore PATH]... [options]
+       %prog sync [--skip-check] [--commit] [options]
+       %prog info [options]"""
     desc = """Initialise a working copy as an import branch; a source url and revision must be specified.
-Or, syncronise an import branch from its source."""
+Or, syncronise an import branch from its source.
+Or, print info about a current import branch."""
     parser = OptionParser(usage=usage, description=desc)
     parser.add_option("-v", "--verbose",
                       action="store_true", dest="verbose", default=False,
@@ -444,7 +481,7 @@ Or, syncronise an import branch from its source."""
 
     options, args = parser.parse_args()
     if len(args) == 0:
-        parser.error('A command such as init or sync must be specified.')
+        parser.error('A command such as init, sync or info must be specified.')
     
     command = args[0]
     if command == 'init':
@@ -461,6 +498,15 @@ Or, syncronise an import branch from its source."""
             parser.error('sync command does not want --ignore option')
         if len(args) != 1:
             parser.error('sync command wants no arguments')
+    elif command == 'info':
+        if options.ignore_paths:
+            parser.error('info command does not want --ignore option')
+        if options.commit:
+            parser.error('info command does not want --commit option')
+        if options.skip_check:
+            parser.error('info command does not want --skip-check option')
+        if len(args) != 1:
+            parser.error('info command wants no arguments')
     else:
         parser.error('Unknown command: %s' % command)
     
@@ -480,6 +526,8 @@ Or, syncronise an import branch from its source."""
         r.init(source_url, source_rev)
     elif command == 'sync':
         r.sync()
+    elif command == 'info':
+        r.info()
 
 
 if __name__ == '__main__':
