@@ -24,6 +24,13 @@ def notify(str):
     print >>sys.stderr, '%s\n' % str,
 
 
+verbose_mode = False
+
+def verbose_notify(str):
+    if verbose_mode:
+        print >>sys.stderr, '%s\n' % str,
+
+
 def retry(cmd):
     attempts = 1
     while attempts < 3:
@@ -55,12 +62,12 @@ class CatWorker(threading.Thread):
             try:
                 self.process(item)
             except Exception, ex:
-                warn('Processing item %s: %s' % (item, ex))
+                warn('Exception processing item %s: %s' % (item, ex))
             self.queue.task_done()
     
     def process(self, item):
         url,rev,dest = item
-        notify('Copying: %s' % dest)
+        verbose_notify('Copying: %s' % dest)
         def get_data():
             return self.client.cat(url, revision=rev, peg_revision=rev)
         data = retry(get_data)
@@ -102,9 +109,9 @@ class Replayer(object):
         self.ignore_paths = []
         
         self.dest_root = self.get_root(self.dest_url, dest_client)
-        notify('Dest root: %s' % self.dest_root)
+        verbose_notify('Dest root: %s' % self.dest_root)
         self.dest_rel_path = self.dest_url[len(self.dest_root):]
-        notify('Dest rel path: %s' % self.dest_rel_path)
+        verbose_notify('Dest rel path: %s' % self.dest_rel_path)
         
         self.name = self.dest_rel_path.replace('/branches/', '')
     
@@ -186,7 +193,7 @@ class Replayer(object):
             if do_copy:
                 to_rev = self.rev_map[from_rev]
                 local_from_path = self.get_local_path(copyfrom_path)
-                notify('Copy source rev %d mapped to %d in dest' % (from_rev, to_rev))
+                verbose_notify('Copy source rev %d mapped to %d in dest' % (from_rev, to_rev))
                 self.dest_client.copy(join_paths(self.dest_url, local_from_path), local_path, pysvn.Revision(pysvn.opt_revision_kind.number, to_rev))
                 if entry.kind != pysvn.node_kind.dir:
                     os.remove(local_path)
@@ -282,7 +289,7 @@ class Replayer(object):
             raise Exception('Status conflict on path: %s (expected %s, was %s)' % (r.path, action, r.text_status))
         
     def commit(self, le):
-        notify('Committing %d actions' % len (self.actions))
+        verbose_notify('Committing %d actions' % len (self.actions))
         message = le.message.strip('\n').decode('utf8')
         message = '(%s) %s\n\nCopied from %s, rev. %s by %s @ %s' % (self.name, message, self.source_url, le.revision.number, le.author, time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(le.date)))
         global commit_notifications
@@ -291,7 +298,7 @@ class Replayer(object):
         def callback_notify(event_dict):
             global commit_notifications
             commit_notifications += 1
-            notify('Progress (%d/%d): %s on %s' % (commit_notifications, expected_notifications, event_dict['action'], event_dict['path']))
+            verbose_notify('Progress (%d/%d): %s on %s' % (commit_notifications, expected_notifications, event_dict['action'], event_dict['path']))
         prev_notify = self.dest_client.callback_notify
         self.dest_client.callback_notify = callback_notify
         result = self.dest_client.checkin('.', message)
@@ -301,7 +308,7 @@ class Replayer(object):
         self.rev_map[le.revision.number] = result.number
     
     def replay_log_entry(self, le):
-        notify('Replaying change %d (%d items)' % (le.revision.number, len(le.changed_paths)))
+        verbose_notify('Replaying change %d (%d items)' % (le.revision.number, len(le.changed_paths)))
         
         self.actions = {}
         
@@ -317,7 +324,7 @@ class Replayer(object):
                 warn('Skipping ignored change: %s' % p.path)
                 continue
             dest_path = self.get_dest_path(p.path)
-            notify('Replaying %s on %s to %s' % (p.action, p.path, dest_path))
+            verbose_notify('Replaying %s on %s to %s' % (p.action, p.path, dest_path))
             self.actions[local_path] = p.action
             try:
                 if p.action == 'A' and p.copyfrom_revision is not None:
@@ -337,12 +344,12 @@ class Replayer(object):
                 warn('Exception processing item %s' % p.path)
                 raise
 
-        notify('Completing copies')
+        verbose_notify('Completing copies')
         self.cat_pool.finish()
         if self.options.skip_check:
             warn('Skipping sanity check')
         else:
-            notify('Checking sanity of working copy')
+            verbose_notify('Checking sanity of working copy')
             self.sanity_check()
         if not self.options.commit:
             warn('Not comitting')
@@ -360,9 +367,9 @@ class Replayer(object):
             raise Exception('Destination does not have %s set!' % REPLAY_SOURCE)
         
         self.source_root = self.get_root(self.source_url, self.source_client)
-        notify('Source root: %s' % self.source_root)
+        verbose_notify('Source root: %s' % self.source_root)
         self.source_rel_path = self.source_url[len(self.source_root):]
-        notify('Source rel path: %s' % self.source_rel_path)
+        verbose_notify('Source rel path: %s' % self.source_rel_path)
         
         # Get ignore paths
         results = self.dest_client.propget(REPLAY_IGNORE, self.dest_url, recurse=False)
@@ -387,7 +394,7 @@ class Replayer(object):
     def sync(self):
         self.get_replay_config()
         
-        notify('Building rev map')
+        verbose_notify('Building rev map')
         self.rev_map = {}
         results = self.dest_client.log(self.dest_url, discover_changed_paths=False, revprops=[REPLAY_SOURCE_REV])
         for r in results:
@@ -401,10 +408,10 @@ class Replayer(object):
         self.start_rev = pysvn.Revision(pysvn.opt_revision_kind.number, last_rev+1)
         self.end_rev = pysvn.Revision(pysvn.opt_revision_kind.head)
         
-        notify('Fetching logs for revisions from %d' % self.start_rev.number)
+        verbose_notify('Fetching logs for revisions from %d' % self.start_rev.number)
         results = self.source_client.log(self.source_url, revision_start=self.start_rev, revision_end=self.end_rev, discover_changed_paths=True, limit=MAX_REVISIONS)
         results.sort(key=lambda x: x.revision.number)
-        notify('Replaying revisions from %d to %d' % (results[0].revision.number, results[-1].revision.number))
+        verbose_notify('Replaying revisions from %d to %d' % (results[0].revision.number, results[-1].revision.number))
         for r in results:
             if r.revision.number in self.rev_map:
                 raise Exception('Revision %d appears to already have been replayed here!' % r.revision.number)
@@ -412,7 +419,7 @@ class Replayer(object):
 
 
 def main(args):
-    usage = """usage: %prog init SOURCE-URL SOURCE-REV [--ignore PATH]... [options]\n       %prog sync [--skip-check] [-c] [options]"""
+    usage = """usage: %prog init SOURCE-URL SOURCE-REV [--ignore PATH]... [options]\n       %prog sync [--skip-check] [--commit] [options]"""
     desc = """Initialise a working copy as an import branch; a source url and revision must be specified.
 Or, syncronise an import branch from its source."""
     parser = OptionParser(usage=usage, description=desc)
@@ -456,6 +463,9 @@ Or, syncronise an import branch from its source."""
             parser.error('sync command wants no arguments')
     else:
         parser.error('Unknown command: %s' % command)
+    
+    global verbose_mode
+    verbose_mode = options.verbose
     
     source_client = pysvn.Client()
     dest_client = pysvn.Client()
