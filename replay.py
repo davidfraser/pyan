@@ -470,7 +470,7 @@ Or, print info about a current import branch."""
                       action="store_true", dest="commit", default=False,
                       help="commit after replaying each revision")
     parser.add_option("--ignore", metavar="PATH",
-                      action="append", dest="ignore_paths",
+                      action="append", dest="ignore_paths", default=[],
                       help="specify paths to ignore (should be relative to source url)")
     parser.add_option("--username", metavar="USERNAME",
                       action="store", dest="username",
