@@ -1,6 +1,7 @@
 import sys
 import compiler
 from glob import glob
+from optparse import OptionParser
 
 
 class CallGraphVisitor(object):
@@ -75,13 +76,54 @@ class CallGraphVisitor(object):
                     s += """    %s -> %s;\n""" % (n, n2)
         s += """}\n"""
         return s
-
-
-def main(args=None):
-    if args is None:
-        args = sys.argv
     
-    filenames = [fn2 for fn in args[1:] for fn2 in glob(fn)]
+    def to_tgf(self):
+        s = ''
+        i = 1
+        id_map = {}
+        for n in self.defines_edges:
+            s += """%d %s\n""" % (i, n)
+            id_map[n] = i
+            i += 1
+        for n in self.uses_edges:
+            if n in id_map:
+                continue
+            s += """%d %s\n""" % (i, n)
+            id_map[n] = i
+            i += 1
+        
+        s += """#\n"""
+        
+        for n in self.defines_edges:
+            for n2 in self.defines_edges[n]:
+                if n2 in self.known_callables and n2 != n:
+                    i1 = id_map[n]
+                    i2 = id_map[n2]
+                    s += """%d %d D\n""" % (i1, i2)
+        for n in self.uses_edges:
+            for n2 in self.uses_edges[n]:
+                if n2 in self.known_callables and n2 != n:
+                    i1 = id_map[n]
+                    i2 = id_map[n2]
+                    s += """%d %d U\n""" % (i1, i2)
+        return s
+
+
+def main():
+    usage = """usage: %prog FILENAME... [--dot|--tgf]"""
+    desc = """Analyse one or more Python source files and generate an approximate call graph of the modules, classes and functions within them."""
+    parser = OptionParser(usage=usage, description=desc)
+    parser.add_option("--dot",
+                      action="store_true", default=False,
+                      help="output in GraphViz dot format")
+    parser.add_option("--tgf",
+                      action="store_true", default=False,
+                      help="output in Trivial Graph Format")
+
+    options, args = parser.parse_args()
+    filenames = [fn2 for fn in args for fn2 in glob(fn)]
+    if len(args) == 0:
+        parser.error('Need one or more filenames to process')
     
     v = CallGraphVisitor()
     for filename in filenames:
@@ -90,8 +132,11 @@ def main(args=None):
         v.name_stack = [module_name]
         v.known_callables.add(module_name)
         compiler.walk(ast, v)
-    print v.to_dot()
-    
+    if options.dot:
+        print v.to_dot()
+    if options.tgf:
+        print v.to_tgf()
+
 
 if __name__ == '__main__':
     main()
