@@ -185,6 +185,8 @@ class CallGraphVisitor(object):
         self.last_value = None
     
     def visitCallFunc(self, node):
+        self.visit(node.node)
+        
         for arg in node.args:
             self.visit(arg)
         
@@ -192,8 +194,6 @@ class CallGraphVisitor(object):
             self.visit(node.star_args)
         if node.dstar_args is not None:
             self.visit(node.dstar_args)
-        
-        self.visit(node.node)
     
     def visitDiscard(self, node):
         self.visit(node.expr)
@@ -201,6 +201,7 @@ class CallGraphVisitor(object):
     
     def visitName(self, node):
         if node.name == 'self' and self.current_class is not None:
+            verbose_output('name %s is maps to %s' % (node.name, self.current_class))
             self.last_value = self.current_class
             return
         
@@ -477,7 +478,8 @@ def main():
         short_name = mod_name.rsplit('.', 1)[-1]
         v.module_names[short_name] = mod_name
     
-    for filename in filenames:
+    # Process the set of files, TWICE: so that forward references are picked up
+    for filename in filenames + filenames:
         ast = compiler.parseFile(filename)
         module_name = get_module_name(filename)
         v.module_name = module_name
