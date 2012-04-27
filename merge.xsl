@@ -121,10 +121,6 @@ If it's an element, return it surrounded by element delimiters, with no attribut
 If it's a comment, return it surrounded by comment delimiters.
 Otherwise just return text.
 -->
-<xsl:template match="node()[name() = 'route']" mode="sig">
-    &lt;route/<xsl:for-each select="*/*/*[name() = 'elementValue' or name() = 'xPath']"><xsl:value-of select="string(.)" /></xsl:for-each>&gt;
-</xsl:template>
-
 <xsl:template match="node()" mode="sig">
     &lt;<xsl:value-of select="name()" />&gt;
 </xsl:template>
