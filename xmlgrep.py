@@ -55,7 +55,17 @@ def grep_file(filename, path, options):
                 l = ''
                 if not options.no_filename:
                     l = l + '%s:%d: ' % (filename, n.lineNo())
-                l = l + '%s' % n
+                if len(options.value) == 0:
+                    l = l + '%s' % n
+                else:
+                    bits = []
+                    for vpath in options.value:
+                        nodes = n.xpathEval(vpath)
+                        if type(nodes) in [int, float, str]:
+                            bits.append(str(nodes))
+                        else:
+                            bits.append('%s' % ''.join([str(n2) for n2 in nodes]))
+                    l = l + ', '.join(bits)
                 r.append(l)
 
     doc1.freeDoc()
@@ -84,6 +94,8 @@ def parse_command_line(argv = None):
                       help="suppress the prefixing filename on output")
     parser.add_option("--parallel", default=4, action='store',
                       help="number of grep processes to run in parallel")
+    parser.add_option("-v", "--value", default=[], action='append',
+                      help="XPath value to print for each match")
     (options, args) = parser.parse_args(argv[1:])
 
     if len(args) == 0:
