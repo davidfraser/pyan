@@ -1,0 +1,3 @@
+This is an unmodified xdot.py mirrored from:
+
+https://code.google.com/p/jrfonseca/wiki/XDot#Download
