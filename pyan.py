@@ -12,7 +12,7 @@ import compiler
 from glob import glob
 from optparse import OptionParser
 import os.path
-
+import re
 
 def verbose_output(msg):
     print >>sys.stderr, msg
@@ -386,6 +386,12 @@ class CallGraphVisitor(object):
         draw_defines = ("draw_defines" in kwargs  and  kwargs["draw_defines"])
         colored = ("colored" in kwargs  and  kwargs["colored"])
         grouped = ("grouped" in kwargs  and  kwargs["grouped"])
+        nested_groups = ("nested_groups" in kwargs  and  kwargs["nested_groups"])
+
+        # TODO:
+        #  - add coloring by file (use HSV: hue = file, value = namespace within file)
+        #  - use the same base color for the cluster as the namespace, but translucent
+        #  - in nested_groups mode, start from the first shade for each box on the same level
 
         # Color nodes by namespace.
         #
@@ -417,7 +423,7 @@ class CallGraphVisitor(object):
 
         # enable clustering
         if grouped:
-            s += """graph [clusterrank local]\n"""
+            s += """    graph [clusterrank local];\n"""
 
         vis_node_list = []  # for sorting; will store nodes to be visualized
         def nodecmp(n1, n2):
@@ -438,30 +444,63 @@ class CallGraphVisitor(object):
         vis_node_list.sort(cmp=nodecmp)  # sort by namespace for clustering
 
         prev_namespace = ""
+        namespace_stack = []
+        indent = ""
         for n in vis_node_list:
             # new namespace? (NOTE: nodes sorted by namespace!)
             if grouped  and  n.namespace != prev_namespace:
-                if prev_namespace != "":
-                    s += """  }\n"""  # terminate previous subgraph
+                if nested_groups:
+                    # Pop the stack until the newly found namespace is within one of the
+                    # parent namespaces, or until the stack runs out (i.e. this is a
+                    # sibling).
+                    #
+                    j = len(namespace_stack) - 1
+                    if j >= 0:
+                        m = re.match(namespace_stack[j], n.namespace)
+                        # The '.' check catches siblings in cases like MeshGenerator vs. Mesh.
+                        while m is None  or  n.namespace[m.end()] != '.':
+                            s += """%s}\n""" % indent  # terminate previous subgraph
+                            del namespace_stack[j]
+                            j -= 1
+                            indent = " " * (4*len(namespace_stack))  # 4 spaces per level
+                            if j < 0:
+                                break
+                            m = re.match(namespace_stack[j], n.namespace)
+                    namespace_stack.append( n.namespace )
+                    indent = " " * (4*len(namespace_stack))  # 4 spaces per level
+                else:
+                    if prev_namespace != "":
+                        s += """%s}\n""" % indent  # terminate previous subgraph
+                    else:
+                        # first subgraph begins, start indenting
+                        indent = "    "  # 4 spaces
                 prev_namespace = n.namespace
                 # begin new subgraph for this namespace (TODO: refactor the label generation)
                 # (name must begin with "cluster" to be recognized as a cluster by GraphViz)
-                s += """  subgraph cluster_%s {\n""" % n.namespace.replace('.', '__').replace('*', '')
+                s += """%ssubgraph cluster_%s {\n""" % (indent, n.namespace.replace('.', '__').replace('*', ''))
                 if colored:
                     # translucent bluish gray
-                    s += """    graph [style="filled,rounded", fillcolor="#8080A018", label="%s"]""" % n.namespace
+                    s += """%s    graph [style="filled,rounded", fillcolor="#8080A018", label="%s"];\n""" % (indent, n.namespace)
 
             # add the node itself
             if colored:
                 idx = get_color_idx(n)
                 c = color_names[idx]
                 t = text_colors[idx]
-                s += """    %s [label="%s", style="filled", colorscheme="%s", fillcolor="%s", fontcolor="%s", group="%s"];\n""" % (n.get_label(), n.get_short_name(), colorscheme_name, c, t, c)
+                s += """%s    %s [label="%s", style="filled", colorscheme="%s", fillcolor="%s", fontcolor="%s", group="%s"];\n""" % (indent, n.get_label(), n.get_short_name(), colorscheme_name, c, t, c)
             else:
-                s += """    %s [label="%s"];\n""" % (n.get_label(), n.get_short_name())
+                s += """%s    %s [label="%s"];\n""" % (indent, n.get_label(), n.get_short_name())
 
         if grouped:
-            s += """  }\n"""  # terminate last subgraph
+            if nested_groups:
+                j = len(namespace_stack) - 1
+                while j >= 0:
+                    s += """%s}\n""" % indent  # terminate all remaining subgraphs
+                    del namespace_stack[j]
+                    j -= 1
+                    indent = " " * (4*len(namespace_stack))  # two spaces per level
+            else:
+                s += """%s}\n""" % indent  # terminate last subgraph
 
         if draw_defines:
             for n in self.defines_edges:
@@ -553,11 +592,17 @@ def main():
     parser.add_option("-g", "--grouped",
                       action="store_true", default=False, dest="grouped",
                       help="group nodes (create subgraphs) according to namespace [dot only]")
+    parser.add_option("-e", "--nested-groups",
+                      action="store_true", default=False, dest="nested_groups",
+                      help="create nested groups (subgraphs) for nested namespaces (implies -g) [dot only]")
 
     options, args = parser.parse_args()
     filenames = [fn2 for fn in args for fn2 in glob(fn)]
     if len(args) == 0:
         parser.error('Need one or more filenames to process')
+
+    if options.nested_groups:
+        options.grouped = True
     
     if not options.verbose:
         global verbose_output
@@ -589,7 +634,8 @@ def main():
     if options.dot:
         print v.to_dot(draw_defines=options.draw_defines,
                        colored=options.colored,
-                       grouped=options.grouped)
+                       grouped=options.grouped,
+                       nested_groups=options.nested_groups)
     if options.tgf:
         print v.to_tgf(draw_defines=options.draw_defines)
 
