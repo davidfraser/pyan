@@ -1,4 +1,4 @@
-Original version from
+Original version by Edmund Horner, from:
 
 http://code.google.com/p/ejrh/source/browse/trunk/utils/pyan.py
 
