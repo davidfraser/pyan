@@ -642,9 +642,9 @@ class CallGraphVisitor(object):
                 # begin new subgraph for this namespace (TODO: refactor the label generation)
                 # (name must begin with "cluster" to be recognized as a cluster by GraphViz)
                 s += """%ssubgraph cluster_%s {\n""" % (indent, n.namespace.replace('.', '__').replace('*', ''))
-                if colored:
-                    # translucent gray (no hue to avoid visual confusion with bluish nodes)
-                    s += """%s    graph [style="filled,rounded", fillcolor="#80808018", label="%s"];\n""" % (indent, n.namespace)
+
+                # translucent gray (no hue to avoid visual confusion with bluish nodes)
+                s += """%s    graph [style="filled,rounded", fillcolor="#80808018", label="%s"];\n""" % (indent, n.namespace)
 #                    # translucent bluish gray
 #                    s += """%s    graph [style="filled,rounded", fillcolor="#8080A018", label="%s"];\n""" % (indent, n.namespace)
 
@@ -670,7 +670,10 @@ class CallGraphVisitor(object):
 
                 s += """%s    %s [label="%s", style="filled", fillcolor="%s", fontcolor="%s", group="%s"];\n""" % (indent, n.get_label(), n.get_short_name(), fill_RGBA, text_RGB, idx)
             else:
-                s += """%s    %s [label="%s"];\n""" % (indent, n.get_label(), n.get_short_name())
+                fill_RGBA = htmlize_rgb( 1.0, 1.0, 1.0, 0.8 )
+                idx = get_hue_idx(n)
+                s += """%s    %s [label="%s", style="filled", fillcolor="%s", fontcolor="#000000", group="%s"];\n""" % (indent, n.get_label(), n.get_short_name(), fill_RGBA, idx)
+#                s += """%s    %s [label="%s"];\n""" % (indent, n.get_label(), n.get_short_name())
 
         if grouped:
             if nested_groups:
@@ -687,11 +690,8 @@ class CallGraphVisitor(object):
             for n in self.defines_edges:
                 for n2 in self.defines_edges[n]:
                     if n2.defined and n2 != n:
-                        if colored:
-                            # gray lines (so they won't visually obstruct the "uses" lines)
-                            s += """    %s -> %s [style="dashed", color="azure4"];\n""" % (n.get_label(), n2.get_label())
-                        else:
-                            s += """    %s -> %s [style="dashed"];\n""" % (n.get_label(), n2.get_label())
+                        # gray lines (so they won't visually obstruct the "uses" lines)
+                        s += """    %s -> %s [style="dashed", color="azure4"];\n""" % (n.get_label(), n2.get_label())
 
         for n in self.uses_edges:
             for n2 in self.uses_edges[n]:
