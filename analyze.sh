@@ -10,6 +10,11 @@ fi
 echo -ne "Analyzing...\n"
 python -m pyan $@ -c --dot >temp.dot
 if [ $? -eq 0 ]; then
+  echo -ne "Generating layout...\n"
+  # "fdp" comes from the graphviz package
+  fdp -Txdot -otemp.xdot temp.dot
+
   echo -ne "Visualizing...\n"
-  python -m xdot -f fdp temp.dot
+  # -n = filter off (input already in xdot format)
+  python -m xdot -n temp.xdot
 fi
