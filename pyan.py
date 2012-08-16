@@ -565,6 +565,7 @@ class CallGraphVisitor(object):
                 top_ns_to_hue_idx[ns] = cidx
                 cidx += 1
                 if cidx >= len(hues):
+                    verbose_output("WARNING: too many top-level namespaces; colors wrapped")
                     cidx = 0  # wrap around
             return top_ns_to_hue_idx[ns]
 
