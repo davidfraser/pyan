@@ -13,9 +13,114 @@ from glob import glob
 from optparse import OptionParser
 import os.path
 import re
+import math
 
 def verbose_output(msg):
     print >>sys.stderr, msg
+
+
+def hsl2rgb(*args):
+    """Convert HSL color tuple to RGB.
+
+    Parameters:  H,S,L, where
+        H,S,L = HSL values as double-precision floats, with each component in [0,1].
+
+    Return value:
+        R,G,B tuple
+
+    For more information:
+        https://en.wikipedia.org/wiki/HSL_and_HSV#From_HSL
+
+    """
+    if len(args) != 3:
+        raise ValueError("hsl2rgb requires exactly 3 arguments. See docstring.")
+
+    H = args[0]
+    S = args[1]
+    L = args[2]
+
+    if H < 0.0  or  H > 1.0:
+        raise ValueError("H component = %g out of range [0,1]" % H)
+    if S < 0.0  or  S > 1.0:
+        raise ValueError("S component = %g out of range [0,1]" % S)
+    if L < 0.0  or  L > 1.0:
+        raise ValueError("L component = %g out of range [0,1]" % L)
+
+    # hue chunk
+    Hpf = H / (60./360.) # "H prime, float" (H', float)
+    Hp = int(Hpf)  # "H prime" (H', int)
+    if Hp >= 6:  # catch special case 360deg = 0deg
+        Hp = 0
+
+    C = (1.0 - math.fabs(2.0*L - 1.0))*S  # HSL chroma
+    X = C * (1.0 - math.fabs( math.modf(Hpf / 2.0)[0] - 1.0 ))
+
+    if S == 0.0:  # H undefined if S == 0
+        R1,G1,B1 = (0.0, 0.0, 0.0)
+    elif Hp == 0:
+        R1,G1,B1 = (C,   X,   0.0)
+    elif Hp == 1:
+        R1,G1,B1 = (X,   C,   0.0)
+    elif Hp == 2:
+        R1,G1,B1 = (0.0, C,   X  )
+    elif Hp == 3:
+        R1,G1,B1 = (0.0, X,   C  )
+    elif Hp == 4:
+        R1,G1,B1 = (X,   0.0, C  )
+    elif Hp == 5:
+        R1,G1,B1 = (C,   0.0, X  )
+
+    # match the HSL Lightness
+    #
+    m = L - 0.5*C
+    R,G,B = (R1 + m, G1 + m, B1 + m)
+
+    return R,G,B
+
+
+def htmlize_rgb(*args):
+    """HTML-ize an RGB(A) color.
+
+    Parameters:  R,G,B[,alpha], where
+        R,G,B = RGB values as double-precision floats, with each component in [0,1].
+        alpha = optional alpha component for translucency, in [0,1]. (1.0 = opaque)
+
+    Example:
+        htmlize_rgb(1.0, 0.5, 0)       =>  "#FF8000"    (RGB)
+        htmlize_rgb(1.0, 0.5, 0, 0.5)  =>  "#FF800080"  (RGBA)
+
+    """
+    if len(args) < 3:
+        raise ValueError("htmlize_rgb requires exactly 3 arguments. See docstring.")
+
+    R = args[0]
+    G = args[1]
+    B = args[2]
+
+    if R < 0.0  or  R > 1.0:
+        raise ValueError("R component = %g out of range [0,1]" % R)
+    if G < 0.0  or  G > 1.0:
+        raise ValueError("G component = %g out of range [0,1]" % G)
+    if B < 0.0  or  B > 1.0:
+        raise ValueError("B component = %g out of range [0,1]" % B)
+
+    R = int(255.0*R)
+    G = int(255.0*G)
+    B = int(255.0*B)
+
+    if len(args) > 3:
+        alp = args[3]
+        if alp < 0.0  or  alp > 1.0:
+            raise ValueError("alpha component = %g out of range [0,1]" % alp)
+        alp = int(255.0*alp)
+        make_RGBA = True
+    else:
+        make_RGBA = False
+
+    if make_RGBA:
+        return "#%02X%02X%02X%02X" % (R, G, B, alp)
+    else:
+        return "#%02X%02X%02X" % (R, G, B)
 
 
 class Node(object):
@@ -49,7 +154,30 @@ class Node(object):
             return '*.' + self.name
         else:
             return self.namespace + '.' + self.name
-    
+
+    def get_level(self):
+        """Return the level of this node (in terms of nested namespaces).
+
+        The level is defined as the number of '.' in the namespace.
+        Top level is level 0.
+
+        """
+        if self.namespace == "":
+            return 0
+        else:
+            return 1 + self.namespace.count('.')
+
+    def get_toplevel_namespace(self):
+        """Return the name of the top-level namespace of this node, or "" if none."""
+        if self.namespace == "":
+            return ""
+
+        idx = self.namespace.find('.')
+        if idx > -1:
+            return self.namespace[0:idx]
+        else:
+            return self.namespace
+
     def get_label(self):
         """Return a label for this node, suitable for use in graph formats.
         Unique nodes should have unique labels; and labels should not contain
@@ -389,7 +517,6 @@ class CallGraphVisitor(object):
         nested_groups = ("nested_groups" in kwargs  and  kwargs["nested_groups"])
 
         # TODO:
-        #  - add coloring by file (use HSV: hue = file, value = namespace within file)
         #  - use the same base color for the cluster as the namespace, but translucent
         #  - in nested_groups mode, start from the first shade for each box on the same level
 
@@ -399,25 +526,61 @@ class CallGraphVisitor(object):
 #        color_names = [ "%s" % j for j in xrange(1,10) ]  # color names in chosen scheme
 #        text_colors = [ "#000000" for j in xrange(8) ]
 #        text_colors.extend( [ "#FFFFFF" for j in xrange(2) ] )
+#        colorscheme_name = "greens7"
+#        color_names = [ "%s" % j for j in xrange(1,8) ]  # color names in chosen scheme
+#        text_colors = [ "#000000" for j in xrange(5) ]
+#        text_colors.extend( [ "#FFFFFF" for j in xrange(2) ] )
 
-        colorscheme_name = "greens7"
-        color_names = [ "%s" % j for j in xrange(1,8) ]  # color names in chosen scheme
-        text_colors = [ "#000000" for j in xrange(5) ]
-        text_colors.extend( [ "#FFFFFF" for j in xrange(2) ] )
-
-        namespace2coloridx = {}
+        # Color by top-level namespace. Use HSL: hue = file, lightness = nesting level.
+        #
+        # Map top-level namespaces (typically files) to different hues.
+        #
+        # The "" namespace (for *.py files) gets the first color.
+        #
+        # Since its level is 0, its lightness will be 1.0, i.e. pure white
+        # regardless of the hue. (See the HSL assignment code below.)
+        #
+        # Reference H values (at S=1, L=0.5):
+        #   0 = pure red
+        #  60 = pure yellow
+        # 120 = pure green
+        # 180 = pure cyan 
+        # 240 = pure blue
+        # 300 = pure magenta
+        #
+        # unused, green (120), orange (50), cyan (190), yellow (90),
+        #         deep blue (240), red (0), magenta (300)
+        # See https://en.wikipedia.org/wiki/File:HSV-RGB-comparison.svg
+        # (although this is HSL, the hue should match)
+        #
+        hues = map( lambda d: d/360., [ 0, 120, 50, 190, 90, 240, 0, 300 ] )
+        top_ns_to_hue_idx = {}
         global cidx   # WTF? Python 2.6 won't pass cidx to the inner function without global...
-        cidx = 0  # first free color index
-        def get_color_idx(node):
+        cidx = 0  # first free hue index
+        def get_hue_idx(node):
             global cidx
-            ns = node.namespace
-            verbose_output("Coloring %s (namespace %s)" % (node.get_short_name(), ns))
-            if ns not in namespace2coloridx:  # not seen yet
-                namespace2coloridx[ns] = cidx
+            ns = node.get_toplevel_namespace()
+            verbose_output("Coloring %s (top-level namespace %s)" % (node.get_short_name(), ns))
+            if ns not in top_ns_to_hue_idx:  # not seen yet
+                top_ns_to_hue_idx[ns] = cidx
                 cidx += 1
-                if cidx >= len(color_names):
+                if cidx >= len(hues):
                     cidx = 0  # wrap around
-            return namespace2coloridx[ns]
+            return top_ns_to_hue_idx[ns]
+
+#        namespace2coloridx = {}
+#        global cidx   # WTF? Python 2.6 won't pass cidx to the inner function without global...
+#        cidx = 0  # first free color index
+#        def get_color_idx(node):
+#            global cidx
+#            ns = node.namespace
+#            verbose_output("Coloring %s (namespace %s)" % (node.get_short_name(), ns))
+#            if ns not in namespace2coloridx:  # not seen yet
+#                namespace2coloridx[ns] = cidx
+#                cidx += 1
+#                if cidx >= len(color_names):
+#                    cidx = 0  # wrap around
+#            return namespace2coloridx[ns]
 
         s = """digraph G {\n"""
 
@@ -479,15 +642,32 @@ class CallGraphVisitor(object):
                 # (name must begin with "cluster" to be recognized as a cluster by GraphViz)
                 s += """%ssubgraph cluster_%s {\n""" % (indent, n.namespace.replace('.', '__').replace('*', ''))
                 if colored:
-                    # translucent bluish gray
-                    s += """%s    graph [style="filled,rounded", fillcolor="#8080A018", label="%s"];\n""" % (indent, n.namespace)
+                    # translucent gray (no hue to avoid visual confusion with bluish nodes)
+                    s += """%s    graph [style="filled,rounded", fillcolor="#80808018", label="%s"];\n""" % (indent, n.namespace)
+#                    # translucent bluish gray
+#                    s += """%s    graph [style="filled,rounded", fillcolor="#8080A018", label="%s"];\n""" % (indent, n.namespace)
 
             # add the node itself
             if colored:
-                idx = get_color_idx(n)
-                c = color_names[idx]
-                t = text_colors[idx]
-                s += """%s    %s [label="%s", style="filled", colorscheme="%s", fillcolor="%s", fontcolor="%s", group="%s"];\n""" % (indent, n.get_label(), n.get_short_name(), colorscheme_name, c, t, c)
+#                idx = get_color_idx(n)
+#                c = color_names[idx]
+#                t = text_colors[idx]
+#                s += """%s    %s [label="%s", style="filled", colorscheme="%s", fillcolor="%s", fontcolor="%s", group="%s"];\n""" % (indent, n.get_label(), n.get_short_name(), colorscheme_name, c, t, c)
+                idx = get_hue_idx(n)
+                H = hues[idx]
+                S = 1.0
+                L = max( [1.0 - 0.1*n.get_level(), 0.1] )
+                A = 0.8  # make nodes translucent (to handle possible overlaps)
+                fill_RGBA = list(hsl2rgb(H,S,L))
+                fill_RGBA.append(A)
+                fill_RGBA = htmlize_rgb( *fill_RGBA )
+
+                if L >= 0.3:
+                    text_RGB = htmlize_rgb( 0.0, 0.0, 0.0 )  # black text on light nodes
+                else:
+                    text_RGB = htmlize_rgb( 1.0, 1.0, 1.0 )  # white text on dark nodes
+
+                s += """%s    %s [label="%s", style="filled", fillcolor="%s", fontcolor="%s", group="%s"];\n""" % (indent, n.get_label(), n.get_short_name(), fill_RGBA, text_RGB, idx)
             else:
                 s += """%s    %s [label="%s"];\n""" % (indent, n.get_label(), n.get_short_name())
 
@@ -518,6 +698,7 @@ class CallGraphVisitor(object):
                     s += """    %s -> %s;\n""" % (n.get_label(), n2.get_label())
         s += """}\n"""
         return s
+
     
     def to_tgf(self, **kwargs):
         s = ''
