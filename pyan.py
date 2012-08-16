@@ -658,7 +658,7 @@ class CallGraphVisitor(object):
                 H = hues[idx]
                 S = 1.0
                 L = max( [1.0 - 0.1*n.get_level(), 0.1] )
-                A = 0.8  # make nodes translucent (to handle possible overlaps)
+                A = 0.7  # make nodes translucent (to handle possible overlaps)
                 fill_RGBA = list(hsl2rgb(H,S,L))
                 fill_RGBA.append(A)
                 fill_RGBA = htmlize_rgb( *fill_RGBA )
