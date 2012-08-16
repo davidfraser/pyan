@@ -512,6 +512,7 @@ class CallGraphVisitor(object):
     
     def to_dot(self, **kwargs):
         draw_defines = ("draw_defines" in kwargs  and  kwargs["draw_defines"])
+        draw_uses = ("draw_uses" in kwargs  and  kwargs["draw_uses"])
         colored = ("colored" in kwargs  and  kwargs["colored"])
         grouped = ("grouped" in kwargs  and  kwargs["grouped"])
         nested_groups = ("nested_groups" in kwargs  and  kwargs["nested_groups"])
@@ -607,6 +608,8 @@ class CallGraphVisitor(object):
 
         vis_node_list.sort(cmp=nodecmp)  # sort by namespace for clustering
 
+        # Write nodes and subgraphs
+        #
         prev_namespace = ""
         namespace_stack = []
         indent = ""
@@ -686,6 +689,8 @@ class CallGraphVisitor(object):
             else:
                 s += """%s}\n""" % indent  # terminate last subgraph
 
+        # Write defines relationships
+        #
         if draw_defines:
             for n in self.defines_edges:
                 for n2 in self.defines_edges[n]:
@@ -693,15 +698,22 @@ class CallGraphVisitor(object):
                         # gray lines (so they won't visually obstruct the "uses" lines)
                         s += """    %s -> %s [style="dashed", color="azure4"];\n""" % (n.get_label(), n2.get_label())
 
-        for n in self.uses_edges:
-            for n2 in self.uses_edges[n]:
-                if n2.defined and n2 != n:
-                    s += """    %s -> %s;\n""" % (n.get_label(), n2.get_label())
-        s += """}\n"""
+        # Write uses relationships
+        #
+        if draw_uses:
+            for n in self.uses_edges:
+                for n2 in self.uses_edges[n]:
+                    if n2.defined and n2 != n:
+                        s += """    %s -> %s;\n""" % (n.get_label(), n2.get_label())
+
+        s += """}\n"""  # terminate "digraph G {"
         return s
 
     
     def to_tgf(self, **kwargs):
+        draw_defines = ("draw_defines" in kwargs  and  kwargs["draw_defines"])
+        draw_uses = ("draw_uses" in kwargs  and  kwargs["draw_uses"])
+
         s = ''
         i = 1
         id_map = {}
@@ -716,7 +728,7 @@ class CallGraphVisitor(object):
         
         s += """#\n"""
         
-        if "draw_defines" in kwargs  and  kwargs["draw_defines"]:
+        if draw_defines:
             for n in self.defines_edges:
                 for n2 in self.defines_edges[n]:
                     if n2.defined and n2 != n:
@@ -724,12 +736,13 @@ class CallGraphVisitor(object):
                         i2 = id_map[n2]
                         s += """%d %d D\n""" % (i1, i2)
 
-        for n in self.uses_edges:
-            for n2 in self.uses_edges[n]:
-                if n2.defined and n2 != n:
-                    i1 = id_map[n]
-                    i2 = id_map[n2]
-                    s += """%d %d U\n""" % (i1, i2)
+        if draw_uses:
+            for n in self.uses_edges:
+                for n2 in self.uses_edges[n]:
+                    if n2.defined and n2 != n:
+                        i1 = id_map[n]
+                        i2 = id_map[n2]
+                        s += """%d %d U\n""" % (i1, i2)
         return s
 
 
@@ -768,9 +781,15 @@ def main():
     parser.add_option("-n", "--no-defines",
                       action="store_false", default=True, dest="draw_defines",
                       help="do not add edges for 'defines' relationships")
+    parser.add_option("-u", "--uses",
+                      action="store_true", default=True, dest="draw_uses",
+                      help="add edges for 'uses' relationships [default]")
+    parser.add_option("-N", "--no-uses",
+                      action="store_false", default=True, dest="draw_uses",
+                      help="do not add edges for 'uses' relationships")
     parser.add_option("-c", "--colored",
                       action="store_true", default=False, dest="colored",
-                      help="color node backgrounds according to namespace [dot only]")
+                      help="color nodes according to namespace [dot only]")
     parser.add_option("-g", "--grouped",
                       action="store_true", default=False, dest="grouped",
                       help="group nodes (create subgraphs) according to namespace [dot only]")
@@ -815,11 +834,13 @@ def main():
     
     if options.dot:
         print v.to_dot(draw_defines=options.draw_defines,
+                       draw_uses=options.draw_uses,
                        colored=options.colored,
                        grouped=options.grouped,
                        nested_groups=options.nested_groups)
     if options.tgf:
-        print v.to_tgf(draw_defines=options.draw_defines)
+        print v.to_tgf(draw_defines=options.draw_defines,
+                       draw_uses=options.draw_uses)
 
 
 if __name__ == '__main__':
