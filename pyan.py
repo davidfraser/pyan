@@ -673,7 +673,7 @@ class CallGraphVisitor(object):
 
                 s += """%s    %s [label="%s", style="filled", fillcolor="%s", fontcolor="%s", group="%s"];\n""" % (indent, n.get_label(), n.get_short_name(), fill_RGBA, text_RGB, idx)
             else:
-                fill_RGBA = htmlize_rgb( 1.0, 1.0, 1.0, 0.8 )
+                fill_RGBA = htmlize_rgb( 1.0, 1.0, 1.0, 0.7 )
                 idx = get_hue_idx(n)
                 s += """%s    %s [label="%s", style="filled", fillcolor="%s", fontcolor="#000000", group="%s"];\n""" % (indent, n.get_label(), n.get_short_name(), fill_RGBA, idx)
 #                s += """%s    %s [label="%s"];\n""" % (indent, n.get_label(), n.get_short_name())
