@@ -158,7 +158,7 @@ class Node(object):
     def get_level(self):
         """Return the level of this node (in terms of nested namespaces).
 
-        The level is defined as the number of '.' in the namespace.
+        The level is defined as the number of '.' in the namespace, plus one.
         Top level is level 0.
 
         """
