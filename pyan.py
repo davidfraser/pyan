@@ -521,18 +521,7 @@ class CallGraphVisitor(object):
         #  - use the same base color for the cluster as the namespace, but translucent
         #  - in nested_groups mode, start from the first shade for each box on the same level
 
-        # Color nodes by namespace.
-        #
-#        colorscheme_name = "oranges9"
-#        color_names = [ "%s" % j for j in xrange(1,10) ]  # color names in chosen scheme
-#        text_colors = [ "#000000" for j in xrange(8) ]
-#        text_colors.extend( [ "#FFFFFF" for j in xrange(2) ] )
-#        colorscheme_name = "greens7"
-#        color_names = [ "%s" % j for j in xrange(1,8) ]  # color names in chosen scheme
-#        text_colors = [ "#000000" for j in xrange(5) ]
-#        text_colors.extend( [ "#FFFFFF" for j in xrange(2) ] )
-
-        # Color by top-level namespace. Use HSL: hue = file, lightness = nesting level.
+        # Color nodes by top-level namespace. Use HSL: hue = file, lightness = nesting level.
         #
         # Map top-level namespaces (typically files) to different hues.
         #
@@ -570,19 +559,6 @@ class CallGraphVisitor(object):
                     cidx = 0  # wrap around
             return top_ns_to_hue_idx[ns]
 
-#        namespace2coloridx = {}
-#        global cidx   # WTF? Python 2.6 won't pass cidx to the inner function without global...
-#        cidx = 0  # first free color index
-#        def get_color_idx(node):
-#            global cidx
-#            ns = node.namespace
-#            verbose_output("Coloring %s (namespace %s)" % (node.get_short_name(), ns))
-#            if ns not in namespace2coloridx:  # not seen yet
-#                namespace2coloridx[ns] = cidx
-#                cidx += 1
-#                if cidx >= len(color_names):
-#                    cidx = 0  # wrap around
-#            return namespace2coloridx[ns]
 
         s = """digraph G {\n"""
 
@@ -604,7 +580,6 @@ class CallGraphVisitor(object):
             for n in self.nodes[name]:
                 if n.defined:
                     vis_node_list.append(n)
-#                    s += """    %s [label="%s"];\n""" % (n.get_label(), n.get_short_name())
 
         vis_node_list.sort(cmp=nodecmp)  # sort by namespace for clustering
 
@@ -646,17 +621,11 @@ class CallGraphVisitor(object):
                 # (name must begin with "cluster" to be recognized as a cluster by GraphViz)
                 s += """%ssubgraph cluster_%s {\n""" % (indent, n.namespace.replace('.', '__').replace('*', ''))
 
-                # translucent gray (no hue to avoid visual confusion with bluish nodes)
+                # translucent gray (no hue to avoid visual confusion with any group of colored nodes)
                 s += """%s    graph [style="filled,rounded", fillcolor="#80808018", label="%s"];\n""" % (indent, n.namespace)
-#                    # translucent bluish gray
-#                    s += """%s    graph [style="filled,rounded", fillcolor="#8080A018", label="%s"];\n""" % (indent, n.namespace)
 
             # add the node itself
             if colored:
-#                idx = get_color_idx(n)
-#                c = color_names[idx]
-#                t = text_colors[idx]
-#                s += """%s    %s [label="%s", style="filled", colorscheme="%s", fillcolor="%s", fontcolor="%s", group="%s"];\n""" % (indent, n.get_label(), n.get_short_name(), colorscheme_name, c, t, c)
                 idx = get_hue_idx(n)
                 H = hues[idx]
                 S = 1.0
@@ -676,7 +645,6 @@ class CallGraphVisitor(object):
                 fill_RGBA = htmlize_rgb( 1.0, 1.0, 1.0, 0.7 )
                 idx = get_hue_idx(n)
                 s += """%s    %s [label="%s", style="filled", fillcolor="%s", fontcolor="#000000", group="%s"];\n""" % (indent, n.get_label(), n.get_short_name(), fill_RGBA, idx)
-#                s += """%s    %s [label="%s"];\n""" % (indent, n.get_label(), n.get_short_name())
 
         if grouped:
             if nested_groups:
