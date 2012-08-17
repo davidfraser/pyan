@@ -517,10 +517,6 @@ class CallGraphVisitor(object):
         grouped = ("grouped" in kwargs  and  kwargs["grouped"])
         nested_groups = ("nested_groups" in kwargs  and  kwargs["nested_groups"])
 
-        # TODO:
-        #  - use the same base color for the cluster as the namespace, but translucent
-        #  - in nested_groups mode, start from the first shade for each box on the same level
-
         # Color nodes by top-level namespace. Use HSL: hue = file, lightness = nesting level.
         #
         # Map top-level namespaces (typically files) to different hues.
