@@ -685,7 +685,7 @@ class CallGraphVisitor(object):
                     s += """%s}\n""" % indent  # terminate all remaining subgraphs
                     del namespace_stack[j]
                     j -= 1
-                    indent = " " * (4*len(namespace_stack))  # two spaces per level
+                    indent = " " * (4*len(namespace_stack))  # 4 spaces per level
             else:
                 s += """%s}\n""" % indent  # terminate last subgraph
 
