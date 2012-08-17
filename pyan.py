@@ -91,7 +91,7 @@ def htmlize_rgb(*args):
 
     """
     if len(args) < 3:
-        raise ValueError("htmlize_rgb requires exactly 3 arguments. See docstring.")
+        raise ValueError("htmlize_rgb requires 3 or 4 arguments. See docstring.")
 
     R = args[0]
     G = args[1]
