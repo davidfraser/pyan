@@ -39,7 +39,7 @@ The included xdot.py is by José Fonseca, mirrored from:
 
 https://code.google.com/p/jrfonseca/wiki/XDot#Download
 
-Note that e.g. Ubuntu 12.04 LTS ships a version which does not have the -n (no filter) option.
+(Even current Linux distributions may ship a version which does not have the -n (no filter) option.)
 
 
 The included analyze.sh is original. It is intended as a rudimentary wrapper for the pyan-fdp-xdot toolchain. The separate fdp step is useful, if one wants to quickly visualize the same data again (since xdot doesn't have to re-generate the layout).
