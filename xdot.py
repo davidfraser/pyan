@@ -1247,7 +1247,19 @@ class TanhAnimation(Animation):
     duration = 0.6
 
     def __init__(self):
-        self.c  = 6.0
+        # Sharpness.
+        #
+        # The constant "c" can be used to tune the behaviour. Larger values produce
+        # steeper slopes. Note that as "c" approaches infinity, the function
+        # tends to a step function switching its value at t = 0.5.
+        # Thus, values between 3.0 (gradual curve over t in [0,1])
+        # and 10.0 (animation starts at t ~ 0.2, ends at t ~ 0.8)
+        # are recommended. If you don't know what to put here, 6.0 is good.
+        #
+        self.c  = 4.0
+
+        # Upper and lower limits for normalization.
+        #
         self.ul = (1.+math.tanh( self.c/2.))/2.
         self.ll = (1.+math.tanh(-self.c/2.))/2.
 
@@ -1258,7 +1270,8 @@ class TanhAnimation(Animation):
     def tick(self):
         t = (time.time() - self.started) / self.duration
 
-        # remap t
+        # Remap t nonlinearly. Both the input and output are in [0,1].
+        #
         t = ( (1.+math.tanh(self.c*(t - 0.5)))/2. - self.ll ) / ( self.ul - self.ll )
 
         self.animate(max(0, min(t, 1)))
