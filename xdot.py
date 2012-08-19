@@ -1899,6 +1899,7 @@ class DotWindow(gtk.Window):
     def __init__(self):
         gtk.Window.__init__(self)
 
+        self.last_used_directory = None
         self.connect('key-press-event', self.on_key_press_event)
 
         self.graph = Graph()
@@ -1996,6 +1997,8 @@ class DotWindow(gtk.Window):
                                                  gtk.RESPONSE_CANCEL,
                                                  gtk.STOCK_OPEN,
                                                  gtk.RESPONSE_OK))
+        if self.last_used_directory is not None:
+            chooser.set_current_folder(self.last_used_directory)
         chooser.set_default_response(gtk.RESPONSE_OK)
         filter = gtk.FileFilter()
         filter.set_name("Graphviz dot files")
@@ -2007,6 +2010,7 @@ class DotWindow(gtk.Window):
         chooser.add_filter(filter)
         if chooser.run() == gtk.RESPONSE_OK:
             filename = chooser.get_filename()
+            self.last_used_directory = chooser.get_current_folder()
             chooser.destroy()
             self.open_file(filename)
         else:
