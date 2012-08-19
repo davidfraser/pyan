@@ -136,11 +136,8 @@ class Pen:
         global highlight_edge
         global highlight_fill
 
-        color = list(mix_colors( highlight_edge, self.color, 0.3 ))
-        pen.color = color
-
-        fillcolor = list(mix_colors( highlight_fill, self.fillcolor, 0.3 ))
-        pen.fillcolor = fillcolor
+        pen.color = mix_colors( highlight_edge, self.color, 0.3 )
+        pen.fillcolor = mix_colors( highlight_fill, self.fillcolor, 0.3 )
 
         return pen
 
