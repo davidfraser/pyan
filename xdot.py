@@ -1241,10 +1241,38 @@ class LinearAnimation(Animation):
         pass
 
 
-class MoveToAnimation(LinearAnimation):
+class TanhAnimation(Animation):
+    """Smooth progression: slow at start, fast at middle, slow at end."""
+
+    duration = 0.6
+
+    def __init__(self):
+        self.c  = 6.0
+        self.ul = (1.+math.tanh( self.c/2.))/2.
+        self.ll = (1.+math.tanh(-self.c/2.))/2.
+
+    def start(self):
+        self.started = time.time()
+        Animation.start(self)
+
+    def tick(self):
+        t = (time.time() - self.started) / self.duration
+
+        # remap t
+        t = ( (1.+math.tanh(self.c*(t - 0.5)))/2. - self.ll ) / ( self.ul - self.ll )
+
+        self.animate(max(0, min(t, 1)))
+        return (t < 1)
+
+    def animate(self, t):
+        pass
+
+
+class MoveToAnimation(TanhAnimation):
 
     def __init__(self, dot_widget, target_x, target_y):
         Animation.__init__(self, dot_widget)
+        TanhAnimation.__init__(self)
         self.source_x = dot_widget.x
         self.source_y = dot_widget.y
         self.target_x = target_x
