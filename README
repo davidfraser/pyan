@@ -1,3 +1,16 @@
+-------------------------------------------------------------------------------
+  Contents
+-------------------------------------------------------------------------------
+
+  - pyan
+  - XDot
+  - analyze.sh
+
+
+-------------------------------------------------------------------------------
+  pyan
+-------------------------------------------------------------------------------
+
 Modified pyan.py by Juha Jeronen, based on original pyan.py by Edmund Horner.
 
 The modified version has some additional features for GraphViz output that can be useful for working with large projects.
@@ -35,12 +48,45 @@ Explanation by original author:
 http://ejrh.wordpress.com/2012/01/31/call-graphs-in-python-part-2/
 
 
-The included xdot.py is by José Fonseca, mirrored from:
+-------------------------------------------------------------------------------
+  XDot
+-------------------------------------------------------------------------------
+
+This XDot was modified by Juha Jeronen, based on the original by José Fonseca.
+
+
+Modifications:
+
+- Focus animation now follows a nonlinear tanh spacing for a smoother-looking
+  experience (slow-fast-slow).
+
+- Uses system highlight color, queried from GTK.
+  The actual node highlight color is mixed from the node's original color
+  and alpha, and the system highlight with alpha=1.0.
+
+- Keyboard shortcuts added for Zoom to fit (F) and Zoom to 100% (1).
+
+- Keyboard shortcut added for Open (Ctrl+O).
+
+- Tooltips added for the toolbar buttons, with the text showing also the keyboard shortcuts.
+
+- The open dialog remembers the last used directory within the same session.
+
+
+This modified version is available at:
+
+https://yousource.it.jyu.fi/jjrandom2/miniprojects/blobs/master/refactoring/
+
+The original by José Fonseca is available at:
 
 https://code.google.com/p/jrfonseca/wiki/XDot#Download
 
-(Even current Linux distributions may ship a version which does not have the -n (no filter) option.)
+(Note that even current Linux distributions may ship a version which does not have the -n (no filter) option.)
 
+
+-------------------------------------------------------------------------------
+  analyze.sh
+-------------------------------------------------------------------------------
 
 The included analyze.sh is original. It is intended as a rudimentary wrapper for the pyan-fdp-xdot toolchain. The separate fdp step is useful, if one wants to quickly visualize the same data again (since xdot doesn't have to re-generate the layout).
 
