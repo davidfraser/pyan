@@ -1,4 +1,6 @@
 xdot TODO:
+  - clean corner cases
+    - error when opening file: if no graph loaded yet, should display "[No graph loaded]"
   - when hovering over a node, highlight all linked nodes
     (better for exploring a large graph)
   - should have an icon in launcher under Unity shell
