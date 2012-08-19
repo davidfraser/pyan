@@ -86,8 +86,10 @@ def setup_highlight_color(gtkobject):
         None.
 
     Side effect:
-        Globals "highlight_edge" and "highlight_fill" will be set to RGB tuples,
+        Globals "highlight_edge" and "highlight_fill" will be set to RGBA tuples,
         from the "base" and "light" styles of STATE_SELECTED, respectively.
+
+        The alpha value (not present in the GTK styles) is set to 1.0.
     
     """
 
