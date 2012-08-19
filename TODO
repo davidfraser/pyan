@@ -1,0 +1,41 @@
+xdot TODO:
+  - if input graph is empty, indicate somehow that a blank file was loaded
+    - create one node saying "[No input]" and render that?
+  - when hovering over a node, highlight all linked nodes
+    (better for exploring a large graph)
+  - should have an icon in launcher under Unity shell
+  - find by text in label (incremental search)
+    - text field with the text "Search" in gray until clicked,
+      then clear it and wait for user input.
+    - buttons:
+      - focus next (if multiple matches)
+        - takes the "next" match (according to some ordering)
+          and "clicks on that node".
+        - if unique match, focus it
+      - focus previous (if multiple matches)
+        - same, with previous match.
+    - make incremental an option? (may be slow)
+  - bug: why doesn't the close button always show up when xdot is maximized
+    under the Unity shell?
+    (take partial screenshot with the windows key, then it bugs out)
+
+xdot done:
+
+  x- traverse by clicking: x(t) should follow tanh-like curve, not linear
+  x- use the system highlight color
+  x- keyboard shortcuts for 1:1 ("1") and fit to screen ("F")
+  x- tooltips for toolbar buttons, including action name and shortcut
+  x- the open dialog should remember the last used directory within the same session
+
+xdot old todo:
+
+  - highlight system:
+    - make a small animation, so that the target flashes at first
+      when highlighted
+    - if the node has an alpha value, boost it but don't make it
+      completely opaque.
+    - color of the highlight:
+      - keep original color but change lightness?
+        (If dark, lighten; if light, darken)
+      - mix in some blue tint?
+      - change hue by 180 degrees?
