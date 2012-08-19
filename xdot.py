@@ -47,6 +47,67 @@ import pangocairo
 # - http://comix.sourceforge.net/
 
 
+def mix_colors(rgb1, rgb2, t):
+    """Mix two RGB or RGBA colors.
+
+    Input format: 3 or 4 component tuples (must match), with components in [0,1].
+
+    Result = (1 - t) * rgb1  +  t * rgb2
+
+    where t in [0,1].
+    
+    (Mnemonic: t is "mix this much of rgb2 into rgb1".)
+
+    """
+    if len(rgb1) > 3:
+        R1,G1,B1,A1 = rgb1
+        R2,G2,B2,A2 = rgb2
+        R = (1.0 - t)*R1 + t*R2
+        G = (1.0 - t)*G1 + t*G2
+        B = (1.0 - t)*B1 + t*B2
+        A = (1.0 - t)*A1 + t*A2
+        return (R,G,B,A)
+    else:
+        R1,G1,B1 = rgb1
+        R2,G2,B2 = rgb2
+        R = (1.0 - t)*R1 + t*R2
+        G = (1.0 - t)*G1 + t*G2
+        B = (1.0 - t)*B1 + t*B2
+        return (R,G,B)
+
+
+def setup_highlight_color(gtkobject):
+    """Query the system highlight color.
+
+    Parameters:
+        gtkobject = a sufficiently initialized GTK object from which to get the data.
+
+    Return value:
+        None.
+
+    Side effect:
+        Globals "highlight_edge" and "highlight_fill" will be set to RGB tuples,
+        from the "base" and "light" styles of STATE_SELECTED, respectively.
+    
+    """
+
+    # http://lobais.blogspot.fi/2006/07/system-colors-in-gtk.html
+    #
+    global highlight_edge
+    global highlight_fill
+
+    if "highlight_edge" not in globals():
+        state = getattr(gtk, "STATE_SELECTED")
+        style_base  = getattr(gtkobject.get_style(), "base")
+        style_light = getattr(gtkobject.get_style(), "light")
+        color_base  = style_base[state]
+        color_light = style_light[state]
+
+        alp = 1.0  # translucency (1.0 = opaque)
+        highlight_edge = (color_base.red/65535.0, color_base.green/65535.0, color_base.blue/65535.0, alp)
+        highlight_fill = (color_light.red/65535.0, color_light.green/65535.0, color_light.blue/65535.0, alp)
+
+
 class Pen:
     """Store pen attributes."""
 
@@ -67,8 +128,20 @@ class Pen:
 
     def highlighted(self):
         pen = self.copy()
-        pen.color = (1, 0, 0, 1)
-        pen.fillcolor = (1, .8, .8, 1)
+#        pen.color = (1, 0, 0, 1)
+#        pen.fillcolor = (1, .8, .8, 1)
+
+        # Use the system highlight color.
+        #
+        global highlight_edge
+        global highlight_fill
+
+        color = list(mix_colors( highlight_edge, self.color, 0.3 ))
+        pen.color = color
+
+        fillcolor = list(mix_colors( highlight_fill, self.fillcolor, 0.3 ))
+        pen.fillcolor = fillcolor
+
         return pen
 
 
@@ -1580,6 +1653,15 @@ class DotWidget(gtk.DrawingArea):
         cr.restore()
 
         self.drag_action.draw(cr)
+
+        # HACK: Query the system highlight color.
+        #
+        # If this is done too early (e.g. in __init__()),
+        # the necessary initialization has not been done yet
+        # and the result will be wrong. Hence, we trigger
+        # it from here, but run the actual setup only once.
+        #
+        setup_highlight_color(self)
 
         return False
 
