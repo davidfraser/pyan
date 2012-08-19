@@ -1772,6 +1772,13 @@ class DotWidget(gtk.DrawingArea):
         if event.keyval == gtk.keysyms.r:
             self.reload()
             return True
+        if event.keyval == gtk.keysyms.f:
+            self.zoom_to_fit()
+            return True
+        if event.keyval in (gtk.keysyms.KP_1,
+                            gtk.keysyms._1):
+            self.zoom_image(1.0)
+            return True
         if event.keyval == gtk.keysyms.q:
             gtk.main_quit()
             return True
