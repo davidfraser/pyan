@@ -1,3 +1,31 @@
-This is an unmodified copy of xdot.py by José Fonseca, mirrored from:
+This XDot was modified by Juha Jeronen, based on the original by José Fonseca.
+
+
+Modifications:
+
+- Focus animation now follows a nonlinear tanh spacing for a smoother-looking
+  experience (slow-fast-slow).
+
+- Uses system highlight color, queried from GTK.
+  The actual node highlight color is mixed from the node's original color
+  and alpha, and the system highlight with alpha=1.0.
+
+- Keyboard shortcuts added for Zoom to fit (F) and Zoom to 100% (1).
+
+- Keyboard shortcut added for Open (Ctrl+O).
+
+- Tooltips added for the toolbar buttons, with the text showing also the keyboard shortcuts.
+
+- The open dialog remembers the last used directory within the same session.
+
+
+This modified version is available at:
+
+https://yousource.it.jyu.fi/jjrandom2/miniprojects/blobs/master/refactoring/
+
+The original is available at:
 
 https://code.google.com/p/jrfonseca/wiki/XDot#Download
+
+
+ -JJ 2012-08-19

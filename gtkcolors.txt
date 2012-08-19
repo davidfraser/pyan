@@ -1,0 +1,3 @@
+This is an unmodified copy of gtkcolors.py by Thomas Da, mirrored from:
+
+http://lobais.blogspot.fi/2006/07/system-colors-in-gtk.html
