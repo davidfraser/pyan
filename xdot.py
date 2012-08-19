@@ -1618,7 +1618,7 @@ class DotWidget(gtk.DrawingArea):
         # but the graph does not contain any nodes.
         #
         if len(xdotcode) == 0  or  len(self.graph.nodes) < 1:
-            dotcode = """digraph G { my_node [shape="none", label="[No input]", style="filled", fillcolor="#FFFFFFB2", fontcolor="#808080"] }"""
+            dotcode = """digraph G { my_node [shape="none", label="[Empty input]", style="filled", fillcolor="#FFFFFFB2", fontcolor="#808080"] }"""
             self.set_dotcode(dotcode)
 
         self.zoom_image(self.zoom_ratio, center=True)
@@ -2057,6 +2057,11 @@ def main():
     if len(args) == 0:
         if not sys.stdin.isatty():
             win.set_dotcode(sys.stdin.read())
+        else:
+            # When interactive, open with a visual indication that no graph has been loaded.
+            #
+            dotcode = """digraph G { my_node [shape="none", label="[No graph loaded]", style="filled", fillcolor="#FFFFFFB2", fontcolor="#808080"] }"""
+            win.set_dotcode(dotcode)
     else:
         if args[0] == '-':
             win.set_dotcode(sys.stdin.read())
