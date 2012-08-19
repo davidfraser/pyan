@@ -1899,6 +1899,8 @@ class DotWindow(gtk.Window):
     def __init__(self):
         gtk.Window.__init__(self)
 
+        self.connect('key-press-event', self.on_key_press_event)
+
         self.graph = Graph()
 
         window = self
@@ -1923,12 +1925,14 @@ class DotWindow(gtk.Window):
 
         # Create actions
         actiongroup.add_actions((
-            ('Open', gtk.STOCK_OPEN, None, None, None, self.on_open),
-            ('Reload', gtk.STOCK_REFRESH, None, None, None, self.on_reload),
-            ('ZoomIn', gtk.STOCK_ZOOM_IN, None, None, None, self.widget.on_zoom_in),
-            ('ZoomOut', gtk.STOCK_ZOOM_OUT, None, None, None, self.widget.on_zoom_out),
-            ('ZoomFit', gtk.STOCK_ZOOM_FIT, None, None, None, self.widget.on_zoom_fit),
-            ('Zoom100', gtk.STOCK_ZOOM_100, None, None, None, self.widget.on_zoom_100),
+            # http://www.pygtk.org/docs/pygtk/class-gtkactiongroup.html#method-gtkactiongroup--add-actions
+            # name, stock_id, label, accelerator, tooltip, callback_func
+            ('Open', gtk.STOCK_OPEN, None, None, "Open [Ctrl+O]", self.on_open),
+            ('Reload', gtk.STOCK_REFRESH, None, None, "Reload [R]", self.on_reload),
+            ('ZoomIn', gtk.STOCK_ZOOM_IN, None, None, "Zoom in [+]", self.widget.on_zoom_in),
+            ('ZoomOut', gtk.STOCK_ZOOM_OUT, None, None, "Zoom out [-]", self.widget.on_zoom_out),
+            ('ZoomFit', gtk.STOCK_ZOOM_FIT, None, None, "Zoom to fit [F]", self.widget.on_zoom_fit),
+            ('Zoom100', gtk.STOCK_ZOOM_100, None, None, "Zoom to 100% [1]", self.widget.on_zoom_100),
         ))
 
         # Add the actiongroup to the uimanager
@@ -1946,6 +1950,12 @@ class DotWindow(gtk.Window):
         self.set_focus(self.widget)
 
         self.show_all()
+
+    def on_key_press_event(self, widget, event):
+        if event.state & gtk.gdk.CONTROL_MASK  and  event.keyval == gtk.keysyms.o:
+            self.on_open(None)
+            return True
+        return False
 
     def set_filter(self, filter):
         self.widget.set_filter(filter)
