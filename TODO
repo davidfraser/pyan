@@ -1,6 +1,4 @@
 xdot TODO:
-  - if input graph is empty, indicate somehow that a blank file was loaded
-    - create one node saying "[No input]" and render that?
   - when hovering over a node, highlight all linked nodes
     (better for exploring a large graph)
   - should have an icon in launcher under Unity shell
@@ -26,6 +24,8 @@ xdot done:
   x- keyboard shortcuts for 1:1 ("1") and fit to screen ("F")
   x- tooltips for toolbar buttons, including action name and shortcut
   x- the open dialog should remember the last used directory within the same session
+  x- if input graph is empty, indicate somehow that a blank file was loaded
+    x- create one node saying "[No input]" and render that?
 
 xdot old todo:
 

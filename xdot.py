@@ -1608,8 +1608,19 @@ class DotWidget(gtk.DrawingArea):
 
     def set_xdotcode(self, xdotcode):
         #print xdotcode
-        parser = XDotParser(xdotcode)
-        self.graph = parser.parse()
+        if len(xdotcode) > 0:
+            parser = XDotParser(xdotcode)
+            self.graph = parser.parse()
+
+        # Catch empty graphs.
+        #
+        # The second check catches the case where the code has nonzero length,
+        # but the graph does not contain any nodes.
+        #
+        if len(xdotcode) == 0  or  len(self.graph.nodes) < 1:
+            dotcode = """digraph G { my_node [shape="none", label="[No input]", style="filled", fillcolor="#FFFFFFB2", fontcolor="#808080"] }"""
+            self.set_dotcode(dotcode)
+
         self.zoom_image(self.zoom_ratio, center=True)
 
     def reload(self):
