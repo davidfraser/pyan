@@ -5,6 +5,7 @@
   - pyan
   - XDot
   - analyze.sh
+  - gtkcolors
 
 
 -------------------------------------------------------------------------------
@@ -91,5 +92,14 @@ https://code.google.com/p/jrfonseca/wiki/XDot#Download
 The included analyze.sh is original. It is intended as a rudimentary wrapper for the pyan-fdp-xdot toolchain. The separate fdp step is useful, if one wants to quickly visualize the same data again (since xdot doesn't have to re-generate the layout).
 
 
- -JJ 2012-08-17
+-------------------------------------------------------------------------------
+  gtkcolors
+-------------------------------------------------------------------------------
 
+The included gtkcolors.py is an unmodified copy of the original by Thomas Da, mirrored from:
+
+http://lobais.blogspot.fi/2006/07/system-colors-in-gtk.html
+
+
+
+ -JJ 2012-08-17
