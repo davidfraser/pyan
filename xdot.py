@@ -1713,7 +1713,13 @@ class DotWidget(gtk.DrawingArea):
                 self.zoom_ratio = zr_saved  # restore original zoom ratio
 
                 fp = file(self.openfilename, 'rt')
-                self.set_dotcode(fp.read(), self.openfilename)
+
+                # XXX HACK: always load xdot files without filter; otherwise use specified filter
+                if os.path.splitext(self.openfilename)[1] == ".xdot":
+                    self.set_xdotcode(fp.read(), self.openfilename)
+                else:
+                    self.set_dotcode(fp.read(), self.openfilename)
+
                 fp.close()
 
                 # Change cursor back and redraw (now with the actual reloaded graph).
