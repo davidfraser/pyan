@@ -1632,6 +1632,26 @@ class DotWidget(gtk.DrawingArea):
             return None
         return xdotcode
 
+    def set_graph_from_message(self, string):
+        # Generates a one-node graph with the text "string".
+        # Useful for passive error messages and the like.
+        #
+        # E.g.
+        #   self.set_graph_from_message("[No graph loaded]")
+
+        # We may be running without any filter (-n); in that case,
+        # we should force a filter here.
+        #
+        filter_saved = self.filter
+        if self.filter is None:
+            self.filter = "dot"
+        ofn_saved = self.openfilename
+        dotcode = """digraph G { my_node [shape="none", label="%s", style="filled", fillcolor="#FFFFFFB2", fontcolor="#808080"] }""" % string
+        self.set_dotcode(dotcode, None)
+        self.filter = filter_saved
+        self.openfilename = ofn_saved
+        self.zoom_to_fit()
+
     def set_dotcode(self, dotcode, filename=None):
         self.openfilename = None
         if isinstance(dotcode, unicode):
@@ -1642,8 +1662,7 @@ class DotWidget(gtk.DrawingArea):
         try:
             self.set_xdotcode(xdotcode)
         except ParseError, ex:
-            dotcode = """digraph G { my_node [shape="none", label="[No graph loaded]", style="filled", fillcolor="#FFFFFFB2", fontcolor="#808080"] }"""
-            self.set_dotcode(dotcode)
+            self.set_graph_from_message("[No graph loaded]")
             dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
                                        message_format=str(ex),
                                        buttons=gtk.BUTTONS_OK)
@@ -1672,18 +1691,17 @@ class DotWidget(gtk.DrawingArea):
         # E.g. the empty graph "digraph G { }" triggers this case.
         #
         if len(xdotcode) == 0  or  len(self.graph.nodes) < 1:
-            dotcode = """digraph G { my_node [shape="none", label="[Empty input]", style="filled", fillcolor="#FFFFFFB2", fontcolor="#808080"] }"""
-            self.set_dotcode(dotcode)
+            self.set_graph_from_message("[Empty input]")
 
-        self.zoom_image(self.zoom_ratio, center=True)
+#        self.zoom_image(self.zoom_ratio, center=True)
+        self.zoom_to_fit()
+        return True  # be consistent! (cf. set_dotcode() and callers for both in DotWindow)
 
     def reload(self):
         if self.openfilename is not None:
             try:
-                dotcode = """digraph G { my_node [shape="none", label="[Reloading...]", style="filled", fillcolor="#FFFFFFB2", fontcolor="#808080"] }"""
                 zr_saved = self.zoom_ratio
-                ofn_saved = self.openfilename
-                self.set_dotcode(dotcode, None)
+                self.set_graph_from_message("[Reloading...]")
                 self.zoom_to_fit()  # show the reloading message clearly
 
                 # Change cursor to "busy" and force-redraw the window
@@ -1693,7 +1711,6 @@ class DotWidget(gtk.DrawingArea):
                     gtk.main_iteration_do(True)
 
                 self.zoom_ratio = zr_saved  # restore original zoom ratio
-                self.openfilename = ofn_saved
 
                 fp = file(self.openfilename, 'rt')
                 self.set_dotcode(fp.read(), self.openfilename)
@@ -1706,8 +1723,7 @@ class DotWidget(gtk.DrawingArea):
                     gtk.main_iteration_do(True)
             except IOError:
                 self.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
-                dotcode = """digraph G { my_node [shape="none", label="[No graph loaded]", style="filled", fillcolor="#FFFFFFB2", fontcolor="#808080"] }"""
-                self.set_dotcode(dotcode)
+                self.set_graph_from_message("[Could not reload '%s']" % self.openfilename)
                 self.zoom_to_fit()
                 self.queue_draw()
                 while gtk.events_pending():
@@ -2107,6 +2123,9 @@ class DotWindow(gtk.Window):
     def set_filter(self, filter):
         self.widget.set_filter(filter)
 
+    def set_graph_from_message(self, string):
+        self.widget.set_graph_from_message(string)
+
     def set_dotcode(self, dotcode, filename=None):
         if self.widget.set_dotcode(dotcode, filename):
             self.update_title(filename)
@@ -2126,11 +2145,14 @@ class DotWindow(gtk.Window):
     def open_file(self, filename):
         try:
             fp = file(filename, 'rt')
-            self.set_dotcode(fp.read(), filename)
+            # XXX HACK: always load xdot files without filter; otherwise use specified filter
+            if os.path.splitext(filename)[1] == ".xdot":
+                self.set_xdotcode(fp.read(), filename)
+            else:
+                self.set_dotcode(fp.read(), filename)
             fp.close()
         except IOError, ex:
-            dotcode = """digraph G { my_node [shape="none", label="[No graph loaded]", style="filled", fillcolor="#FFFFFFB2", fontcolor="#808080"] }"""
-            self.set_dotcode(dotcode)
+            self.set_graph_from_message("[No graph loaded]")
             dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
                                     message_format=str(ex),
                                     buttons=gtk.BUTTONS_OK)
@@ -2147,10 +2169,22 @@ class DotWindow(gtk.Window):
                                                  gtk.RESPONSE_OK))
         if self.last_used_directory is not None:
             chooser.set_current_folder(self.last_used_directory)
+        # first time in each session, open in the folder where the current file is
+        # (if any was given on the command line)
+        elif self.widget.openfilename is not None:
+            chooser.set_current_folder(os.path.dirname(self.openfilename))
+
         chooser.set_default_response(gtk.RESPONSE_OK)
+        # Filter is required to load .dot with no layout information.
+        if self.widget.filter is not None:
+            filter = gtk.FileFilter()
+            filter.set_name("Graphviz dot files")
+            filter.add_pattern("*.dot")
+            chooser.add_filter(filter)
+        # .xdot contains layout information and requires no filter.
         filter = gtk.FileFilter()
-        filter.set_name("Graphviz dot files")
-        filter.add_pattern("*.dot")
+        filter.set_name("Graphviz xdot files")
+        filter.add_pattern("*.xdot")
         chooser.add_filter(filter)
         filter = gtk.FileFilter()
         filter.set_name("All files")
@@ -2197,8 +2231,7 @@ def main():
         else:
             # When interactive, open with a visual indication that no graph has been loaded.
             #
-            dotcode = """digraph G { my_node [shape="none", label="[No graph loaded]", style="filled", fillcolor="#FFFFFFB2", fontcolor="#808080"] }"""
-            win.set_dotcode(dotcode)
+            win.set_graph_from_message("[No graph loaded]")
     else:
         if args[0] == '-':
             win.set_dotcode(sys.stdin.read())
