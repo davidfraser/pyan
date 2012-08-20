@@ -2139,6 +2139,11 @@ class DotWindow(gtk.Window):
         # Create a Toolbar
         toolbar = uimanager.get_widget('/ToolBar')
 
+        # for enable/disable logic
+        self.find_go   = uimanager.get_widget('/ToolBar/FindGo')
+        self.find_next = uimanager.get_widget('/ToolBar/FindNext')
+        self.find_prev = uimanager.get_widget('/ToolBar/FindPrev')
+
         # Create a text entry for search.
         #
         # UIManager does not support text fields, so we need to do this manually.
@@ -2147,8 +2152,9 @@ class DotWindow(gtk.Window):
         #
         self.find_displaying_placeholder = True
         self.find_entry = gtk.Entry()
-        self.find_entry.add_events(gtk.gdk.BUTTON_PRESS_MASK)
+        self.find_entry.add_events(gtk.gdk.BUTTON_PRESS_MASK | gtk.gdk.FOCUS_CHANGE_MASK)
         self.find_entry.connect("button-press-event", self.on_find_entry_button_press)
+        self.find_entry.connect("focus-out-event", self.on_find_entry_focus_out)
         self.clear_find_field()
         item = gtk.ToolItem()
         item.add(self.find_entry)
@@ -2179,6 +2185,12 @@ class DotWindow(gtk.Window):
         self.find_entry.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse("#808080"))
         self.find_entry.set_text("Find")
 
+        # Disable the find buttons until the user enters something to find
+        #
+        self.find_go.set_sensitive(False)
+        self.find_next.set_sensitive(False)
+        self.find_prev.set_sensitive(False)
+
     def prepare_find_field(self):
         # Prepares the "Find" field for user interaction,
         # if it is currently displaying the placeholder text.
@@ -2187,6 +2199,12 @@ class DotWindow(gtk.Window):
             self.find_entry.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse("#000000"))
             self.find_entry.set_text("")
             self.find_displaying_placeholder = False
+
+            # Enable the find buttons
+            #
+            self.find_go.set_sensitive(True)
+            self.find_next.set_sensitive(True)
+            self.find_prev.set_sensitive(True)
 
     def on_key_press_event(self, widget, event):
         if event.state & gtk.gdk.CONTROL_MASK  and  event.keyval == gtk.keysyms.o:
@@ -2228,7 +2246,9 @@ class DotWindow(gtk.Window):
             if event.keyval in [ gtk.keysyms.Escape, gtk.keysyms.Return, gtk.keysyms.KP_Enter ]:
                 return False
             if self.find_displaying_placeholder:
-                print "cannot happen"   # DEBUG
+                return False
+            text = self.find_entry.get_text()
+            if len(text) == 0:
                 return False
 
             self.find_first()  # TODO: make incremental search an option?
@@ -2242,6 +2262,12 @@ class DotWindow(gtk.Window):
             self.prepare_find_field()
             self.find_entry.grab_focus()
             return True
+        return False
+
+    def on_find_entry_focus_out(self, widget, event):
+        text = self.find_entry.get_text()
+        if len(text) == 0:
+            self.clear_find_field()
         return False
 
     # Find system: adapters to catch events
