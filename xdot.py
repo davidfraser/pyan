@@ -86,7 +86,7 @@ def setup_highlight_color(gtkobject):
         None.
 
     Side effect:
-        Globals "highlight_edge" and "highlight_fill" will be set to RGBA tuples,
+        Globals "highlight_base" and "highlight_light" will be set to RGBA tuples,
         from the "base" and "light" styles of STATE_SELECTED, respectively.
 
         The alpha value (not present in the GTK styles) is set to 1.0.
@@ -95,10 +95,10 @@ def setup_highlight_color(gtkobject):
 
     # http://lobais.blogspot.fi/2006/07/system-colors-in-gtk.html
     #
-    global highlight_edge
-    global highlight_fill
+    global highlight_base
+    global highlight_light
 
-    if "highlight_edge" not in globals():
+    if "highlight_base" not in globals():
         state = getattr(gtk, "STATE_SELECTED")
         style_base  = getattr(gtkobject.get_style(), "base")
         style_light = getattr(gtkobject.get_style(), "light")
@@ -106,8 +106,8 @@ def setup_highlight_color(gtkobject):
         color_light = style_light[state]
 
         alp = 1.0  # translucency (1.0 = opaque)
-        highlight_edge = (color_base.red/65535.0, color_base.green/65535.0, color_base.blue/65535.0, alp)
-        highlight_fill = (color_light.red/65535.0, color_light.green/65535.0, color_light.blue/65535.0, alp)
+        highlight_base = (color_base.red/65535.0, color_base.green/65535.0, color_base.blue/65535.0, alp)
+        highlight_light = (color_light.red/65535.0, color_light.green/65535.0, color_light.blue/65535.0, alp)
 
 
 class Pen:
@@ -135,11 +135,11 @@ class Pen:
 
         # Use the system highlight color.
         #
-        global highlight_edge
-        global highlight_fill
+        global highlight_base
+        global highlight_light
 
-        pen.color = mix_colors( highlight_edge, self.color, 0.3 )
-        pen.fillcolor = mix_colors( highlight_fill, self.fillcolor, 0.3 )
+        pen.color = mix_colors( highlight_base, self.color, 0.3 )
+        pen.fillcolor = mix_colors( highlight_light, self.fillcolor, 0.3 )
 
         return pen
 
@@ -1534,20 +1534,20 @@ class ZoomAreaAction(DragAction):
     def draw(self, cr):
         cr.save()
 
-        global highlight_edge
-        global highlight_fill
+        global highlight_base
+        global highlight_light
 
 #        cr.set_source_rgba(.5, .5, 1.0, 0.25)
-        highlight_fill_translucent = list(highlight_fill[:-1])
-        highlight_fill_translucent.append( 0.25 )
-        cr.set_source_rgba(*highlight_fill_translucent)
+        highlight_base_translucent = list(highlight_base[:-1])
+        highlight_base_translucent.append( 0.25 )
+        cr.set_source_rgba(*highlight_base_translucent)
         cr.rectangle(self.startmousex, self.startmousey,
                      self.prevmousex - self.startmousex,
                      self.prevmousey - self.startmousey)
         cr.fill()
 #        cr.set_source_rgba(.5, .5, 1.0, 1.0)
-        highlight_fill_translucent[-1] = 0.7
-        cr.set_source_rgba(*highlight_fill_translucent)
+        highlight_base_translucent[-1] = 0.7
+        cr.set_source_rgba(*highlight_base_translucent)
         cr.set_line_width(1)
         cr.rectangle(self.startmousex - .5, self.startmousey - .5,
                      self.prevmousex - self.startmousex + 1,
