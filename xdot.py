@@ -431,7 +431,7 @@ class Element(CompoundShape):
     def get_url(self, x, y):
         return None
 
-    def get_jump(self, x, y):
+    def get_jump(self, x, y, **kwargs):
         return None
 
 
@@ -461,7 +461,7 @@ class Node(Element):
             return Url(self, self.url)
         return None
 
-    def get_jump(self, x, y):
+    def get_jump(self, x, y, **kwargs):
         if self.is_inside(x, y):
             return Jump(self, self.x, self.y)
         return None
@@ -483,7 +483,7 @@ class Edge(Element):
 
     RADIUS = 10
 
-    def get_jump(self, x, y):
+    def get_jump(self, x, y, **kwargs):
         if square_distance(x, y, *self.points[0]) <= self.RADIUS*self.RADIUS:
             return Jump(self, self.dst.x, self.dst.y, highlight=set([self, self.dst]))
         if square_distance(x, y, *self.points[-1]) <= self.RADIUS*self.RADIUS:
@@ -527,14 +527,40 @@ class Graph(Shape):
                 return url
         return None
 
-    def get_jump(self, x, y):
+    def get_jump(self, x, y, **kwargs):
         for edge in self.edges:
-            jump = edge.get_jump(x, y)
+            jump = edge.get_jump(x, y, **kwargs)
             if jump is not None:
                 return jump
         for node in self.nodes:
-            jump = node.get_jump(x, y)
+            jump = node.get_jump(x, y, **kwargs)
             if jump is not None:
+                if "highlight_linked_nodes" in kwargs:
+                    do_highlight = kwargs["highlight_linked_nodes"]
+                else:
+                    do_highlight = None
+
+                # When hovering over a node, highlight its links.
+                #
+                # By default, we highlight outgoing links, but in "to" mode
+                # (control held down) and "to_links_only" mode, we highlight
+                # incoming links.
+                #
+                if do_highlight is None  or  do_highlight == "from":
+                    linked_edges = filter( lambda e: e.src == node, self.edges )
+                else:  # "to" or "to_links_only"
+                    linked_edges = filter( lambda e: e.dst == node, self.edges )
+                jump.highlight.update( linked_edges )
+
+                # Optionally, highlight the linked nodes, too.
+                #
+                if do_highlight == "from":
+                    linked_nodes = map( lambda e: e.dst, linked_edges )
+                    jump.highlight.update( linked_nodes )
+                elif do_highlight == "to":
+                    linked_nodes = map( lambda e: e.src, linked_edges )
+                    jump.highlight.update( linked_nodes )
+
                 return jump
         return None
 
@@ -1449,7 +1475,22 @@ class NullAction(DragAction):
         dot_widget = self.dot_widget
         item = dot_widget.get_url(x, y)
         if item is None:
-            item = dot_widget.get_jump(x, y)
+            # Highlight also linked nodes if a modifier key is held down.
+            #
+            # This is handy for exploring especially large graphs,
+            # but may look confusing if always on. Hence, it has to be
+            # switched on by holding down a modifier.
+            #
+            do_highlight = None
+            state = event.state
+            if state & gtk.gdk.SHIFT_MASK:
+                do_highlight = "from"
+            elif state & gtk.gdk.CONTROL_MASK:
+                do_highlight = "to"
+            elif state & gtk.gdk.MOD1_MASK  or  state & gtk.gdk.MOD5_MASK:  # Alt or AltGr
+                do_highlight = "to_links_only"
+
+            item = dot_widget.get_jump(x, y, highlight_linked_nodes=do_highlight)
         if item is not None:
             dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))
             dot_widget.set_highlight(item.highlight)
@@ -1552,6 +1593,7 @@ class DotWidget(gtk.DrawingArea):
         self.connect("size-allocate", self.on_area_size_allocate)
 
         self.connect('key-press-event', self.on_key_press_event)
+        self.connect('key-release-event', self.on_key_release_event)
         self.last_mtime = None
 
         gobject.timeout_add(1000, self.update)
@@ -1719,13 +1761,18 @@ class DotWidget(gtk.DrawingArea):
         rect = self.get_allocation()
         width = abs(x1 - x2)
         height = abs(y1 - y2)
-        self.zoom_ratio = min(
-            float(rect.width)/float(width),
-            float(rect.height)/float(height)
-        )
-        self.zoom_to_fit_on_resize = False
-        self.x = (x1 + x2) / 2
-        self.y = (y1 + y2) / 2
+        try:
+            self.zoom_ratio = min(
+                float(rect.width)/float(width),
+                float(rect.height)/float(height)
+            )
+            self.zoom_to_fit_on_resize = False
+            self.x = (x1 + x2) / 2
+            self.y = (y1 + y2) / 2
+        # The user may try to select an area of zero size with shift-drag.
+        # (Actually happened to me. Fixing.)
+        except ZeroDivisionError:
+            pass
         self.queue_draw()
 
     def zoom_to_fit(self):
@@ -1805,7 +1852,56 @@ class DotWidget(gtk.DrawingArea):
         if event.keyval == gtk.keysyms.q:
             gtk.main_quit()
             return True
+
+        # Since pressing modifiers may now change the highlight set,
+        # we must update it now.
+        #
+        self.update_highlight(event, mode="press")
+#        print gtk.gdk.keyval_name(event.keyval)   # DEBUG
+
         return False
+
+    def on_key_release_event(self, widget, event):
+        # WTF? In Ubuntu 12.04 LTS, GTK seems to be very lazy in sending key release events
+        # for pure modifiers. A release may take several seconds to register...
+#        print gtk.gdk.keyval_name(event.keyval)   # DEBUG
+
+        # Releasing modifiers may change the highlight set.
+        self.update_highlight(event, mode="release")
+
+    def update_highlight(self, event, **kwargs):
+        # If not one of "our" keys, do nothing.
+        #
+        # (ISO level 3 shift = AltGr in scandinavic keyboards.)
+        #
+        if event.keyval not in [ gtk.keysyms.Shift_L,   gtk.keysyms.Shift_R,
+                                 gtk.keysyms.Control_L, gtk.keysyms.Control_R,
+                                 gtk.keysyms.Alt_L,     gtk.keysyms.Alt_R,
+                                 gtk.keysyms.ISO_Level3_Shift ]:
+            return
+
+        # Given shift/ctrl state, updates the highlight set.
+        # Used by the key press and key release handlers.
+        #
+        mode = kwargs["mode"] if "mode" in kwargs else None
+
+        # Do new highlights when the appropriate modifier is pressed.
+        # Remove any highlights when a modifier is released.
+        #
+        do_highlight = None
+        if mode == "press":
+            if event.keyval == gtk.keysyms.Shift_L  or  event.keyval == gtk.keysyms.Shift_R:
+                do_highlight = "from"
+            elif event.keyval == gtk.keysyms.Control_L  or  event.keyval == gtk.keysyms.Control_R:
+                do_highlight = "to"
+            else: # alt
+                do_highlight = "to_links_only"
+
+        x, y = self.get_pointer()  # Note: not event.window; that would include the toolbar height
+                                   # and we would get the graph coordinates wrong.
+        item = self.get_jump(x, y, highlight_linked_nodes=do_highlight)
+        if item is not None:
+            self.set_highlight(item.highlight)
 
     def get_drag_action(self, event):
         state = event.state
@@ -1850,7 +1946,7 @@ class DotWidget(gtk.DrawingArea):
             if url is not None:
                 self.emit('clicked', unicode(url.url), event)
             else:
-                jump = self.get_jump(x, y)
+                jump = self.get_jump(x, y)  # no kwargs to pass in
                 if jump is not None:
                     self.animate_to(jump.x, jump.y)
 
@@ -1896,9 +1992,9 @@ class DotWidget(gtk.DrawingArea):
         x, y = self.window2graph(x, y)
         return self.graph.get_url(x, y)
 
-    def get_jump(self, x, y):
+    def get_jump(self, x, y, **kwargs):
         x, y = self.window2graph(x, y)
-        return self.graph.get_jump(x, y)
+        return self.graph.get_jump(x, y, **kwargs)
 
 
 class DotWindow(gtk.Window):
