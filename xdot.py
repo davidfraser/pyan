@@ -1705,7 +1705,13 @@ class DotWidget(gtk.DrawingArea):
                 while gtk.events_pending():
                     gtk.main_iteration_do(True)
             except IOError:
-                pass
+                self.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
+                dotcode = """digraph G { my_node [shape="none", label="[No graph loaded]", style="filled", fillcolor="#FFFFFFB2", fontcolor="#808080"] }"""
+                self.set_dotcode(dotcode)
+                self.zoom_to_fit()
+                self.queue_draw()
+                while gtk.events_pending():
+                    gtk.main_iteration_do(True)
 
     def update(self):
         if self.openfilename is not None:
