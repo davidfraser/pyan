@@ -2229,18 +2229,27 @@ class DotWindow(gtk.Window):
 #        print gtk.gdk.keyval_name(event.keyval), event.state
 
         if self.find_entry.is_focus():
-            # XXX usability TEST
-            #
-            # Escape:
-            #   First press  = clear find term, but wait for a new one
-            #   Second press = exit focus
             if event.keyval == gtk.keysyms.Escape:
-                already_cleared = (self.find_entry.get_text() == "")
-                if not already_cleared:
-                    self.prepare_find_field()
-                else:
-                    self.clear_find_field()
-                    self.widget.grab_focus()
+#                # XXX usability TEST
+#                #
+#                # Escape:
+#                #   First press  = clear find term, but wait for a new one
+#                #   Second press = exit focus
+#                already_cleared = (self.find_entry.get_text() == "")
+#                if not already_cleared:
+#                    self.prepare_find_field()
+#                else:
+#                    self.clear_find_field()
+#                    self.widget.grab_focus()
+
+                # First press = clear and exit focus
+                #
+                # (to just clear, can already use Ctrl+Backspace,
+                #  or refocus the field and then just Backspace...)
+                #
+                self.clear_find_field()
+                self.widget.grab_focus()
+
                 return True
             elif event.keyval == gtk.keysyms.Return  or  event.keyval == gtk.keysyms.KP_Enter:
                 self.widget.grab_focus()
