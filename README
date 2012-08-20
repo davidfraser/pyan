@@ -1,6 +1,6 @@
--------------------------------------------------------------------------------
+===============================================================================
   Contents
--------------------------------------------------------------------------------
+===============================================================================
 
   - pyan
   - XDot
@@ -8,9 +8,9 @@
   - gtkcolors
 
 
--------------------------------------------------------------------------------
+===============================================================================
   pyan
--------------------------------------------------------------------------------
+===============================================================================
 
 Modified pyan.py by Juha Jeronen, based on original pyan.py by Edmund Horner.
 
@@ -49,9 +49,9 @@ Explanation by original author:
 http://ejrh.wordpress.com/2012/01/31/call-graphs-in-python-part-2/
 
 
--------------------------------------------------------------------------------
+===============================================================================
   XDot
--------------------------------------------------------------------------------
+===============================================================================
 
 This XDot was modified by Juha Jeronen, based on the original by José Fonseca.
 
@@ -62,8 +62,11 @@ Modifications:
   experience (slow-fast-slow).
 
 - Uses system highlight color, queried from GTK.
-  The actual node highlight color is mixed from the node's original color
+
+  For nodes, the actual node highlight color is mixed from the node's original color
   and alpha, and the system highlight with alpha=1.0.
+
+  For area zooming (shift+drag), the system highlight color is used with alpha=0.25.
 
 - Keyboard shortcuts added for Zoom to fit (F) and Zoom to 100% (1).
 
@@ -72,6 +75,63 @@ Modifications:
 - Tooltips added for the toolbar buttons, with the text showing also the keyboard shortcuts.
 
 - The open dialog remembers the last used directory within the same session.
+
+- [No graph loaded] is shown when no graph is loaded (input error, no filename on command line, etc.).
+
+- [Empty input] is shown when the an empty graph is loaded (blank file, or valid graph but no nodes).
+
+
+In addition, the original contains some functionality that may be difficult to discover. Documenting these, from reading the source code:
+
+- Shift-dragging allows to select a rectangular area to zoom to.
+
+- Ctrl-dragging zooms smoothly.
+
+- Hovering the mouse cursor over a node highlights it.
+
+- Hovering over the end of a link (graph edge, "arrow") highlights the node at the other end of the link. (This is useful for exploring graphs.)
+
+- Clicking a highlighted node centers it. Animated. The animation automatically zooms out and back in, if the view is highly zoomed and the destination node is near the edge of the view. If the destination is clearly visible, then the animation just pans the view.
+
+- Clicking the end of a highlighted link (graph edge, "arrow") jumps to and centers the node at the other end of the link. (Animated.)
+
+
+--------------------------------------
+Mouse behaviour and keyboard shortcuts
+--------------------------------------
+
+Here is a complete list for both the original and modified versions of XDot. Unless otherwise specified, each item applies to both versions.
+
+-----
+Mouse
+-----
+
+Click a node              = Center view to clicked node
+Click the end of an edge  = Center view to the node at the other end of the edge
+                            (Here "edge" means a graph edge, i.e. link or arrow.)
+Mouse wheel up/down       = Zoom view in/out
+Drag                      = Pan view
+Shift+drag                = Zoom to area (choose the area while dragging)
+Ctrl+drag                 = Zoom smoothly
+
+Dragging accepts both left and middle buttons.
+
+--------
+Keyboard
+--------
+
+Arrow keys                = Pan view
++, =, Page up, keypad +   = Zoom in
+-, Page down, keypad -    = Zoom out
+F                         = Zoom to fit            [modified version only]
+1, keypad 1               = Zoom to 100%           [modified version only]
+
+Ctrl+O                    = Open file...           [modified version only]
+R                         = Reload current file
+Q                         = Quit XDot
+
+Escape                    = Cancel current mouse drag action
+
 
 
 This modified version is available at:
@@ -85,16 +145,16 @@ https://code.google.com/p/jrfonseca/wiki/XDot#Download
 (Note that even current Linux distributions may ship a version which does not have the -n (no filter) option.)
 
 
--------------------------------------------------------------------------------
+===============================================================================
   analyze.sh
--------------------------------------------------------------------------------
+===============================================================================
 
 The included analyze.sh is original. It is intended as a rudimentary wrapper for the pyan-fdp-xdot toolchain. The separate fdp step is useful, if one wants to quickly visualize the same data again (since xdot doesn't have to re-generate the layout).
 
 
--------------------------------------------------------------------------------
+===============================================================================
   gtkcolors
--------------------------------------------------------------------------------
+===============================================================================
 
 The included gtkcolors.py is an unmodified copy of the original by Thomas Da, mirrored from:
 
@@ -103,3 +163,4 @@ http://lobais.blogspot.fi/2006/07/system-colors-in-gtk.html
 
 
  -JJ 2012-08-17
+ 
