@@ -2077,6 +2077,7 @@ class DotWindow(gtk.Window):
             <toolitem action="ZoomFit"/>
             <toolitem action="Zoom100"/>
             <separator/>
+            <toolitem action="FindClear"/>
             <toolitem action="FindGo"/>
             <toolitem action="FindPrev"/>
             <toolitem action="FindNext"/>
@@ -2098,7 +2099,7 @@ class DotWindow(gtk.Window):
         window = self
 
         window.set_title(self.base_title)
-        window.set_default_size(512, 512)
+        window.set_default_size(640, 512)
         vbox = gtk.VBox()
         window.add(vbox)
 
@@ -2120,14 +2121,15 @@ class DotWindow(gtk.Window):
             # http://www.pygtk.org/docs/pygtk/class-gtkactiongroup.html#method-gtkactiongroup--add-actions
             # name, stock_id, label, accelerator, tooltip, callback_func
             ('Open', gtk.STOCK_OPEN, None, None, "Open [Ctrl+O]", self.on_open),
-            ('Reload', gtk.STOCK_REFRESH, None, None, "Reload [R]", self.on_reload),
-            ('ZoomIn', gtk.STOCK_ZOOM_IN, None, None, "Zoom in [+]", self.widget.on_zoom_in),
-            ('ZoomOut', gtk.STOCK_ZOOM_OUT, None, None, "Zoom out [-]", self.widget.on_zoom_out),
-            ('ZoomFit', gtk.STOCK_ZOOM_FIT, None, None, "Zoom to fit [F]", self.widget.on_zoom_fit),
-            ('Zoom100', gtk.STOCK_ZOOM_100, None, None, "Zoom to 100% [1]", self.widget.on_zoom_100),
-            ('FindGo', gtk.STOCK_FIND, None, None, "Focus first match [Enter]", self.on_find_first),
-            ('FindPrev', gtk.STOCK_GO_BACK, None, None, "Focus previous match [Shift+N]", self.on_find_prev),
-            ('FindNext', gtk.STOCK_GO_FORWARD, None, None, "Focus next match [N]", self.on_find_next),
+            ('Reload', gtk.STOCK_REFRESH, None, "R", "Reload [R]", self.on_reload),
+            ('ZoomIn', gtk.STOCK_ZOOM_IN, None, "plus", "Zoom in [+]", self.widget.on_zoom_in),
+            ('ZoomOut', gtk.STOCK_ZOOM_OUT, "Zoom o_ut", "minus", "Zoom out [-]", self.widget.on_zoom_out),
+            ('ZoomFit', gtk.STOCK_ZOOM_FIT, None, "F", "Zoom to fit [F]", self.widget.on_zoom_fit),
+            ('Zoom100', gtk.STOCK_ZOOM_100, None, "1", "Zoom to 100% [1]", self.widget.on_zoom_100),
+            ('FindClear', gtk.STOCK_CLOSE, "_Clear Find", "Escape", "Clear find term [Escape]", self.on_find_clear),
+            ('FindGo', gtk.STOCK_FIND, "Find fir_st", "Return", "Focus first match [Return]", self.on_find_first),
+            ('FindPrev', gtk.STOCK_GO_BACK, "Find _previous", "<Shift>N", "Focus previous match [Shift+N]", self.on_find_prev),
+            ('FindNext', gtk.STOCK_GO_FORWARD, "Find n_ext", "N", "Focus next match [N]", self.on_find_next),
         ))
 
         # Add the actiongroup to the uimanager
@@ -2140,9 +2142,10 @@ class DotWindow(gtk.Window):
         toolbar = uimanager.get_widget('/ToolBar')
 
         # for enable/disable logic
-        self.find_go   = uimanager.get_widget('/ToolBar/FindGo')
-        self.find_next = uimanager.get_widget('/ToolBar/FindNext')
-        self.find_prev = uimanager.get_widget('/ToolBar/FindPrev')
+        self.button_find_clear = uimanager.get_widget('/ToolBar/FindClear')
+        self.button_find_go    = uimanager.get_widget('/ToolBar/FindGo')
+        self.button_find_next  = uimanager.get_widget('/ToolBar/FindNext')
+        self.button_find_prev  = uimanager.get_widget('/ToolBar/FindPrev')
 
         # Create a text entry for search.
         #
@@ -2158,13 +2161,13 @@ class DotWindow(gtk.Window):
         self.clear_find_field()
         item = gtk.ToolItem()
         item.add(self.find_entry)
-        item.set_tooltip_text("Find [Ctrl+F = Focus, Enter = Search, Esc = Clear]")
-        toolbar.insert(item, 8)  # 8 = after second separator
+        item.set_size_request(*self.find_entry.size_request())
+        item.set_tooltip_text("Find [Ctrl+F = Focus, Return = Search, Escape = Clear]")
+        toolbar.insert(item, 9)  # 9 = after FindClear
 
         vbox.pack_start(toolbar, False)
         vbox.pack_start(self.widget)
         self.set_focus(self.widget)
-
         self.show_all()
 
     def clear_find_field(self):
@@ -2187,9 +2190,10 @@ class DotWindow(gtk.Window):
 
         # Disable the find buttons until the user enters something to find
         #
-        self.find_go.set_sensitive(False)
-        self.find_next.set_sensitive(False)
-        self.find_prev.set_sensitive(False)
+        self.button_find_clear.set_sensitive(False)
+        self.button_find_go.set_sensitive(False)
+        self.button_find_next.set_sensitive(False)
+        self.button_find_prev.set_sensitive(False)
 
     def prepare_find_field(self):
         # Prepares the "Find" field for user interaction,
@@ -2202,9 +2206,10 @@ class DotWindow(gtk.Window):
 
             # Enable the find buttons
             #
-            self.find_go.set_sensitive(True)
-            self.find_next.set_sensitive(True)
-            self.find_prev.set_sensitive(True)
+            self.button_find_clear.set_sensitive(True)
+            self.button_find_go.set_sensitive(True)
+            self.button_find_next.set_sensitive(True)
+            self.button_find_prev.set_sensitive(True)
 
     def on_key_press_event(self, widget, event):
         if event.state & gtk.gdk.CONTROL_MASK  and  event.keyval == gtk.keysyms.o:
@@ -2272,6 +2277,9 @@ class DotWindow(gtk.Window):
 
     # Find system: adapters to catch events
     #
+    def on_find_clear(self, action):
+        self.clear_find_field()
+        self.widget.grab_focus()
     def on_find_first(self, action):
         self.find_first()
     def on_find_next(self, action):
