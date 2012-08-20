@@ -1591,6 +1591,8 @@ class DotWidget(gtk.DrawingArea):
         try:
             self.set_xdotcode(xdotcode)
         except ParseError, ex:
+            dotcode = """digraph G { my_node [shape="none", label="[No graph loaded]", style="filled", fillcolor="#FFFFFFB2", fontcolor="#808080"] }"""
+            self.set_dotcode(dotcode)
             dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
                                        message_format=str(ex),
                                        buttons=gtk.BUTTONS_OK)
@@ -1614,8 +1616,9 @@ class DotWidget(gtk.DrawingArea):
 
         # Catch empty graphs.
         #
-        # The second check catches the case where the code has nonzero length,
-        # but the graph does not contain any nodes.
+        # The second check catches the case where the code has nonzero length
+        # (parsed successfully) but the graph does not contain any nodes.
+        # E.g. the empty graph "digraph G { }" triggers this case.
         #
         if len(xdotcode) == 0  or  len(self.graph.nodes) < 1:
             dotcode = """digraph G { my_node [shape="none", label="[Empty input]", style="filled", fillcolor="#FFFFFFB2", fontcolor="#808080"] }"""
@@ -1994,6 +1997,8 @@ class DotWindow(gtk.Window):
             self.set_dotcode(fp.read(), filename)
             fp.close()
         except IOError, ex:
+            dotcode = """digraph G { my_node [shape="none", label="[No graph loaded]", style="filled", fillcolor="#FFFFFFB2", fontcolor="#808080"] }"""
+            self.set_dotcode(dotcode)
             dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
                                     message_format=str(ex),
                                     buttons=gtk.BUTTONS_OK)
