@@ -1492,12 +1492,21 @@ class ZoomAreaAction(DragAction):
 
     def draw(self, cr):
         cr.save()
-        cr.set_source_rgba(.5, .5, 1.0, 0.25)
+
+        global highlight_edge
+        global highlight_fill
+
+#        cr.set_source_rgba(.5, .5, 1.0, 0.25)
+        highlight_fill_translucent = list(highlight_fill[:-1])
+        highlight_fill_translucent.append( 0.25 )
+        cr.set_source_rgba(*highlight_fill_translucent)
         cr.rectangle(self.startmousex, self.startmousey,
                      self.prevmousex - self.startmousex,
                      self.prevmousey - self.startmousey)
         cr.fill()
-        cr.set_source_rgba(.5, .5, 1.0, 1.0)
+#        cr.set_source_rgba(.5, .5, 1.0, 1.0)
+        highlight_fill_translucent[-1] = 0.7
+        cr.set_source_rgba(*highlight_fill_translucent)
         cr.set_line_width(1)
         cr.rectangle(self.startmousex - .5, self.startmousey - .5,
                      self.prevmousex - self.startmousex + 1,
