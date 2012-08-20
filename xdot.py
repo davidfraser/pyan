@@ -2199,36 +2199,48 @@ class DotWindow(gtk.Window):
         self.find_entry.set_text("Find")
 
     def prepare_find_field(self):
-        # Prepares the "Find" field for user interaction,
+        # Clear the "Find" field and prepare it for user interaction,
         # if it is currently displaying the placeholder text.
         #
+        self.find_entry.set_text("")
+        # empty find term - disable next/prev
+        self.button_find_next.set_sensitive(False)
+        self.button_find_prev.set_sensitive(False)
+
         if self.find_displaying_placeholder:
             self.find_entry.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse("#000000"))
-            self.find_entry.set_text("")
             self.find_displaying_placeholder = False
 
             # Enable the find buttons
             #
             self.button_find_clear.set_sensitive(True)
             self.button_find_go.set_sensitive(True)
-            self.button_find_next.set_sensitive(True)
-            self.button_find_prev.set_sensitive(True)
 
     def on_key_press_event(self, widget, event):
         if event.state & gtk.gdk.CONTROL_MASK  and  event.keyval == gtk.keysyms.o:
             self.on_open(None)
             return True
         if event.state & gtk.gdk.CONTROL_MASK  and  event.keyval == gtk.keysyms.f:
-            self.prepare_find_field()
+            if self.find_displaying_placeholder:
+                self.prepare_find_field()
             self.find_entry.grab_focus()
             return True
 
 #        print gtk.gdk.keyval_name(event.keyval), event.state
 
         if self.find_entry.is_focus():
+            # XXX usability TEST
+            #
+            # Escape:
+            #   First press  = clear find term, but wait for a new one
+            #   Second press = exit focus
             if event.keyval == gtk.keysyms.Escape:
-                self.clear_find_field()
-                self.widget.grab_focus()
+                already_cleared = (self.find_entry.get_text() == "")
+                if not already_cleared:
+                    self.prepare_find_field()
+                else:
+                    self.clear_find_field()
+                    self.widget.grab_focus()
                 return True
             elif event.keyval == gtk.keysyms.Return  or  event.keyval == gtk.keysyms.KP_Enter:
                 self.widget.grab_focus()
@@ -2255,11 +2267,11 @@ class DotWindow(gtk.Window):
                 return False
             if self.find_displaying_placeholder:
                 return False
-            text = self.find_entry.get_text()
-            if len(text) == 0:
-                return False
+#            text = self.find_entry.get_text()
+#            if len(text) == 0:
+#                return False
 
-            self.find_first()  # TODO: make incremental search an option?
+            self.find_and_highlight_matches()  # TODO: make incremental search an option?
 
             return True
 
@@ -2267,12 +2279,16 @@ class DotWindow(gtk.Window):
 
     def on_find_entry_button_press(self, area, event):
         if event.button == 1:
-            self.prepare_find_field()
+            if self.find_displaying_placeholder:
+                self.prepare_find_field()
             self.find_entry.grab_focus()
             return True
         return False
 
     def on_find_entry_focus_out(self, widget, event):
+        # Return the Find field to placeholder state
+        # if focus is lost when the text entry is empty.
+        #
         text = self.find_entry.get_text()
         if len(text) == 0:
             self.clear_find_field()
@@ -2284,6 +2300,7 @@ class DotWindow(gtk.Window):
         self.clear_find_field()
         self.widget.grab_focus()
     def on_find_first(self, action):
+        self.find_and_highlight_matches()
         self.find_first()
     def on_find_next(self, action):
         self.find_next()
@@ -2292,10 +2309,33 @@ class DotWindow(gtk.Window):
 
     # Find system: implementation
     #
+    def find_and_highlight_matches(self):
+        # TODO: check that find term has actually changed; only rerun when necessary.
+        #
+        # (This will also make it so that the next/prev buttons are not unnecessarily disabled;
+        #  otherwise they would be when re-focusing the Find field with Ctrl+F, when the Find
+        #  field gets the key release events.)
+
+        text = self.find_entry.get_text()
+#        if len(text):
+
+        # find_first() has not been done yet - disable next/prev
+        self.button_find_next.set_sensitive(False)
+        self.button_find_prev.set_sensitive(False)
+
+        print "find_and_highlight_matches(): %s TODO" % text  # TODO
     def find_first(self):
         text = self.find_entry.get_text()
         if len(text):
             print "find_first(): %s TODO" % text  # TODO
+
+            # now that first is found (TODO check match), enable next/prev
+            self.button_find_next.set_sensitive(True)
+            self.button_find_prev.set_sensitive(True)
+        else:
+            # empty find term - just disable next/prev
+            self.button_find_next.set_sensitive(False)
+            self.button_find_prev.set_sensitive(False)
     def find_next(self):
         print "find_next(): TODO"  # TODO
     def find_prev(self):
