@@ -1680,9 +1680,30 @@ class DotWidget(gtk.DrawingArea):
     def reload(self):
         if self.openfilename is not None:
             try:
+                dotcode = """digraph G { my_node [shape="none", label="[Reloading...]", style="filled", fillcolor="#FFFFFFB2", fontcolor="#808080"] }"""
+                zr_saved = self.zoom_ratio
+                ofn_saved = self.openfilename
+                self.set_dotcode(dotcode, None)
+                self.zoom_to_fit()  # show the reloading message clearly
+
+                # Change cursor to "busy" and force-redraw the window
+                self.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.WATCH))
+                self.queue_draw()
+                while gtk.events_pending():
+                    gtk.main_iteration_do(True)
+
+                self.zoom_ratio = zr_saved  # restore original zoom ratio
+                self.openfilename = ofn_saved
+
                 fp = file(self.openfilename, 'rt')
                 self.set_dotcode(fp.read(), self.openfilename)
                 fp.close()
+
+                # Change cursor back and redraw (now with the actual reloaded graph).
+                self.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
+                self.queue_draw()
+                while gtk.events_pending():
+                    gtk.main_iteration_do(True)
             except IOError:
                 pass
 
