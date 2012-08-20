@@ -1,9 +1,6 @@
 xdot TODO:
-  - clean corner cases
-    - error when opening file: if no graph loaded yet, should display "[No graph loaded]"
-  - when hovering over a node, highlight all linked nodes
-    (better for exploring a large graph)
   - should have an icon in launcher under Unity shell
+    - application icon!
   - find by text in label (incremental search)
     - text field with the text "Search" in gray until clicked,
       then clear it and wait for user input.
@@ -28,6 +25,10 @@ xdot done:
   x- the open dialog should remember the last used directory within the same session
   x- if input graph is empty, indicate somehow that a blank file was loaded
     x- create one node saying "[No input]" and render that?
+  x - clean corner cases
+    - error when opening file: if no graph loaded yet, should display "[No graph loaded]"
+  x - when hovering over a node, highlight all linked nodes
+    (better for exploring a large graph)
 
 xdot old todo:
 
