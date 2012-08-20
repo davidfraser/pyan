@@ -2139,7 +2139,12 @@ class DotWindow(gtk.Window):
         # Create a Toolbar
         toolbar = uimanager.get_widget('/ToolBar')
 
-        # Create a text entry for search
+        # Create a text entry for search.
+        #
+        # UIManager does not support text fields, so we need to do this manually.
+        # Note that everything in a toolbar must be a ToolItem; hence we wrap
+        # the text entry widget into a ToolItem before adding it.
+        #
         self.find_displaying_placeholder = True
         self.find_entry = gtk.Entry()
         self.find_entry.add_events(gtk.gdk.BUTTON_PRESS_MASK)
@@ -2151,9 +2156,7 @@ class DotWindow(gtk.Window):
         toolbar.insert(item, 8)  # 8 = after second separator
 
         vbox.pack_start(toolbar, False)
-
         vbox.pack_start(self.widget)
-
         self.set_focus(self.widget)
 
         self.show_all()
@@ -2228,9 +2231,7 @@ class DotWindow(gtk.Window):
                 print "cannot happen"   # DEBUG
                 return False
 
-            text = self.find_entry.get_text()
-            if len(text):
-                self.find_first()  # TODO: make incremental search an option?
+            self.find_first()  # TODO: make incremental search an option?
 
             return True
 
@@ -2240,8 +2241,10 @@ class DotWindow(gtk.Window):
         if event.button == 1:
             self.prepare_find_field()
             self.find_entry.grab_focus()
+            return True
+        return False
 
-    # Adapters to catch events
+    # Find system: adapters to catch events
     #
     def on_find_first(self, action):
         self.find_first()
@@ -2250,10 +2253,11 @@ class DotWindow(gtk.Window):
     def on_find_prev(self, action):
         self.find_prev()
 
-    # Implementation
+    # Find system: implementation
     #
     def find_first(self):
 #        text = self.find_entry.get_text()
+#        if len(text):
         print "find_first(): TODO"  # TODO
     def find_next(self):
         print "find_next(): TODO"  # TODO
