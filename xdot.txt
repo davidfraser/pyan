@@ -3,6 +3,16 @@ This XDot was modified by Juha Jeronen, based on the original by José Fonseca.
 
 Modifications:
 
+- The hover-over-node highlight system has been extended to make exploring large graphs easier. See below.
+
+- Keyboard shortcuts added for Zoom to fit (F) and Zoom to 100% (1).
+
+- Keyboard shortcut added for Open (Ctrl+O).
+
+- Tooltips added for the toolbar buttons, with the text showing also the keyboard shortcuts.
+
+- The open dialog remembers the last used directory within the same session.
+
 - Focus animation now follows a nonlinear tanh spacing for a smoother-looking
   experience (slow-fast-slow).
 
@@ -13,17 +23,9 @@ Modifications:
 
   For area zooming (shift+drag), the system highlight color is used with alpha=0.25.
 
-- Keyboard shortcuts added for Zoom to fit (F) and Zoom to 100% (1).
-
-- Keyboard shortcut added for Open (Ctrl+O).
-
-- Tooltips added for the toolbar buttons, with the text showing also the keyboard shortcuts.
-
-- The open dialog remembers the last used directory within the same session.
-
 - [No graph loaded] is shown when no graph is loaded (input error, no filename on command line, etc.).
 
-- [Empty input] is shown when the an empty graph is loaded (blank file, or valid graph but no nodes).
+- [Empty input] is shown when an empty graph is loaded (blank file, or valid graph but no nodes).
 
 
 In addition, the original contains some functionality that may be difficult to discover. Documenting these, from reading the source code:
@@ -51,13 +53,22 @@ Here is a complete list for both the original and modified versions of XDot. Unl
 Mouse
 -----
 
-Click a node              = Center view to clicked node
-Click the end of an edge  = Center view to the node at the other end of the edge
-                            (Here "edge" means a graph edge, i.e. link or arrow.)
-Mouse wheel up/down       = Zoom view in/out
-Drag                      = Pan view
-Shift+drag                = Zoom to area (choose the area while dragging)
-Ctrl+drag                 = Zoom smoothly
+Click the end of a link    = Center view to the node at the other end of the link
+Click a node               = Center view to clicked node
+
+Hover on the end of a link = Highlight link and the node at the other end
+Hover on a node            = Highlight node                              [original version]
+                             Highlight node and all its outgoing links   [modified version]
+Alt+hover on a node        = Highlight node and all its incoming links   [modified version only]
+Shift+hover on a node      = Highlight node, all its outgoing links
+                             and the nodes connected by the links        [modified version only]
+Ctrl+hover on a node       = Highlight node, all its incoming links
+                             and the nodes connected by the links        [modified version only]
+
+Mouse wheel up/down        = Zoom view in/out
+Drag                       = Pan view
+Shift+drag                 = Zoom to area (choose the area while dragging)
+Ctrl+drag                  = Zoom smoothly
 
 Dragging accepts both left and middle buttons.
 
@@ -65,17 +76,17 @@ Dragging accepts both left and middle buttons.
 Keyboard
 --------
 
-Arrow keys                = Pan view
-+, =, Page up, keypad +   = Zoom in
--, Page down, keypad -    = Zoom out
-F                         = Zoom to fit            [modified version only]
-1, keypad 1               = Zoom to 100%           [modified version only]
+Arrow keys                 = Pan view
++, =, Page up, keypad +    = Zoom in
+-, Page down, keypad -     = Zoom out
+F                          = Zoom to fit            [modified version only]
+1, keypad 1                = Zoom to 100%           [modified version only]
 
-Ctrl+O                    = Open file...           [modified version only]
-R                         = Reload current file
-Q                         = Quit XDot
+Ctrl+O                     = Open file...           [modified version only]
+R                          = Reload current file
+Q                          = Quit XDot
 
-Escape                    = Cancel current mouse drag action
+Escape                     = Cancel current mouse drag action
 
 
 
