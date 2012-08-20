@@ -1495,7 +1495,8 @@ class NullAction(DragAction):
             dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))
             dot_widget.set_highlight(item.highlight)
         else:
-            dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
+#            dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
+            dot_widget.window.set_cursor(None)  # inherit cursor from parent window!
             dot_widget.set_highlight(None)
 
 
@@ -1510,7 +1511,8 @@ class PanAction(DragAction):
         self.dot_widget.queue_draw()
 
     def stop(self):
-        self.dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
+#        self.dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
+        self.dot_widget.window.set_cursor(None)  # inherit cursor from parent window!
 
     abort = stop
 
@@ -1716,7 +1718,7 @@ class DotWidget(gtk.DrawingArea):
                 self.set_graph_from_message("[Reloading...]")
 
                 # Change cursor to "busy" and force-redraw the window
-                self.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.WATCH))
+                self.parent.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.WATCH))
                 while gtk.events_pending():
                     gtk.main_iteration_do(True)
 
@@ -1733,11 +1735,11 @@ class DotWidget(gtk.DrawingArea):
                 fp.close()
 
                 # Change cursor back and redraw (now with the actual reloaded graph).
-                self.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
+                self.parent.window.set_cursor(None)  # inherit cursor from parent window!
                 while gtk.events_pending():
                     gtk.main_iteration_do(True)
             except IOError:
-                self.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
+                self.parent.window.set_cursor(None)  # inherit cursor from parent window!
                 self.set_graph_from_message("[Could not reload '%s']" % self.openfilename)
                 while gtk.events_pending():
                     gtk.main_iteration_do(True)
@@ -2191,14 +2193,14 @@ class DotWindow(gtk.Window):
             fp.close()
 
             # Change cursor back and redraw (now with the actual reloaded graph).
-            self.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
+            self.window.set_cursor(None)  # inherit cursor from parent window!
             while gtk.events_pending():
                 gtk.main_iteration_do(True)
 
             self.widget.update_disabled = False
 
         except IOError, ex:
-            self.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
+            self.window.set_cursor(None)  # inherit cursor from parent window!
             self.set_graph_from_message("[No graph loaded]")
             while gtk.events_pending():
                 gtk.main_iteration_do(True)
