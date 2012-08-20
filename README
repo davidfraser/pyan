@@ -82,6 +82,8 @@ Modifications:
 
 - [Empty input] is shown when an empty graph is loaded (blank file, or valid graph but no nodes).
 
+- Minor UI fixes (e.g. mouse cursor now changes to busy while loading).
+
 
 In addition, the original contains some functionality that may be difficult to discover. Documenting these, from reading the source code:
 
