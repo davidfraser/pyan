@@ -1585,7 +1585,7 @@ class DotWidget(gtk.DrawingArea):
         self.openfilename = None
 
         # This can be used to temporarily disable the auto-reload mechanism.
-        # (It is useful when loading another file.)
+        # (It is useful while another file is being loaded.)
         #
         self.update_disabled = False
 
@@ -1981,6 +1981,7 @@ class DotWidget(gtk.DrawingArea):
         return NullAction
 
     def on_area_button_press(self, area, event):
+        self.grab_focus()  # grab focus away from the find field
         self.animation.stop()
         self.drag_action.abort()
         action_type = self.get_drag_action(event)
@@ -2075,6 +2076,10 @@ class DotWindow(gtk.Window):
             <toolitem action="ZoomOut"/>
             <toolitem action="ZoomFit"/>
             <toolitem action="Zoom100"/>
+            <separator/>
+            <toolitem action="FindGo"/>
+            <toolitem action="FindPrev"/>
+            <toolitem action="FindNext"/>
         </toolbar>
     </ui>
     '''
@@ -2086,6 +2091,7 @@ class DotWindow(gtk.Window):
 
         self.last_used_directory = None
         self.connect('key-press-event', self.on_key_press_event)
+        self.connect('key-release-event', self.on_key_release_event)
 
         self.graph = Graph()
 
@@ -2119,6 +2125,9 @@ class DotWindow(gtk.Window):
             ('ZoomOut', gtk.STOCK_ZOOM_OUT, None, None, "Zoom out [-]", self.widget.on_zoom_out),
             ('ZoomFit', gtk.STOCK_ZOOM_FIT, None, None, "Zoom to fit [F]", self.widget.on_zoom_fit),
             ('Zoom100', gtk.STOCK_ZOOM_100, None, None, "Zoom to 100% [1]", self.widget.on_zoom_100),
+            ('FindGo', gtk.STOCK_FIND, None, None, "Focus first match [Enter]", self.on_find_first),
+            ('FindPrev', gtk.STOCK_GO_BACK, None, None, "Focus previous match [Shift+N]", self.on_find_prev),
+            ('FindNext', gtk.STOCK_GO_FORWARD, None, None, "Focus next match [N]", self.on_find_next),
         ))
 
         # Add the actiongroup to the uimanager
@@ -2129,6 +2138,18 @@ class DotWindow(gtk.Window):
 
         # Create a Toolbar
         toolbar = uimanager.get_widget('/ToolBar')
+
+        # Create a text entry for search
+        self.find_displaying_placeholder = True
+        self.find_entry = gtk.Entry()
+        self.find_entry.add_events(gtk.gdk.BUTTON_PRESS_MASK)
+        self.find_entry.connect("button-press-event", self.on_find_entry_button_press)
+        self.clear_find_field()
+        item = gtk.ToolItem()
+        item.add(self.find_entry)
+        item.set_tooltip_text("Find [Ctrl+F = Focus, Enter = Search, Esc = Clear]")
+        toolbar.insert(item, 8)  # 8 = after second separator
+
         vbox.pack_start(toolbar, False)
 
         vbox.pack_start(self.widget)
@@ -2137,11 +2158,107 @@ class DotWindow(gtk.Window):
 
         self.show_all()
 
+    def clear_find_field(self):
+        # Clear the "Find" field, setting its text to the placeholder text
+        # ("Find" printed in gray).
+
+#        # how to set colors:
+#        # widget color
+#        entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#FF0000"))
+#        # frame color
+#        entry.modify_bg(gtk.STATE_NORMAL, gtk.gdk.color_parse("#0000FF"))
+#        # text color
+#        entry.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse("#00FF00"))
+
+        # TODO: un-highlight everything (clear find criteria)
+
+        self.find_displaying_placeholder = True
+        self.find_entry.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse("#808080"))
+        self.find_entry.set_text("Find")
+
+    def prepare_find_field(self):
+        # Prepares the "Find" field for user interaction,
+        # if it is currently displaying the placeholder text.
+        #
+        if self.find_displaying_placeholder:
+            self.find_entry.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse("#000000"))
+            self.find_entry.set_text("")
+            self.find_displaying_placeholder = False
+
     def on_key_press_event(self, widget, event):
         if event.state & gtk.gdk.CONTROL_MASK  and  event.keyval == gtk.keysyms.o:
             self.on_open(None)
             return True
+        if event.state & gtk.gdk.CONTROL_MASK  and  event.keyval == gtk.keysyms.f:
+            self.prepare_find_field()
+            self.find_entry.grab_focus()
+            return True
+
+#        print gtk.gdk.keyval_name(event.keyval), event.state
+
+        if self.find_entry.is_focus():
+            if event.keyval == gtk.keysyms.Escape:
+                self.clear_find_field()
+                self.widget.grab_focus()
+                return True
+            elif event.keyval == gtk.keysyms.Return  or  event.keyval == gtk.keysyms.KP_Enter:
+                self.widget.grab_focus()
+                self.find_first()
+                return True
+        else:
+            if event.keyval == gtk.keysyms.Return  or  event.keyval == gtk.keysyms.KP_Enter:
+                self.find_first()
+                return True
+            if event.keyval == gtk.keysyms.n:
+                self.find_next()
+                return True
+            if event.keyval == gtk.keysyms.N:
+                self.find_prev()
+                return True
+
         return False
+
+    def on_key_release_event(self, widget, event):
+        # Run incremental search on key release in the find field.
+        #
+        if self.find_entry.is_focus():
+            if event.keyval in [ gtk.keysyms.Escape, gtk.keysyms.Return, gtk.keysyms.KP_Enter ]:
+                return False
+            if self.find_displaying_placeholder:
+                print "cannot happen"   # DEBUG
+                return False
+
+            text = self.find_entry.get_text()
+            if len(text):
+                self.find_first()  # TODO: make incremental search an option?
+
+            return True
+
+        return False
+
+    def on_find_entry_button_press(self, area, event):
+        if event.button == 1:
+            self.prepare_find_field()
+            self.find_entry.grab_focus()
+
+    # Adapters to catch events
+    #
+    def on_find_first(self, action):
+        self.find_first()
+    def on_find_next(self, action):
+        self.find_next()
+    def on_find_prev(self, action):
+        self.find_prev()
+
+    # Implementation
+    #
+    def find_first(self):
+#        text = self.find_entry.get_text()
+        print "find_first(): TODO"  # TODO
+    def find_next(self):
+        print "find_next(): TODO"  # TODO
+    def find_prev(self):
+        print "find_prev(): TODO"  # TODO
 
     def set_filter(self, filter):
         self.widget.set_filter(filter)
