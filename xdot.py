@@ -2182,18 +2182,21 @@ class DotWindow(gtk.Window):
 #        # text color
 #        entry.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse("#00FF00"))
 
-        # TODO: un-highlight everything (clear find criteria)
-
-        self.find_displaying_placeholder = True
-        self.find_entry.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse("#808080"))
-        self.find_entry.set_text("Find")
-
         # Disable the find buttons until the user enters something to find
         #
         self.button_find_clear.set_sensitive(False)
         self.button_find_go.set_sensitive(False)
         self.button_find_next.set_sensitive(False)
         self.button_find_prev.set_sensitive(False)
+
+        # TODO: un-highlight everything (clear find criteria)
+        # TODO: consider find when:
+        #   - reloading (must re-focus with same find term)
+        #   - loading a new file (must clear find field)
+
+        self.find_displaying_placeholder = True
+        self.find_entry.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse("#808080"))
+        self.find_entry.set_text("Find")
 
     def prepare_find_field(self):
         # Prepares the "Find" field for user interaction,
@@ -2290,9 +2293,9 @@ class DotWindow(gtk.Window):
     # Find system: implementation
     #
     def find_first(self):
-#        text = self.find_entry.get_text()
-#        if len(text):
-        print "find_first(): TODO"  # TODO
+        text = self.find_entry.get_text()
+        if len(text):
+            print "find_first(): %s TODO" % text  # TODO
     def find_next(self):
         print "find_next(): TODO"  # TODO
     def find_prev(self):
