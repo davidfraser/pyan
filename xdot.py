@@ -1582,6 +1582,11 @@ class DotWidget(gtk.DrawingArea):
         self.graph = Graph()
         self.openfilename = None
 
+        # This can be used to temporarily disable the auto-reload mechanism.
+        # (It is useful when loading another file.)
+        #
+        self.update_disabled = False
+
         self.set_flags(gtk.CAN_FOCUS)
 
         self.add_events(gtk.gdk.BUTTON_PRESS_MASK | gtk.gdk.BUTTON_RELEASE_MASK)
@@ -1660,7 +1665,7 @@ class DotWidget(gtk.DrawingArea):
         if xdotcode is None:
             return False
         try:
-            self.set_xdotcode(xdotcode)
+            self.set_xdotcode(xdotcode, filename)
         except ParseError, ex:
             self.set_graph_from_message("[No graph loaded]")
             dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
@@ -1678,11 +1683,17 @@ class DotWidget(gtk.DrawingArea):
             self.openfilename = filename
             return True
 
-    def set_xdotcode(self, xdotcode):
+    def set_xdotcode(self, xdotcode, filename=None):
         #print xdotcode
         if len(xdotcode) > 0:
             parser = XDotParser(xdotcode)
             self.graph = parser.parse()
+            self.openfilename = filename
+
+        if filename is None:
+            self.last_mtime = None
+        else:
+            self.last_mtime = os.stat(filename).st_mtime
 
         # Catch empty graphs.
         #
@@ -1692,6 +1703,7 @@ class DotWidget(gtk.DrawingArea):
         #
         if len(xdotcode) == 0  or  len(self.graph.nodes) < 1:
             self.set_graph_from_message("[Empty input]")
+            self.openfilename = None
 
 #        self.zoom_image(self.zoom_ratio, center=True)
         self.zoom_to_fit()
@@ -1702,11 +1714,9 @@ class DotWidget(gtk.DrawingArea):
             try:
                 zr_saved = self.zoom_ratio
                 self.set_graph_from_message("[Reloading...]")
-                self.zoom_to_fit()  # show the reloading message clearly
 
                 # Change cursor to "busy" and force-redraw the window
                 self.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.WATCH))
-                self.queue_draw()
                 while gtk.events_pending():
                     gtk.main_iteration_do(True)
 
@@ -1724,18 +1734,23 @@ class DotWidget(gtk.DrawingArea):
 
                 # Change cursor back and redraw (now with the actual reloaded graph).
                 self.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
-                self.queue_draw()
                 while gtk.events_pending():
                     gtk.main_iteration_do(True)
             except IOError:
                 self.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
                 self.set_graph_from_message("[Could not reload '%s']" % self.openfilename)
-                self.zoom_to_fit()
-                self.queue_draw()
                 while gtk.events_pending():
                     gtk.main_iteration_do(True)
 
     def update(self):
+        # open_file() of DotWindow disables our update while the new file
+        # is being loaded. This is needed so that we won't think that
+        # the mtime of the *old* file has changed (when in reality,
+        # the mtime has only been switched to the mtime of the *new* file).
+        #
+        if self.update_disabled:
+            return True
+
         if self.openfilename is not None:
             current_mtime = os.stat(self.openfilename).st_mtime
             if current_mtime != self.last_mtime:
@@ -2138,7 +2153,7 @@ class DotWindow(gtk.Window):
             self.widget.zoom_to_fit()
 
     def set_xdotcode(self, xdotcode, filename=None):
-        if self.widget.set_xdotcode(xdotcode):
+        if self.widget.set_xdotcode(xdotcode, filename):
             self.update_title(filename)
             self.widget.zoom_to_fit()
         
@@ -2150,6 +2165,23 @@ class DotWindow(gtk.Window):
 
     def open_file(self, filename):
         try:
+            # Disable the update timer while we load the new file;
+            # otherwise it will think that the *old* file has changed
+            # when self.last_mtime is updated to the mtime of the *new* file.
+            #
+            self.widget.update_disabled = True
+
+            zr_saved = self.widget.zoom_ratio
+            self.update_title()  # remove the old filename from the window title
+            self.set_graph_from_message("[Opening '%s'...]" % os.path.basename(filename))
+
+            # Change cursor to "busy" and force-redraw the window
+            self.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.WATCH))
+            while gtk.events_pending():
+                gtk.main_iteration_do(True)
+
+            self.widget.zoom_ratio = zr_saved  # restore original zoom ratio
+
             fp = file(filename, 'rt')
             # XXX HACK: always load xdot files without filter; otherwise use specified filter
             if os.path.splitext(filename)[1] == ".xdot":
@@ -2157,14 +2189,28 @@ class DotWindow(gtk.Window):
             else:
                 self.set_dotcode(fp.read(), filename)
             fp.close()
+
+            # Change cursor back and redraw (now with the actual reloaded graph).
+            self.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
+            while gtk.events_pending():
+                gtk.main_iteration_do(True)
+
+            self.widget.update_disabled = False
+
         except IOError, ex:
+            self.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
             self.set_graph_from_message("[No graph loaded]")
+            while gtk.events_pending():
+                gtk.main_iteration_do(True)
+
             dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
                                     message_format=str(ex),
                                     buttons=gtk.BUTTONS_OK)
             dlg.set_title(self.base_title)
             dlg.run()
             dlg.destroy()
+
+            self.widget.update_disabled = False
 
     def on_open(self, action):
         chooser = gtk.FileChooserDialog(title="Open dot File",
