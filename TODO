@@ -1,17 +1,7 @@
 xdot TODO:
+  - animated highlighting
   - should have an icon in launcher under Unity shell
     - application icon!
-  - find by text in label (incremental search)
-    - text field with the text "Search" in gray until clicked,
-      then clear it and wait for user input.
-    - buttons:
-      - focus next (if multiple matches)
-        - takes the "next" match (according to some ordering)
-          and "clicks on that node".
-        - if unique match, focus it
-      - focus previous (if multiple matches)
-        - same, with previous match.
-    - make incremental an option? (may be slow)
   - bug: why doesn't the close button always show up when xdot is maximized
     under the Unity shell?
     (take partial screenshot with the windows key, then it bugs out)
@@ -29,6 +19,17 @@ xdot done:
     - error when opening file: if no graph loaded yet, should display "[No graph loaded]"
   x - when hovering over a node, highlight all linked nodes
     (better for exploring a large graph)
+  x- find by text in label (incremental search)
+    - text field with the text "Search" in gray until clicked,
+      then clear it and wait for user input.
+    - buttons:
+      - focus next (if multiple matches)
+        - takes the "next" match (according to some ordering)
+          and "clicks on that node".
+        - if unique match, focus it
+      - focus previous (if multiple matches)
+        - same, with previous match.
+    - make incremental an option? (may be slow)
 
 xdot old todo:
 

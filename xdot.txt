@@ -3,6 +3,8 @@ This XDot was modified by Juha Jeronen, based on the original by José Fonseca.
 
 Modifications:
 
+- Added a "Find" feature for searching graph elements by the text they display. The search is always case-insensitive. By default the Find system runs in incremental mode; for viewing a large graph on a slow computer, there is a new "-N" command line option to use non-incremental mode.
+
 - The hover-over-node highlight system has been extended to make exploring large graphs easier. See below.
 
 - Keyboard shortcuts added for Zoom to fit (F) and Zoom to 100% (1).
@@ -90,6 +92,30 @@ Q                          = Quit XDot
 
 Escape                     = Cancel current mouse drag action
 
+
+In addition, the modified version comes with a Find system:
+
+If in incremental Find mode (default):
+
+Ctrl+F                     = Focus the Find field (re-highlighting all matches
+                             if the highlight has disappeared)
+typing [while in Find]     = Incremental search for the text that is being typed.
+                             Highlights all matches.
+Escape [while in Find]     = Clear the Find field and exit Find
+Return [while in Find]     = Jump to first match
+N                          = Jump to next match
+Shift+N                    = Jump to previous match
+
+If in non-incremental Find mode (using "-N" command line option):
+
+Ctrl+F                     = Focus the Find field (re-highlighting all matches
+                             if the highlight has disappeared)
+Escape [while in Find]     = Clear the Find field and exit Find
+Return [while in Find]     = Run the search for the current term
+                             and highlight all matches.
+N                          = First press:     jump to first match
+                             Further presses: jump to next match
+Shift+N                    = Jump to previous match
 
 
 This modified version is available at:
