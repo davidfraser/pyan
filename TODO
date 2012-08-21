@@ -3,6 +3,8 @@ xdot TODO:
   - when mouse cursor enters Find field, re-highlight? (don't require clicking)
   - should have an icon in launcher under Unity shell
     - application icon!
+  - online help: add a tutorial graph explaining hard-to-discover features
+    that can be opened with a help button
   - bug: why doesn't the close button always show up when xdot is maximized
     under the Unity shell?
     (take partial screenshot with the windows key, then it bugs out)
