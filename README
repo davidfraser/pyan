@@ -172,6 +172,8 @@ N                          = First press:     jump to first match
                              Further presses: jump to next match
 Shift+N                    = Jump to previous match
 
+Note that when cycling through the found items, they are not sorted into any meaningful order.
+
 
 This modified version is available at:
 
