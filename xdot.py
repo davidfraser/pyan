@@ -2523,7 +2523,13 @@ class DotWindow(gtk.Window):
             # We will return the view to this position
             # when the user clears the Find field.
             #
-            self.old_xy = (self.widget.x, self.widget.y)
+            # We only store it if we don't already have a stored position.
+            # This is done so that if several terms are searched in succession
+            # (and browsed with next/prev), the only view position
+            # that is remembered is the one before *any* of the searching.
+            #
+            if self.old_xy == (-1,-1):
+                self.old_xy = (self.widget.x, self.widget.y)
 
             if self.incremental_find:
                 # incremental mode:
