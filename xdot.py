@@ -2314,12 +2314,6 @@ class DotWindow(gtk.Window):
 #            self.widget.zoom_to_fit()
             self.widget.animate_to(*self.old_xy)
 
-        # TODO: un-highlight everything (clear find criteria)
-        # TODO: consider find when:
-        #   - reloading (special case: must re-search and re-focus with same find term)
-        #   - loading a new file (must clear Find system state)
-        #   - no graph loaded
-
         self.matching_items = []
         self.match_idx = -1  # currently focused match
         self.old_xy = (-1,-1)  # for view reset when clearing
@@ -2621,6 +2615,13 @@ class DotWindow(gtk.Window):
             # Clear Find system state.
             #
             self.clear_find_field()
+            # defocus find field to prevent typing into the placeholder
+            #
+            # (Use case: use incremental Find, do *not* hit Return,
+            #  open a new file. Focus would stay in the Find field,
+            #  but the field would have the placeholder text.) 
+            #
+            self.widget.grab_focus()
 
             zr_saved = self.widget.zoom_ratio
             self.update_title()  # remove the old filename from the window title
