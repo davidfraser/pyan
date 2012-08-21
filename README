@@ -173,9 +173,9 @@ Shift+N                    = Jump to previous match
 
 Notes:
 
-- The highlight disappears the the mouse pointer moves over the graph. This is intentional, so that it is possible to explore the graph normally. To re-show the highlight for the same search term, focus the Find field by clicking it or by pressing Ctrl+F.
+- The highlight from Find disappears when the mouse pointer moves over the graph. This is intentional, so that it is possible to explore the graph normally. To re-show the highlight for the same search term, focus the Find field again by clicking it or by pressing Ctrl+F.
 
-- When cycling through the found items, they are not sorted into any meaningful order.
+- When cycling through the found items, they are (currently) not sorted into any meaningful order.
 
 
 This modified version is available at:
