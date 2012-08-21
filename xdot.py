@@ -1392,8 +1392,53 @@ class LinearAnimation(Animation):
         pass
 
 
+class ExpDecayAnimation(Animation):
+    """Smooth progression: fast at start, slow at end.
+
+    Based on exponential decay.
+
+    Good for suddenly starting, smoothly decaying highlight etc.
+
+    """
+
+    duration = 0.6
+
+    def __init__(self):
+        # Sharpness (decay time constant).
+        #
+        self.c  = 4.0
+
+        # Upper and lower limits for normalization.
+        #
+        self.ul = 1.0   # exp(0)
+        self.ll = math.exp(-self.c)  # value at t = 1.0
+
+    def start(self):
+        self.started = time.time()
+        Animation.start(self)
+
+    def tick(self):
+        t = (time.time() - self.started) / self.duration
+
+        # Remap t nonlinearly. Both the input and output are in [0,1].
+        #
+        t = 1.0 - (math.exp( -self.c * t ) - self.ll) / (self.ul - self.ll)
+
+        self.animate(max(0, min(t, 1)))
+        return (t < 1)
+
+    def animate(self, t):
+        pass
+
+
 class TanhAnimation(Animation):
-    """Smooth progression: slow at start, fast at middle, slow at end."""
+    """Smooth progression: slow at start, fast at middle, slow at end.
+
+    Based on the hyperbolic tangent function.
+
+    Good for panning, zooming, etc.
+
+    """
 
     duration = 0.6
 
