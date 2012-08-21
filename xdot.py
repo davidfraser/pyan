@@ -1867,6 +1867,7 @@ class DotWidget(gtk.DrawingArea):
                 while gtk.events_pending():
                     gtk.main_iteration_do(True)
 
+            # The Find system updates its state via this callback mechanism.
             if self.reload_callback is not None:
                 self.reload_callback()
 
@@ -2199,6 +2200,7 @@ class DotWidget(gtk.DrawingArea):
 
     def set_reload_callback(self, func):
         # Set a callback to run at the end of reload().
+        # This is used by the Find system.
         self.reload_callback = func
 
 class DotWindow(gtk.Window):
