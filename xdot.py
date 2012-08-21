@@ -1645,6 +1645,11 @@ class DotWidget(gtk.DrawingArea):
         self.graph = Graph()
         self.openfilename = None
 
+        # If set, this function is run at the end of reload().
+        # Used by the Find system to re-run the search when the current file is reloaded.
+        #
+        self.reload_callback = None
+
         # This can be used to temporarily disable the auto-reload mechanism.
         # (It is useful while another file is being loaded.)
         #
@@ -1804,6 +1809,9 @@ class DotWidget(gtk.DrawingArea):
                 self.set_graph_from_message("[Could not reload '%s']" % self.openfilename)
                 while gtk.events_pending():
                     gtk.main_iteration_do(True)
+
+            if self.reload_callback is not None:
+                self.reload_callback()
 
     def update(self):
         # open_file() of DotWindow disables our update while the new file
@@ -2132,6 +2140,9 @@ class DotWidget(gtk.DrawingArea):
         x, y = self.window2graph(x, y)
         return self.graph.get_jump(x, y, **kwargs)
 
+    def set_reload_callback(self, func):
+        # Set a callback to run at the end of reload().
+        self.reload_callback = func
 
 class DotWindow(gtk.Window):
 
@@ -2180,6 +2191,7 @@ class DotWindow(gtk.Window):
         window.add(vbox)
 
         self.widget = DotWidget()
+        self.widget.set_reload_callback( self.reload_callback )
 
         # Create a UIManager instance
         uimanager = self.uimanager = gtk.UIManager()
@@ -2692,6 +2704,10 @@ class DotWindow(gtk.Window):
     def on_reload(self, action):
         self.widget.reload()
 
+    def reload_callback(self):
+        if not self.find_displaying_placeholder:
+            self.find_last_searched_text = ""  # Force re-run of Find.
+            self.find_and_highlight_matches()
 
 def main():
     import optparse
