@@ -2612,7 +2612,8 @@ class DotWindow(gtk.Window):
             #
             self.widget.update_disabled = True
 
-            # Clear Find system state.
+            # Clear Find system state (list of matching items, match_idx,
+            # old view position, ...).
             #
             self.clear_find_field()
             # defocus find field to prevent typing into the placeholder
