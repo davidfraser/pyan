@@ -2526,7 +2526,7 @@ class DotWindow(gtk.Window):
             # We only store it if we don't already have a stored position.
             # This is done so that if several terms are searched in succession
             # (and browsed with next/prev), the only view position
-            # that is remembered is the one before *any* of the searching.
+            # that is remembered is the user-set one before *any* of the searching.
             #
             if self.old_xy == (-1,-1):
                 self.old_xy = (self.widget.x, self.widget.y)
