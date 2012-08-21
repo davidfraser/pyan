@@ -2389,8 +2389,7 @@ class DotWindow(gtk.Window):
 
         # Clear the highlight, except if we're currently loading a new file.
         if not self.widget.update_disabled:
-            self.widget.highlight = set(self.matching_items)
-            self.widget.queue_draw()
+            self.widget.set_highlight( set(self.matching_items) )
 
     def prepare_find_field(self):
         # Clear the "Find" field and prepare it for user interaction,
@@ -2410,8 +2409,7 @@ class DotWindow(gtk.Window):
 
         # Clear the highlight, except if we're currently loading a new file.
         if not self.widget.update_disabled:
-            self.widget.highlight = set(self.matching_items)
-            self.widget.queue_draw()
+            self.widget.set_highlight( set(self.matching_items) )
 
         # If Find has focused something, return view to its original position
         # it had before the first focus.
@@ -2590,8 +2588,7 @@ class DotWindow(gtk.Window):
         # We always highlight the matches, though, to give the user a way to re-highlight them
         # after exploring the graph using the mouse (which destroys the highlight).
         #
-        self.widget.highlight = set(self.matching_items)  # (not just type change; must copy)
-        self.widget.queue_draw()
+        self.widget.set_highlight( set(self.matching_items) )
 
     def find_first(self):
         text = self.find_entry.get_text()
@@ -2604,8 +2601,7 @@ class DotWindow(gtk.Window):
 
                 self.match_idx = -1  # currently focused match (-1 = none)
                 self.old_xy = (-1,-1)  # for view reset when clearing
-                self.widget.highlight = set( [] )
-                self.widget.queue_draw()
+                self.widget.set_highlight( set( [] ) )
                 return
 
             # Remember original view position.
@@ -2629,8 +2625,7 @@ class DotWindow(gtk.Window):
 
                 # focus and center the first match
                 node = self.matching_items[self.match_idx]
-                self.widget.highlight = set( [node] )
-                self.widget.queue_draw()
+                self.widget.set_highlight( set( [node] ) )
                 self.widget.animate_to( node.x, node.y )
             else:
                 # non-incremental mode:
@@ -2657,8 +2652,7 @@ class DotWindow(gtk.Window):
 
         # focus and center the next match
         node = self.matching_items[self.match_idx]
-        self.widget.highlight = set( [node] )
-        self.widget.queue_draw()
+        self.widget.set_highlight( set( [node] ) )
         self.widget.animate_to( node.x, node.y )
     def find_prev(self):
         nmatches = len(self.matching_items)
@@ -2671,8 +2665,7 @@ class DotWindow(gtk.Window):
 
         # focus and center the prev match
         node = self.matching_items[self.match_idx]
-        self.widget.highlight = set( [node] )
-        self.widget.queue_draw()
+        self.widget.set_highlight( set( [node] ) )
         self.widget.animate_to( node.x, node.y )
 
     def set_filter(self, filter):
