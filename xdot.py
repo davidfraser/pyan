@@ -2156,8 +2156,15 @@ class DotWindow(gtk.Window):
 
     base_title = 'Dot Viewer'
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         gtk.Window.__init__(self)
+
+        # Set incremental Find on/off.
+        #
+        # Currently this is only possible at startup. See "findgo_label" for why.
+        #
+        if "incremental_find" in kwargs:
+            self.incremental_find = kwargs["incremental_find"]
 
         self.last_used_directory = None
         self.connect('key-press-event', self.on_key_press_event)
@@ -2185,6 +2192,22 @@ class DotWindow(gtk.Window):
         actiongroup = gtk.ActionGroup('Actions')
         self.actiongroup = actiongroup
 
+        # Different behaviour:
+        #  - incremental mode:
+        #    * typing in the Find field runs the search after each key release
+        #      and highlights all matching items
+        #    * pressing Return/FindGo jumps to the first match
+        #  - non-incremental mode:
+        #    * pressing Return/FindGo runs the search and highlights all matching items
+        #    * then pressing N/FindNext jumps to the first match
+        #
+        if self.incremental_find:
+            findgo_label   = "Find fir_st"
+            findgo_tooltip = "Jump to first match [Return]"
+        else:
+            findgo_label   = "Run _search"
+            findgo_tooltip = "Run the search [Return]"
+
         # Create actions
         actiongroup.add_actions((
             # http://www.pygtk.org/docs/pygtk/class-gtkactiongroup.html#method-gtkactiongroup--add-actions
@@ -2196,9 +2219,9 @@ class DotWindow(gtk.Window):
             ('ZoomFit', gtk.STOCK_ZOOM_FIT, None, "F", "Zoom to fit [F]", self.widget.on_zoom_fit),
             ('Zoom100', gtk.STOCK_ZOOM_100, None, "1", "Zoom to 100% [1]", self.widget.on_zoom_100),
             ('FindClear', gtk.STOCK_CLOSE, "_Clear Find", "Escape", "Clear find term [Escape]", self.on_find_clear),
-            ('FindGo', gtk.STOCK_FIND, "Find fir_st", "Return", "Focus first match [Return]", self.on_find_first),
-            ('FindPrev', gtk.STOCK_GO_BACK, "Find _previous", "<Shift>N", "Focus previous match [Shift+N]", self.on_find_prev),
-            ('FindNext', gtk.STOCK_GO_FORWARD, "Find n_ext", "N", "Focus next match [N]", self.on_find_next),
+            ('FindGo', gtk.STOCK_FIND, findgo_label, "Return", findgo_tooltip, self.on_find_first),
+            ('FindPrev', gtk.STOCK_GO_BACK, "Find _previous", "<Shift>N", "Jump to previous match [Shift+N]", self.on_find_prev),
+            ('FindNext', gtk.STOCK_GO_FORWARD, "Find n_ext", "N", "Jump to next match [N]", self.on_find_next),
         ))
 
         # Add the actiongroup to the uimanager
@@ -2235,7 +2258,10 @@ class DotWindow(gtk.Window):
         item = gtk.ToolItem()
         item.add(self.find_entry)
         item.set_size_request(*self.find_entry.size_request())
-        item.set_tooltip_text("Find [Ctrl+F = Focus, Return = Search, Escape = Clear]")
+        if self.incremental_find:
+            item.set_tooltip_text("Find [Ctrl+F = Focus, Return = Jump to first match, Escape = Clear]")
+        else:
+            item.set_tooltip_text("Find [Ctrl+F = Focus, Return = Search, Escape = Clear]")
         toolbar.insert(item, 9)  # 9 = after FindClear
 
         vbox.pack_start(toolbar, False)
@@ -2288,7 +2314,11 @@ class DotWindow(gtk.Window):
         self.find_displaying_placeholder = True
         self.find_last_searched_text = ""
         self.find_entry.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse("#808080"))
-        self.find_entry.set_text("Find")
+
+        if self.incremental_find:
+            self.find_entry.set_text("Find")
+        else:
+            self.find_entry.set_text("Find [Return = go]")
 
         # Clear the highlight, except if we're currently loading a new file.
         if not self.widget.update_disabled:
@@ -2375,6 +2405,8 @@ class DotWindow(gtk.Window):
                 return True
             elif event.keyval == gtk.keysyms.Return  or  event.keyval == gtk.keysyms.KP_Enter:
                 self.widget.grab_focus()
+                if not self.incremental_find:
+                    self.find_and_highlight_matches()  # run the search now
                 self.find_first()
                 return True
         else:
@@ -2391,9 +2423,9 @@ class DotWindow(gtk.Window):
         return False
 
     def on_key_release_event(self, widget, event):
-        # Run incremental search on key release in the find field.
+        # Run incremental Find on key release in the Find field.
         #
-        if self.find_entry.is_focus():
+        if self.find_entry.is_focus()  and  self.incremental_find:
             if event.keyval in [ gtk.keysyms.Escape, gtk.keysyms.Return, gtk.keysyms.KP_Enter ]:
                 return False
             if self.find_displaying_placeholder:
@@ -2402,7 +2434,7 @@ class DotWindow(gtk.Window):
 #            if len(text) == 0:
 #                return False
 
-            self.find_and_highlight_matches()  # TODO: make incremental search an option?
+            self.find_and_highlight_matches()
 
             return True
 
@@ -2441,11 +2473,11 @@ class DotWindow(gtk.Window):
     # Find system: implementation
     #
     def find_and_highlight_matches(self):
-        # TODO: check that find term has actually changed; only rerun when necessary.
+        # Check that the find term has actually changed; only rerun when necessary.
         #
-        # Also, not doing this would cause bugs:
+        # Not doing this would cause bugs:
         #  - next/prev buttons would be disabled when re-focusing the Find field with Ctrl+F,
-        #    when the Find field gets the key release events.
+        #    when the Find field gets the key release events (for the Ctrl+F).
         #  - match_idx would be lost when re-focusing the Find field; then clearing the field
         #    would not reset the view position even if a match was focused.
         #
@@ -2487,13 +2519,23 @@ class DotWindow(gtk.Window):
             #
             self.old_xy = (self.widget.x, self.widget.y)
 
-            self.match_idx = 0  # currently focused match
+            if self.incremental_find:
+                # incremental mode:
+                #   - match highlight already seen; focus the first match now
+                #
+                self.match_idx = 0  # currently focused match
 
-            # focus and center the first match
-            node = self.matching_items[self.match_idx]
-            self.widget.highlight = set( [node] )
-            self.widget.queue_draw()
-            self.widget.animate_to( node.x, node.y )
+                # focus and center the first match
+                node = self.matching_items[self.match_idx]
+                self.widget.highlight = set( [node] )
+                self.widget.queue_draw()
+                self.widget.animate_to( node.x, node.y )
+            else:
+                # non-incremental mode:
+                #   - Return/FindGo highlights everything
+                #   - first press of Next highlights the actual first match
+                #
+                self.match_idx = -1
 
             # now that first is found, enable next/prev
             self.button_find_next.set_sensitive(True)
@@ -2666,12 +2708,16 @@ def main():
         '-n', '--no-filter',
         action='store_const', const=None, dest='filter',
         help='assume input is already filtered into xdot format (use e.g. dot -Txdot)')
+    parser.add_option(
+        '-N', '--no-incremental-find',
+        action='store_const', const=False, default=True, dest='incremental_find',
+        help='disable incremental Find (useful for large graphs on slow computers). When disabled, the Find feature only runs the search when Return or the Go button is pressed.')
 
     (options, args) = parser.parse_args(sys.argv[1:])
     if len(args) > 1:
         parser.error('incorrect number of arguments')
 
-    win = DotWindow()
+    win = DotWindow(incremental_find=options.incremental_find)
     win.connect('destroy', gtk.main_quit)
     win.set_filter(options.filter)
     if len(args) == 0:
