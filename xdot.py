@@ -156,6 +156,7 @@ class Shape:
 
     def select_pen(self, highlight):
         if highlight:
+            # XXX/TODO: need to change this for animated highlights
             if not hasattr(self, 'highlight_pen'):
                 self.highlight_pen = self.pen.highlighted()
             return self.highlight_pen
@@ -434,6 +435,17 @@ class Element(CompoundShape):
     def get_jump(self, x, y, **kwargs):
         return None
 
+    def get_texts(self):
+        # Return the content of any TextShapes in this CompoundShape.
+        #
+        # Return format is list of strings, one item per TextShape.
+        #
+        # This is used by the Find logic.
+        #
+        textshapes = filter( lambda obj: isinstance(obj, TextShape), self.shapes )
+        texts      = map( lambda obj: obj.t, textshapes )
+        return texts
+
 
 class Node(Element):
 
@@ -502,6 +514,16 @@ class Graph(Shape):
         self.nodes = nodes
         self.edges = edges
 
+        # List of items to search through for filter_items_by_text().
+        #
+        # We generate this here (only once) to speed up the search;
+        # we can do this because the graph content never changes after
+        # the graph (any given, particular graph) is loaded.
+        #
+        # format: (node_obj, list_of_text_strings_in_node)
+        self.items_and_texts =       map( lambda obj: (obj, obj.get_texts()), self.nodes )
+        self.items_and_texts.extend( map( lambda obj: (obj, obj.get_texts()), self.edges ) )
+
     def get_size(self):
         return self.width, self.height
 
@@ -546,6 +568,14 @@ class Graph(Shape):
                 # (control held down) and "to_links_only" mode, we highlight
                 # incoming links.
                 #
+                # The implementation of this feature has three parts:
+                #   - Graph.get_jump()
+                #     * highlight set computation
+                #   - NullAction.on_motion_notify()  (this)
+                #     * mouse move handling
+                #   - DotWidget.update_highlight()
+                #     * keypress handling
+                #
                 if do_highlight is None  or  do_highlight == "from":
                     linked_edges = filter( lambda e: e.src == node, self.edges )
                 else:  # "to" or "to_links_only"
@@ -563,6 +593,29 @@ class Graph(Shape):
 
                 return jump
         return None
+
+    def filter_items_by_text(self, text):
+        # Return list of nodes/edges that have at least one text string containing
+        # the search term "text".
+        #
+        # Requires self.items_and_texts to be up to date.
+
+        if len(text) == 0:
+            return []
+
+        def match_text(term, texts): # str, list of str
+            # Return true if "term" is contained in at least one string of the list "texts".
+
+            # case-sensitive match
+#            return any( filter( lambda t: t.find(term) != -1, texts ) )
+
+            # case-insensitive match (user-friendly)
+            return any( filter( lambda t: re.search(term,t,re.IGNORECASE) is not None, texts ) )
+
+        matching_pairs = filter( lambda o: match_text(text, o[1]), self.items_and_texts )
+        matching_items = map( lambda o: o[0], matching_pairs )  # discard text lists
+
+        return matching_items
 
 
 class XDotAttrParser:
@@ -1481,6 +1534,14 @@ class NullAction(DragAction):
             # but may look confusing if always on. Hence, it has to be
             # switched on by holding down a modifier.
             #
+            # The implementation of this feature has three parts:
+            #   - Graph.get_jump()
+            #     * highlight set computation
+            #   - NullAction.on_motion_notify()  (this)
+            #     * mouse move handling
+            #   - DotWidget.update_highlight()
+            #     * keypress handling
+            #
             do_highlight = None
             state = event.state
             if state & gtk.gdk.SHIFT_MASK:
@@ -1936,6 +1997,14 @@ class DotWidget(gtk.DrawingArea):
         self.update_highlight(event, mode="release")
 
     def update_highlight(self, event, **kwargs):
+        # The implementation of this feature has three parts:
+        #   - Graph.get_jump()
+        #     * highlight set computation
+        #   - NullAction.on_motion_notify()  (this)
+        #     * mouse move handling
+        #   - DotWidget.update_highlight()
+        #     * keypress handling
+        #
         # If not one of "our" keys, do nothing.
         #
         # (ISO level 3 shift = AltGr in scandinavic keyboards.)
@@ -2154,6 +2223,10 @@ class DotWindow(gtk.Window):
         # the text entry widget into a ToolItem before adding it.
         #
         self.find_displaying_placeholder = True
+        self.matching_items = []
+        self.match_idx = -1  # currently focused match
+        self.old_xy = (-1,-1)  # for view reset when clearing
+        self.find_last_searched_text = ""
         self.find_entry = gtk.Entry()
         self.find_entry.add_events(gtk.gdk.BUTTON_PRESS_MASK | gtk.gdk.FOCUS_CHANGE_MASK)
         self.find_entry.connect("button-press-event", self.on_find_entry_button_press)
@@ -2189,23 +2262,72 @@ class DotWindow(gtk.Window):
         self.button_find_next.set_sensitive(False)
         self.button_find_prev.set_sensitive(False)
 
+        # If Find has focused something, return view to its original position
+        # it had before the first focus.
+        #
+        # (Note that the incremental find itself does not focus; it only does
+        #  when hitting Return (FindGo) and scanning through the matches
+        #  with FindNext/FindPrev.)
+        #
+        # The update_disabled check catches the case when a new file is being loaded;
+        # in that case the old view position does not matter.
+        #
+        if self.match_idx != -1  and  not self.widget.update_disabled:
+#            self.widget.zoom_to_fit()
+            self.widget.animate_to(*self.old_xy)
+
         # TODO: un-highlight everything (clear find criteria)
         # TODO: consider find when:
-        #   - reloading (must re-focus with same find term)
-        #   - loading a new file (must clear find field)
+        #   - reloading (special case: must re-search and re-focus with same find term)
+        #   - loading a new file (must clear Find system state)
+        #   - no graph loaded
 
+        self.matching_items = []
+        self.match_idx = -1  # currently focused match
+        self.old_xy = (-1,-1)  # for view reset when clearing
         self.find_displaying_placeholder = True
+        self.find_last_searched_text = ""
         self.find_entry.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse("#808080"))
         self.find_entry.set_text("Find")
+
+        # Clear the highlight, except if we're currently loading a new file.
+        if not self.widget.update_disabled:
+            self.widget.highlight = set(self.matching_items)
+            self.widget.queue_draw()
 
     def prepare_find_field(self):
         # Clear the "Find" field and prepare it for user interaction,
         # if it is currently displaying the placeholder text.
         #
         self.find_entry.set_text("")
+        self.find_last_searched_text = ""
+
         # empty find term - disable next/prev
         self.button_find_next.set_sensitive(False)
         self.button_find_prev.set_sensitive(False)
+        self.matching_items = []
+
+        # Clear the highlight, except if we're currently loading a new file.
+        if not self.widget.update_disabled:
+            self.widget.highlight = set(self.matching_items)
+            self.widget.queue_draw()
+
+        # If Find has focused something, return view to its original position
+        # it had before the first focus.
+        #
+        # (Note that the incremental find itself does not focus; it only does
+        #  when hitting Return (FindGo) and scanning through the matches
+        #  with FindNext/FindPrev.)
+        #
+        # The update_disabled check catches the case when a new file is being loaded;
+        # in that case the old view position does not matter.
+        #
+        if self.match_idx != -1  and  not self.widget.update_disabled:
+#            self.widget.zoom_to_fit()
+            self.widget.animate_to(*self.old_xy)
+
+        self.match_idx = -1  # currently focused match
+        self.old_xy = (-1,-1)  # for view reset when clearing
 
         if self.find_displaying_placeholder:
             self.find_entry.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse("#000000"))
@@ -2321,24 +2443,59 @@ class DotWindow(gtk.Window):
     def find_and_highlight_matches(self):
         # TODO: check that find term has actually changed; only rerun when necessary.
         #
-        # (This will also make it so that the next/prev buttons are not unnecessarily disabled;
-        #  otherwise they would be when re-focusing the Find field with Ctrl+F, when the Find
-        #  field gets the key release events.)
-
+        # Also, not doing this would cause bugs:
+        #  - next/prev buttons would be disabled when re-focusing the Find field with Ctrl+F,
+        #    when the Find field gets the key release events.
+        #  - match_idx would be lost when re-focusing the Find field; then clearing the field
+        #    would not reset the view position even if a match was focused.
+        #
         text = self.find_entry.get_text()
-#        if len(text):
+        if text != self.find_last_searched_text:
+            self.find_last_searched_text = text
+            self.matching_items = self.widget.graph.filter_items_by_text( text )
+            self.match_idx = -1  # currently focused match
 
-        # find_first() has not been done yet - disable next/prev
-        self.button_find_next.set_sensitive(False)
-        self.button_find_prev.set_sensitive(False)
+            # find_first() has not been done yet - disable next/prev
+            self.button_find_next.set_sensitive(False)
+            self.button_find_prev.set_sensitive(False)
 
-        print "find_and_highlight_matches(): %s TODO" % text  # TODO
+        # We always highlight the matches, though, to give the user a way to re-highlight them
+        # after exploring the graph using the mouse (which destroys the highlight).
+        #
+        self.widget.highlight = set(self.matching_items)  # (not just type change; must copy)
+        self.widget.queue_draw()
+
     def find_first(self):
         text = self.find_entry.get_text()
         if len(text):
-            print "find_first(): %s TODO" % text  # TODO
+            nmatches = len(self.matching_items)
+            if nmatches == 0:
+                # no match - disable next/prev
+                self.button_find_next.set_sensitive(False)
+                self.button_find_prev.set_sensitive(False)
 
-            # now that first is found (TODO check match), enable next/prev
+                self.match_idx = -1  # currently focused match (-1 = none)
+                self.old_xy = (-1,-1)  # for view reset when clearing
+                self.widget.highlight = set( [] )
+                self.widget.queue_draw()
+                return
+
+            # Remember original view position.
+            #
+            # We will return the view to this position
+            # when the user clears the Find field.
+            #
+            self.old_xy = (self.widget.x, self.widget.y)
+
+            self.match_idx = 0  # currently focused match
+
+            # focus and center the first match
+            node = self.matching_items[self.match_idx]
+            self.widget.highlight = set( [node] )
+            self.widget.queue_draw()
+            self.widget.animate_to( node.x, node.y )
+
+            # now that first is found, enable next/prev
             self.button_find_next.set_sensitive(True)
             self.button_find_prev.set_sensitive(True)
         else:
@@ -2346,14 +2503,41 @@ class DotWindow(gtk.Window):
             self.button_find_next.set_sensitive(False)
             self.button_find_prev.set_sensitive(False)
     def find_next(self):
-        print "find_next(): TODO"  # TODO
+        nmatches = len(self.matching_items)
+        if nmatches == 0:
+            return
+
+        self.match_idx += 1
+        if self.match_idx >= nmatches:
+            self.match_idx = 0
+
+        # focus and center the next match
+        node = self.matching_items[self.match_idx]
+        self.widget.highlight = set( [node] )
+        self.widget.queue_draw()
+        self.widget.animate_to( node.x, node.y )
     def find_prev(self):
-        print "find_prev(): TODO"  # TODO
+        nmatches = len(self.matching_items)
+        if nmatches == 0:
+            return
+
+        self.match_idx -= 1
+        if self.match_idx < 0:
+            self.match_idx = nmatches - 1
+
+        # focus and center the prev match
+        node = self.matching_items[self.match_idx]
+        self.widget.highlight = set( [node] )
+        self.widget.queue_draw()
+        self.widget.animate_to( node.x, node.y )
 
     def set_filter(self, filter):
+        # Set GraphViz filter name for reading .dot files.
         self.widget.set_filter(filter)
 
     def set_graph_from_message(self, string):
+        # Generate a one-node graph from string and render it.
+        # Useful for passive error messages and the like.
         self.widget.set_graph_from_message(string)
 
     def set_dotcode(self, dotcode, filename=None):
@@ -2379,6 +2563,10 @@ class DotWindow(gtk.Window):
             # when self.last_mtime is updated to the mtime of the *new* file.
             #
             self.widget.update_disabled = True
+
+            # Clear Find system state.
+            #
+            self.clear_find_field()
 
             zr_saved = self.widget.zoom_ratio
             self.update_title()  # remove the old filename from the window title
