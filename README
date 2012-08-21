@@ -152,7 +152,7 @@ In addition, the modified version comes with a Find system:
 
 If in incremental Find mode (default):
 
-Ctrl+F                     = Focus the Find field (re-highlighting all matches
+Ctrl+F or click Find field = Focus the Find field (re-highlighting all matches
                              if the highlight has disappeared)
 typing [while in Find]     = Incremental search for the text that is being typed.
                              Highlights all matches.
@@ -163,8 +163,7 @@ Shift+N                    = Jump to previous match
 
 If in non-incremental Find mode (using "-N" command line option):
 
-Ctrl+F                     = Focus the Find field (re-highlighting all matches
-                             if the highlight has disappeared)
+Ctrl+F or click Find field = Focus the Find field
 Escape [while in Find]     = Clear the Find field and exit Find
 Return [while in Find]     = Run the search for the current term
                              and highlight all matches.
@@ -172,7 +171,11 @@ N                          = First press:     jump to first match
                              Further presses: jump to next match
 Shift+N                    = Jump to previous match
 
-Note that when cycling through the found items, they are not sorted into any meaningful order.
+Notes:
+
+- The highlight disappears the the mouse pointer moves over the graph. This is intentional, so that it is possible to explore the graph normally. To re-show the highlight for the same search term, focus the Find field by clicking it or by pressing Ctrl+F.
+
+- When cycling through the found items, they are not sorted into any meaningful order.
 
 
 This modified version is available at:
