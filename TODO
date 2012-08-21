@@ -1,5 +1,6 @@
 xdot TODO:
   - animated highlighting
+  - when mouse cursor enters Find field, re-highlight? (don't require clicking)
   - should have an icon in launcher under Unity shell
     - application icon!
   - bug: why doesn't the close button always show up when xdot is maximized
