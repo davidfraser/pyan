@@ -81,8 +81,11 @@ def mix_colors(rgb1, rgb2, t):
 def setup_highlight_color(gtkobject):
     """Query the system highlight color.
 
+    If the query fails, a default blue is used and a warning printed to stderr.
+
     Parameters:
         gtkobject = a sufficiently initialized GTK object from which to get the data.
+                    Probably requires an initialized window with a context...
 
     Return value:
         None.
@@ -101,11 +104,18 @@ def setup_highlight_color(gtkobject):
     global highlight_light
 
     if "highlight_base" not in globals():
-        state = getattr(gtk, "STATE_SELECTED")
-        style_base  = getattr(gtkobject.get_style(), "base")
-        style_light = getattr(gtkobject.get_style(), "light")
-        color_base  = style_base[state]
-        color_light = style_light[state]
+        try:  # ...to get system highlight color
+            state = getattr(gtk, "STATE_SELECTED")
+            style_base  = getattr(gtkobject.get_style(), "base")
+            style_light = getattr(gtkobject.get_style(), "light")
+            color_base  = style_base[state]
+            color_light = style_light[state]
+        except AttributeError:
+            print >>sys.stderr, "xdot: WARNING: unable to get system highlight color; using default blue."
+
+            # This default is extracted from GNOME 2.30.2 in Debian Stable, August 2012.
+            color_base  = gtk.gdk.Color(34438, 43947, 55769)
+            color_light = gtk.gdk.Color(53951, 58126, 63317)
 
         alp = 1.0  # translucency (1.0 = opaque)
         highlight_base = (color_base.red/65535.0, color_base.green/65535.0, color_base.blue/65535.0, alp)
