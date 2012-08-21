@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 #
 # Copyright 2008 Jose Fonseca
+#           2012 Juha Jeronen (the Find field, extension of graph exploration functionality,
+#                              several small UI improvements)
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU Lesser General Public License as published
@@ -2365,6 +2367,8 @@ class DotWindow(gtk.Window):
         self.find_displaying_placeholder = True
         self.find_last_searched_text = ""
         self.find_entry.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse("#808080"))
+        # Set background to white
+        self.find_entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#FFFFFF"))
 
         if self.incremental_find:
             self.find_entry.set_text("Find")
@@ -2382,6 +2386,10 @@ class DotWindow(gtk.Window):
         #
         self.find_entry.set_text("")
         self.find_last_searched_text = ""
+
+        # Restore background to white
+        #
+        self.find_entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#FFFFFF"))
 
         # empty find term - disable next/prev
         self.button_find_next.set_sensitive(False)
@@ -2476,8 +2484,15 @@ class DotWindow(gtk.Window):
     def on_key_release_event(self, widget, event):
         # Run incremental Find on key release in the Find field.
         #
-        if self.find_entry.is_focus()  and  self.incremental_find:
+        if self.find_entry.is_focus():
             if event.keyval in [ gtk.keysyms.Escape, gtk.keysyms.Return, gtk.keysyms.KP_Enter ]:
+                return False
+            # Ignore the Ctrl+F that gets us here (and other Ctrl+something key combinations).
+            #
+            # XXX: it is possible to press Ctrl+F quickly in such a way that
+            # the "F" generates a separate release event with no CONTROL_MASK. What to do then?
+            #
+            if event.state & gtk.gdk.CONTROL_MASK:
                 return False
             if self.find_displaying_placeholder:
                 return False
@@ -2485,7 +2500,13 @@ class DotWindow(gtk.Window):
 #            if len(text) == 0:
 #                return False
 
-            self.find_and_highlight_matches()
+            # Search term changed, must run search again
+            if self.incremental_find:
+                self.find_and_highlight_matches()
+            else:
+                # search not run yet, disable next/prev
+                self.button_find_next.set_sensitive(False)
+                self.button_find_prev.set_sensitive(False)
 
             return True
 
@@ -2540,6 +2561,15 @@ class DotWindow(gtk.Window):
             self.find_last_searched_text = text
             self.matching_items = self.widget.graph.filter_items_by_text( text )
             self.match_idx = -1  # currently focused match
+
+            # Make background of Find light red if nothing matches.
+            # Restore white if something matches.
+            #
+            if len(text) > 0  and  len(self.matching_items) == 0:
+                # TODO: this color is kind of ugly, find a better one
+                self.find_entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#F0B0A0"))
+            else:
+                self.find_entry.modify_base(gtk.STATE_NORMAL, gtk.gdk.color_parse("#FFFFFF"))
 
             # find_first() has not been done yet - disable next/prev
             self.button_find_next.set_sensitive(False)
