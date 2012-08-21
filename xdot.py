@@ -2447,9 +2447,12 @@ class DotWindow(gtk.Window):
         return False
 
     def on_find_entry_button_press(self, area, event):
+        # Click handler for the Find text field.
         if event.button == 1:
             if self.find_displaying_placeholder:
                 self.prepare_find_field()
+            if self.incremental_find:
+                self.find_and_highlight_matches()
             self.find_entry.grab_focus()
             return True
         return False
