@@ -73,6 +73,10 @@ Modifications:
 - Focus animation now follows a nonlinear tanh spacing for a smoother-looking
   experience (slow-fast-slow).
 
+- Animated highlighting (can use "-b" to switch off).
+
+- Animated zooming (can use "-a" to switch off).
+
 - Uses system highlight color, queried from GTK.
 
   For nodes, the actual node highlight color is mixed from the node's original color
