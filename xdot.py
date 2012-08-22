@@ -1911,6 +1911,15 @@ class DotWidget(gtk.DrawingArea):
         self.highlight = None
         self.old_highlight = None
 
+    def reset_mouse_cursor(self):
+        # Reset the mouse cursor to default.
+        #
+        # Call this when loading a new graph; otherwise the cursor may remain
+        # as "hand" while loading (when it should change to "busy")!
+        #
+        self.window.set_cursor(None)  # None = use inherited mouse cursor
+        self.parent.window.set_cursor(None)
+
     def set_animated(self, animate_view, animate_highlights):
         # Enable/disable view pan/zoom animations.
         self.animate = animate_view
@@ -2025,6 +2034,7 @@ class DotWidget(gtk.DrawingArea):
                 self.set_graph_from_message("[Reloading...]")
 
                 # Change cursor to "busy" and force-redraw the window
+                self.reset_mouse_cursor()
                 self.parent.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.WATCH))
                 while gtk.events_pending():
                     gtk.main_iteration_do(True)
@@ -3049,6 +3059,7 @@ class DotWindow(gtk.Window):
             self.set_graph_from_message("[Opening '%s'...]" % os.path.basename(filename))
 
             # Change cursor to "busy" and force-redraw the window
+            self.widget.reset_mouse_cursor()
             self.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.WATCH))
             while gtk.events_pending():
                 gtk.main_iteration_do(True)
