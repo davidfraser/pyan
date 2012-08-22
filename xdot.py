@@ -1689,7 +1689,16 @@ class ZoomToAnimation(MoveToAnimation):
     def animate(self, t):
         a, b, c = self.source_zoom, self.extra_zoom, self.target_zoom
         self.dot_widget.zoom_ratio = c*t + b*t*(1-t) + a*(1-t)
-        self.dot_widget.zoom_to_fit_on_resize = False
+        # XXX Why was the zoom to fit flag disabled here?
+        # XXX
+        # XXX Doing that breaks zoom to fit when the UI is animated
+        # XXX (dot_widget.animate == True) and the window is first maximized
+        # XXX and then restored (because the first animation switches zoom to fit off).
+        # XXX
+        # XXX If we want to do that here, we should re-enable the flag when the
+        # XXX animation finishes (note: stop() is not a reliable indicator of this,
+        # XXX since it might not be called at all.)
+#        self.dot_widget.zoom_to_fit_on_resize = False
         MoveToAnimation.animate(self, t)
 
 
@@ -3002,12 +3011,12 @@ class DotWindow(gtk.Window):
     def set_dotcode(self, dotcode, filename=None):
         if self.widget.set_dotcode(dotcode, filename):
             self.update_title(filename)
-            self.widget.zoom_to_fit()
+            self.widget.zoom_to_fit(animate=False)
 
     def set_xdotcode(self, xdotcode, filename=None):
         if self.widget.set_xdotcode(xdotcode, filename):
             self.update_title(filename)
-            self.widget.zoom_to_fit()
+            self.widget.zoom_to_fit(animate=False)
         
     def update_title(self, filename=None):
         if filename is None:
