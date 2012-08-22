@@ -1975,6 +1975,10 @@ class DotWidget(gtk.DrawingArea):
         self.openfilename = None
         if isinstance(dotcode, unicode):
             dotcode = dotcode.encode('utf8')
+        if self.filter is not None  and  filename is not None:
+            self.set_graph_from_message("[Running layout filter '%s' on '%s'...]" % (self.filter, os.path.basename(filename)))
+            while gtk.events_pending():
+                gtk.main_iteration_do(True)
         xdotcode = self.run_filter(dotcode)
         if xdotcode is None:
             return False
@@ -2004,8 +2008,20 @@ class DotWidget(gtk.DrawingArea):
         self.reset_highlight_system()
 
         if len(xdotcode) > 0:
+            if filename is not None:
+                self.set_graph_from_message("[Rendering '%s'...]" % os.path.basename(filename))
+                while gtk.events_pending():
+                    gtk.main_iteration_do(True)
+
             parser = XDotParser(xdotcode)
-            self.graph = parser.parse()
+            temp_graph = parser.parse()
+
+            if filename is not None:
+                self.set_graph_from_message("[Render complete, displaying...]")
+                while gtk.events_pending():
+                    gtk.main_iteration_do(True)
+
+            self.graph = temp_graph
             self.openfilename = filename
 
         if filename is None:
@@ -2029,6 +2045,7 @@ class DotWidget(gtk.DrawingArea):
 
     def reload(self):
         if self.openfilename is not None:
+            self.update_disabled = True  # don't try to auto-reload while already reloading :)
             try:
                 zr_saved = self.target_zoom_ratio
                 self.set_graph_from_message("[Reloading...]")
@@ -2065,6 +2082,8 @@ class DotWidget(gtk.DrawingArea):
             # The Find system updates its state via this callback mechanism.
             if self.reload_callback is not None:
                 self.reload_callback()
+
+            self.update_disabled = False
 
     def update(self):
         # open_file() of DotWindow disables our update while the new file
