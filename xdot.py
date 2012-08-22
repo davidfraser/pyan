@@ -2403,7 +2403,7 @@ class DotWidget(gtk.DrawingArea):
     def on_area_button_release(self, area, event):
         self.drag_action.on_button_release(event)
         self.drag_action = NullAction(self)
-        if event.button == 1 and self.is_click(event):
+        if (event.button == 1  or  event.button == 3) and self.is_click(event):
             x, y = int(event.x), int(event.y)
             url = self.get_url(x, y)
             if url is not None:
@@ -2411,10 +2411,14 @@ class DotWidget(gtk.DrawingArea):
             else:
                 jump = self.get_jump(x, y)  # no kwargs to pass in
                 if jump is not None:
-                    self.animate_to(jump.x, jump.y)
+                    if event.button == 3:
+                        zoom = 1.0
+                    else:
+                        zoom = None  # keep current zoom
+                    self.animate_to(jump.x, jump.y, zoom)
 
             return True
-        if event.button == 1 or event.button == 2:
+        if event.button == 1 or event.button == 2 or event.button == 3:
             return True
         return False
 
