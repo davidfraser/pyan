@@ -2618,6 +2618,7 @@ class DotWindow(gtk.Window):
         self.matching_items = []
         self.match_idx = -1  # currently focused match
         self.old_xy = (-1,-1)  # for view reset when clearing
+        self.old_zoom = None  # for view reset when clearing
         self.find_last_searched_text = ""
         self.find_entry = gtk.Entry()
         self.find_entry.add_events(gtk.gdk.POINTER_MOTION_MASK | gtk.gdk.POINTER_MOTION_HINT_MASK | gtk.gdk.BUTTON_PRESS_MASK | gtk.gdk.FOCUS_CHANGE_MASK)
@@ -2670,11 +2671,12 @@ class DotWindow(gtk.Window):
         #
         if self.match_idx != -1  and  not self.widget.update_disabled:
 #            self.widget.zoom_to_fit()
-            self.widget.animate_to(*self.old_xy)
+            self.widget.animate_to(self.old_xy[0], self.old_xy[1], self.old_zoom)
 
         self.matching_items = []
         self.match_idx = -1  # currently focused match
         self.old_xy = (-1,-1)  # for view reset when clearing
+        self.old_zoom = None
         self.find_displaying_placeholder = True
         self.find_last_searched_text = ""
         self.find_entry.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse("#808080"))
@@ -2722,10 +2724,11 @@ class DotWindow(gtk.Window):
         #
         if self.match_idx != -1  and  not self.widget.update_disabled:
 #            self.widget.zoom_to_fit()
-            self.widget.animate_to(*self.old_xy)
+            self.widget.animate_to(self.old_xy[0], self.old_xy[1], self.old_zoom)
 
         self.match_idx = -1  # currently focused match
         self.old_xy = (-1,-1)  # for view reset when clearing
+        self.old_zoom = None
 
         if self.find_displaying_placeholder:
             self.find_entry.modify_text(gtk.STATE_NORMAL, gtk.gdk.color_parse("#000000"))
@@ -2908,6 +2911,7 @@ class DotWindow(gtk.Window):
 
                 self.match_idx = -1  # currently focused match (-1 = none)
                 self.old_xy = (-1,-1)  # for view reset when clearing
+                self.old_zoom = None
                 self.widget.set_highlight( set( [] ) )
                 return
 
@@ -2921,8 +2925,10 @@ class DotWindow(gtk.Window):
             # (and browsed with next/prev), the only view position
             # that is remembered is the user-set one before *any* of the searching.
             #
-            if self.old_xy == (-1,-1):
-                self.old_xy = (self.widget.x, self.widget.y)
+            if self.old_zoom is None:
+                # use target, not current value, just in case an animation is in progress
+                self.old_xy = (self.widget.target_x, self.widget.target_y)
+                self.old_zoom = self.widget.target_zoom_ratio
 
             if self.incremental_find:
                 # incremental mode:
