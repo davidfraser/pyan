@@ -2798,10 +2798,13 @@ class DotWindow(gtk.Window):
                 return False
             # Ignore the Ctrl+F that gets us here (and other Ctrl+something key combinations).
             #
+            # But *do accept* Ctrl+Backspace, as that just clears the content of the field.
+            #
             # XXX: it is possible to press Ctrl+F quickly in such a way that
             # the "F" generates a separate release event with no CONTROL_MASK. What to do then?
             #
-            if event.state & gtk.gdk.CONTROL_MASK:
+#            print gtk.gdk.keyval_name(event.keyval)   # DEBUG
+            if event.state & gtk.gdk.CONTROL_MASK  and  event.keyval != gtk.keysyms.BackSpace:
                 return False
             if self.find_displaying_placeholder:
                 return False
