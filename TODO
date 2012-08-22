@@ -1,5 +1,4 @@
 xdot TODO:
-  - when mouse cursor enters Find field, re-highlight? (don't require clicking)
   - should have an icon in launcher under Unity shell
     - application icon!
   - online help: add a tutorial graph explaining hard-to-discover features
@@ -34,6 +33,7 @@ xdot done:
     - make incremental an option? (may be slow)
   x- animated highlighting
   x- animated zooming
+  x- when mouse cursor enters Find field, re-highlight? (don't require clicking)
 
 xdot old todo:
 

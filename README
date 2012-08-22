@@ -73,9 +73,9 @@ Modifications:
 - Focus animation now follows a nonlinear tanh spacing for a smoother-looking
   experience (slow-fast-slow).
 
-- Animated highlighting (can use "-b" to switch off).
+- Animated highlighting (potentially heavy; can use "-b" to switch off).
 
-- Animated zooming (can use "-a" to switch off).
+- Animated zooming and arrow-key panning (potentially heavy; can use "-a" to switch off).
 
 - Uses system highlight color, queried from GTK.
 
@@ -179,7 +179,7 @@ Notes:
 
 - If there are no matches when the search runs, the background of the Find field becomes red. When there are matches, it turns back to white.
 
-- The highlight from Find disappears when the mouse pointer moves over the graph. This is intentional, so that it is possible to explore the graph normally. To re-show the highlight for the same search term, focus the Find field again by clicking it or by pressing Ctrl+F.
+- The highlight from Find disappears when the mouse pointer moves over the graph. This is intentional, so that it is possible to explore the graph normally. To re-show the highlight for the same search term, hover the mouse cursor over the Find field, or focus it by pressing Ctrl+F.
 
 - When cycling through the found items, they are (currently) not sorted into any meaningful order.
 
