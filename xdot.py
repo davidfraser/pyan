@@ -1488,7 +1488,7 @@ class Animation(object):
 
     def stop(self):
         self.dot_widget.animation = NoAnimation(self.dot_widget)
-        self.t = 0.0
+        self.t = 1.0
         if self.timeout_id is not None:
             gobject.source_remove(self.timeout_id)
             self.timeout_id = None
@@ -1576,7 +1576,7 @@ class ExpDecayAnimation(Animation):
         # We do NOT clear self.dot_widget.animation, because this is
         # not a pan/zoom animation.
         #
-        self.t = 0.0
+        self.t = 1.0
         if self.timeout_id is not None:
             gobject.source_remove(self.timeout_id)
             self.timeout_id = None
@@ -2442,9 +2442,13 @@ class DotWidget(gtk.DrawingArea):
         self.drag_action.on_button_release(event)
         self.drag_action = NullAction(self)
 
-        # Remember the current position as the desired one
-        self.target_x = self.x
-        self.target_y = self.y
+        # Remember the current position as the desired one,
+        # except if a pan/zoom animation is running (in that case,
+        # it has already set a target).
+        #
+        if not self.animate  or  self.animation is None  or  isinstance(self.animation, NoAnimation)  or  self.animation.get_t() >= 1.0:
+            self.target_x = self.x
+            self.target_y = self.y
 
         if (event.button == 1  or  event.button == 3) and self.is_click(event):
             x, y = int(event.x), int(event.y)
