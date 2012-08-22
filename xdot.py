@@ -2,7 +2,7 @@
 #
 # Copyright 2008 Jose Fonseca
 #           2012 Juha Jeronen (the Find field, extension of graph exploration functionality,
-#                              several small UI improvements)
+#                              additional UI animations, several small UI improvements)
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU Lesser General Public License as published
