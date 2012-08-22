@@ -3088,7 +3088,7 @@ class DotWindow(gtk.Window):
         # first time in each session, open in the folder where the current file is
         # (if any was given on the command line)
         elif self.widget.openfilename is not None:
-            chooser.set_current_folder(os.path.dirname(self.openfilename))
+            chooser.set_current_folder(os.path.dirname(self.widget.openfilename))
 
         chooser.set_default_response(gtk.RESPONSE_OK)
         # Filter is required to load .dot with no layout information.
