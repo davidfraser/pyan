@@ -2616,9 +2616,10 @@ class DotWindow(gtk.Window):
         self.old_xy = (-1,-1)  # for view reset when clearing
         self.find_last_searched_text = ""
         self.find_entry = gtk.Entry()
-        self.find_entry.add_events(gtk.gdk.BUTTON_PRESS_MASK | gtk.gdk.FOCUS_CHANGE_MASK)
+        self.find_entry.add_events(gtk.gdk.POINTER_MOTION_MASK | gtk.gdk.POINTER_MOTION_HINT_MASK | gtk.gdk.BUTTON_PRESS_MASK | gtk.gdk.FOCUS_CHANGE_MASK)
         self.find_entry.connect("button-press-event", self.on_find_entry_button_press)
         self.find_entry.connect("focus-out-event", self.on_find_entry_focus_out)
+        self.find_entry.connect("motion-notify-event", self.on_find_entry_motion_notify)
         self.clear_find_field()
         item = gtk.ToolItem()
         item.add(self.find_entry)
@@ -2835,6 +2836,11 @@ class DotWindow(gtk.Window):
         if len(text) == 0:
             self.clear_find_field()
         return False
+
+    def on_find_entry_motion_notify(self, area, event):
+        # Re-highlight matches.
+        if not self.find_displaying_placeholder:
+            self.find_and_highlight_matches()
 
     # Find system: adapters to catch events
     #
