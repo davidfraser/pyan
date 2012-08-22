@@ -1682,22 +1682,60 @@ class ZoomToAnimation(MoveToAnimation):
         rect = self.dot_widget.get_allocation()
         visible = min(rect.width, rect.height) / self.dot_widget.zoom_ratio
         visible *= 0.9
+
+        # If extra zoom is enabled, make an additional "jump" by zooming out and back in.
+        #
+        # This makes the transition look smoother (unless it's an arrow key pan, which
+        # should be a pure pan; that's why this can be disabled from the calling end).
+        #
         if distance > 0  and  allow_extra_zoom:
-            desired_middle_zoom = visible / distance
+#            desired_middle_zoom = visible / distance   # original xdot
+
+            # note: zoom factor => smaller values = further out
+            q = distance / visible  # possible range: (0, +infty)
+                                    # (following a graph edge may travel further than visible!)
+            # Idea of this formula:
+            #   - never zoom too much out: cap the zoom-out at half the zoom factor
+            #     of the linearly calculated middle zoom (middle_zoom). Half the
+            #     zoom factor means the camera is twice as far away.
+            #   - the formula should reduce to 1.0 * middle_zoom for q=0.
+            #   - the **2.0: do almost nothing when q is "small".
+            #   
+            desired_middle_zoom = 1.0/min( 1.0 + (q**2.0), 2.0 ) * middle_zoom
+
+#            # XXX TEST: Don't automatically zoom further out than "zoom to fit" does,
+#            # unless source or target is further out than that.
+#            fit_zoom = dot_widget.compute_zoom_to_fit_ratio()
+#            if self.source_zoom >= fit_zoom  and  self.target_zoom >= fit_zoom:
+#                desired_middle_zoom = max(desired_middle_zoom, fit_zoom)
+
+            # The 4 balances the 1/4 from t*(1-t) at t=0.5.
+            #
+            # The min ensures only negative values get through - i.e. the
+            # extra zoom point never zooms in.
+            #
             self.extra_zoom = min(0, 4 * (desired_middle_zoom - middle_zoom))
+#            print "q=%g, src=%g, mid=%g (des=%g), tgt=%g, ext=%g" % (q, self.source_zoom, middle_zoom, desired_middle_zoom, self.target_zoom, self.extra_zoom) # DEBUG
 
     def animate(self, t):
         a, b, c = self.source_zoom, self.extra_zoom, self.target_zoom
+        # This is the unique parabola that passes through these three points:
+        #   source_zoom at t=0
+        #   desired_middle_zoom at t=0.5
+        #   target_zoom at t=1
         self.dot_widget.zoom_ratio = c*t + b*t*(1-t) + a*(1-t)
+
         # XXX Why was the zoom to fit flag disabled here?
         # XXX
         # XXX Doing that breaks zoom to fit when the UI is animated
         # XXX (dot_widget.animate == True) and the window is first maximized
-        # XXX and then restored (because the first animation switches zoom to fit off).
+        # XXX and then restored (because running the first animation then
+        # XXX switches zoom to fit off).
         # XXX
         # XXX If we want to do that here, we should re-enable the flag when the
         # XXX animation finishes (note: stop() is not a reliable indicator of this,
-        # XXX since it might not be called at all.)
+        # XXX since it might not be called at all. Should probably enable from stop(),
+        # XXX but also from here when t>=1 (at which point the timer is removed).)
 #        self.dot_widget.zoom_to_fit_on_resize = False
         MoveToAnimation.animate(self, t)
 
@@ -2231,7 +2269,7 @@ class DotWidget(gtk.DrawingArea):
             pass
         self.queue_draw()
 
-    def zoom_to_fit(self, animate=True):
+    def compute_zoom_to_fit_ratio(self):
         rect = self.get_allocation()
         rect.x += self.ZOOM_TO_FIT_MARGIN
         rect.y += self.ZOOM_TO_FIT_MARGIN
@@ -2241,6 +2279,10 @@ class DotWidget(gtk.DrawingArea):
             float(rect.width)/float(self.graph.width),
             float(rect.height)/float(self.graph.height)
         )
+        return zoom_ratio
+
+    def zoom_to_fit(self, animate=True):
+        zoom_ratio = self.compute_zoom_to_fit_ratio()
         self.zoom_image(zoom_ratio, center=True, animate=animate)
         self.zoom_to_fit_on_resize = True
 
