@@ -49,6 +49,15 @@ import pangocairo
 # - http://comix.sourceforge.net/
 
 
+def get_highlight_animation():
+    """Return currently running highlight animation object, or None if none."""
+    global highlight_animation
+    if "highlight_animation" not in globals():
+        return None
+    else:
+        return highlight_animation
+
+
 def mix_colors(rgb1, rgb2, t):
     """Mix two RGB or RGBA colors.
 
@@ -135,17 +144,46 @@ class Pen:
         self.dash = ()
 
     def copy(self):
-        """Create a copy of this pen."""
+        """Create and return a copy of this pen."""
         pen = Pen()
         pen.__dict__ = self.__dict__.copy()
         return pen
 
-    def highlighted(self):
+    def highlighted_initial(self):
+        """Compute initial (start-of-animation) highlight color for this pen.
+
+        Return a new pen which has the computed color.
+
+        """
+        pen = self.copy()
+
+        # For this, we use the system highlight color as-is.
+        #
+        global highlight_base
+        global highlight_light
+
+        pen.color = highlight_base
+        pen.fillcolor = highlight_light
+#        pen.color = (1, 0, 0, 1)   # DEBUG
+#        pen.fillcolor = (1, .8, .8, 1)
+
+        return pen
+
+    def highlighted_final(self):
+        """Compute final (end-of-animation) highlight color for this pen.
+
+        Return a new pen which has the computed color.
+
+        """
         pen = self.copy()
 #        pen.color = (1, 0, 0, 1)
 #        pen.fillcolor = (1, .8, .8, 1)
 
-        # Use the system highlight color.
+        # Mix system highlight color with the pen's own color.
+        #
+        # This makes it possible to still visually recognize the original color
+        # of the object (at least in a collection of similarly colored objects)
+        # even though it is highlighted.
         #
         global highlight_base
         global highlight_light
@@ -155,6 +193,22 @@ class Pen:
 
         return pen
 
+    @staticmethod
+    def mix(tgt, pen1, pen2, t):
+        """Mix colors of "pen1" and "pen2", saving result to the pen "tgt".
+
+        (This cumbersome syntax is used to avoid creating new objects
+         at each frame of an animation.)
+
+        Parameters:
+            tgt (out), pen1 (in), pen2 (in) = Pen instances
+            t = float in [0,1]. Mix result is (1 - t) * pen1  +  t * pen2.
+                (Mnemonic: t is "mix this much of pen2 into pen1".)
+
+        """
+        # XXX The mixing semantics come directly from mix_colors().
+        tgt.color     = mix_colors( pen1.color,     pen2.color,     t )
+        tgt.fillcolor = mix_colors( pen1.fillcolor, pen2.fillcolor, t )
 
 class Shape:
     """Abstract base class for all the drawing shapes."""
@@ -166,14 +220,67 @@ class Shape:
         """Draw this shape with the given cairo context"""
         raise NotImplementedError
 
-    def select_pen(self, highlight):
+    def select_pen(self, highlight, old_highlight):
+        """Return suitable pen based on the flags.
+
+        Parameters:
+            highlight     = bool. Is this item highlighted now?
+            old_highlight = bool. Was this item highlighted just before the
+                                  highlight set (of the Graph) was last changed?
+
+        """
+        # Create the highlight pen objects if they don't exist yet,
+        # but only if we can do that (needs the system highlight color
+        # to be initialized)).
+        #
+        if not hasattr(self, 'highlight_pen_final')  and  "highlight_base" in globals():
+            # XXX/TODO: Make animated highlights an option?
+            # XXX/TODO: Disabling them could save two pens per shape if low on memory...
+            self.highlight_pen_initial = self.pen.highlighted_initial()
+            self.highlight_pen_final   = self.pen.highlighted_final()
+            # This pen is used as a scratchpad for mixing the other two during animation.
+            self.highlight_pen_mix     = self.highlight_pen_final.copy()
+
+        highlight_animation = get_highlight_animation()
+        if highlight_animation is not None:
+            t = highlight_animation.get_t()
+
         if highlight:
-            # XXX/TODO: need to change this for animated highlights
-            if not hasattr(self, 'highlight_pen'):
-                self.highlight_pen = self.pen.highlighted()
-            return self.highlight_pen
+            if highlight_animation is not None:
+                if not old_highlight:
+                    # This item was added to the highlight set in the most recent change.
+                    # Animate the color.
+                    #
+                    Pen.mix(self.highlight_pen_mix,
+                            self.highlight_pen_initial, self.highlight_pen_final, t)
+                    return self.highlight_pen_mix
+                else:
+                    # Let any old_highlight items keep their final, settled color;
+                    # only ones just obtaining the highlight should "flash".
+                    #
+                    return self.highlight_pen_final
+            else:
+                # Not animated or no animation running; just use the final color
+                # for a highlighted item.
+                #
+                return self.highlight_pen_final
         else:
-            return self.pen
+            if highlight_animation is not None:
+                if old_highlight:
+                    # Fade from highlighted to normal.
+                    #
+                    Pen.mix(self.highlight_pen_mix,
+                            self.highlight_pen_final, self.pen, t)
+                    return self.highlight_pen_mix
+                else:
+                    # No old highlight, either; just use the normal color.
+                    #
+                    return self.pen
+            else:
+                # Not animated or no animation running; just use the normal color
+                # for a non-highlighted item.
+                #
+                return self.pen
 
 
 class TextShape(Shape):
@@ -193,7 +300,7 @@ class TextShape(Shape):
         self.w = w
         self.t = t
 
-    def draw(self, cr, highlight=False):
+    def draw(self, cr, highlight=False, old_highlight=False):
 
         try:
             layout = self.layout
@@ -259,7 +366,7 @@ class TextShape(Shape):
 
         cr.save()
         cr.scale(f, f)
-        cr.set_source_rgba(*self.select_pen(highlight).color)
+        cr.set_source_rgba(*self.select_pen(highlight, old_highlight).color)
         cr.show_layout(layout)
         cr.restore()
 
@@ -312,14 +419,14 @@ class EllipseShape(Shape):
         self.h = h
         self.filled = filled
 
-    def draw(self, cr, highlight=False):
+    def draw(self, cr, highlight=False, old_highlight=False):
         cr.save()
         cr.translate(self.x0, self.y0)
         cr.scale(self.w, self.h)
         cr.move_to(1.0, 0.0)
         cr.arc(0.0, 0.0, 1.0, 0, 2.0*math.pi)
         cr.restore()
-        pen = self.select_pen(highlight)
+        pen = self.select_pen(highlight, old_highlight)
         if self.filled:
             cr.set_source_rgba(*pen.fillcolor)
             cr.fill()
@@ -338,13 +445,13 @@ class PolygonShape(Shape):
         self.points = points
         self.filled = filled
 
-    def draw(self, cr, highlight=False):
+    def draw(self, cr, highlight=False, old_highlight=False):
         x0, y0 = self.points[-1]
         cr.move_to(x0, y0)
         for x, y in self.points:
             cr.line_to(x, y)
         cr.close_path()
-        pen = self.select_pen(highlight)
+        pen = self.select_pen(highlight, old_highlight)
         if self.filled:
             cr.set_source_rgba(*pen.fillcolor)
             cr.fill_preserve()
@@ -363,12 +470,12 @@ class LineShape(Shape):
         self.pen = pen.copy()
         self.points = points
 
-    def draw(self, cr, highlight=False):
+    def draw(self, cr, highlight=False, old_highlight=False):
         x0, y0 = self.points[0]
         cr.move_to(x0, y0)
         for x1, y1 in self.points[1:]:
             cr.line_to(x1, y1)
-        pen = self.select_pen(highlight)
+        pen = self.select_pen(highlight, old_highlight)
         cr.set_dash(pen.dash)
         cr.set_line_width(pen.linewidth)
         cr.set_source_rgba(*pen.color)
@@ -383,7 +490,7 @@ class BezierShape(Shape):
         self.points = points
         self.filled = filled
 
-    def draw(self, cr, highlight=False):
+    def draw(self, cr, highlight=False, old_highlight=False):
         x0, y0 = self.points[0]
         cr.move_to(x0, y0)
         for i in xrange(1, len(self.points), 3):
@@ -391,7 +498,7 @@ class BezierShape(Shape):
             x2, y2 = self.points[i + 1]
             x3, y3 = self.points[i + 2]
             cr.curve_to(x1, y1, x2, y2, x3, y3)
-        pen = self.select_pen(highlight)
+        pen = self.select_pen(highlight, old_highlight)
         if self.filled:
             cr.set_source_rgba(*pen.fillcolor)
             cr.fill_preserve()
@@ -409,9 +516,9 @@ class CompoundShape(Shape):
         Shape.__init__(self)
         self.shapes = shapes
 
-    def draw(self, cr, highlight=False):
+    def draw(self, cr, highlight=False, old_highlight=False):
         for shape in self.shapes:
-            shape.draw(cr, highlight=highlight)
+            shape.draw(cr, highlight=highlight, old_highlight=old_highlight)
 
 
 class Url(object):
@@ -539,9 +646,11 @@ class Graph(Shape):
     def get_size(self):
         return self.width, self.height
 
-    def draw(self, cr, highlight_items=None):
+    def draw(self, cr, highlight_items=None, old_highlight_items=None):
         if highlight_items is None:
             highlight_items = ()
+        if old_highlight_items is None:
+            old_highlight_items = ()
         cr.set_source_rgba(0.0, 0.0, 0.0, 1.0)
 
         cr.set_line_cap(cairo.LINE_CAP_BUTT)
@@ -550,9 +659,11 @@ class Graph(Shape):
         for shape in self.shapes:
             shape.draw(cr)
         for edge in self.edges:
-            edge.draw(cr, highlight=(edge in highlight_items))
+            edge.draw(cr, highlight=(edge in highlight_items),
+                          old_highlight=(edge in old_highlight_items))
         for node in self.nodes:
-            node.draw(cr, highlight=(node in highlight_items))
+            node.draw(cr, highlight=(node in highlight_items),
+                          old_highlight=(node in old_highlight_items))
 
     def get_url(self, x, y):
         for node in self.nodes:
@@ -622,7 +733,13 @@ class Graph(Shape):
 #            return any( filter( lambda t: t.find(term) != -1, texts ) )
 
             # case-insensitive match (user-friendly)
-            return any( filter( lambda t: re.search(term,t,re.IGNORECASE) is not None, texts ) )
+            #
+            # regex version (would require UI for handling regex parse errors)
+#            return any( filter( lambda t: re.search(term,t,re.IGNORECASE) is not None, texts ) )
+            #
+            # non-regex version
+            term = term.lower()
+            return any( filter( lambda t: t.lower().find(term) != -1, texts ) )
 
         matching_pairs = filter( lambda o: match_text(text, o[1]), self.items_and_texts )
         matching_items = map( lambda o: o[0], matching_pairs )  # discard text lists
@@ -1364,18 +1481,28 @@ class Animation(object):
     def __init__(self, dot_widget):
         self.dot_widget = dot_widget
         self.timeout_id = None
+        self.t = 0.0
 
     def start(self):
         self.timeout_id = gobject.timeout_add(int(self.step * 1000), self.tick)
 
     def stop(self):
         self.dot_widget.animation = NoAnimation(self.dot_widget)
+        self.t = 0.0
         if self.timeout_id is not None:
             gobject.source_remove(self.timeout_id)
             self.timeout_id = None
 
     def tick(self):
         self.stop()
+
+    def get_t(self):
+        # This is provided for the animated highlight system, where the possible
+        # sources for draw commands are too various and difficult to manage properly.
+        # Hence, in that case, instead of drawing from animate(), we let the drawing end
+        # query the current t value (regardless of where the draw call came from).
+        #
+        return self.t
 
 
 class NoAnimation(Animation):
@@ -1397,7 +1524,9 @@ class LinearAnimation(Animation):
 
     def tick(self):
         t = (time.time() - self.started) / self.duration
-        self.animate(max(0, min(t, 1)))
+        t = max(0, min(t, 1))
+        self.t = t
+        self.animate(t)
         return (t < 1)
 
     def animate(self, t):
@@ -1415,7 +1544,9 @@ class ExpDecayAnimation(Animation):
 
     duration = 0.6
 
-    def __init__(self):
+    def __init__(self, dot_widget):
+        Animation.__init__(self, dot_widget)
+
         # Sharpness (decay time constant).
         #
         self.c  = 4.0
@@ -1435,16 +1566,30 @@ class ExpDecayAnimation(Animation):
         # Remap t nonlinearly. Both the input and output are in [0,1].
         #
         t = 1.0 - (math.exp( -self.c * t ) - self.ll) / (self.ul - self.ll)
+        t = max(0, min(t, 1))
+        self.t = t
 
-        self.animate(max(0, min(t, 1)))
+        self.animate(t)
         return (t < 1)
 
+    def stop(self):
+        # We do NOT clear self.dot_widget.animation, because this is
+        # not a pan/zoom animation.
+        #
+        self.t = 0.0
+        if self.timeout_id is not None:
+            gobject.source_remove(self.timeout_id)
+            self.timeout_id = None
+
     def animate(self, t):
-        pass
+        self.dot_widget.queue_draw()
 
 
 class TanhAnimation(Animation):
     """Smooth progression: slow at start, fast at middle, slow at end.
+
+    Features also a "jumpstart mode": fast at start, slow at end.
+    This may be useful if the new animation interrupts a previous TanhAnimation.
 
     Based on the hyperbolic tangent function.
 
@@ -1454,7 +1599,7 @@ class TanhAnimation(Animation):
 
     duration = 0.6
 
-    def __init__(self):
+    def __init__(self, jumpstart=False):
         # Sharpness.
         #
         # The constant "c" can be used to tune the behaviour. Larger values produce
@@ -1471,18 +1616,29 @@ class TanhAnimation(Animation):
         self.ul = (1.+math.tanh( self.c/2.))/2.
         self.ll = (1.+math.tanh(-self.c/2.))/2.
 
+        self.jumpstart = jumpstart
+
     def start(self):
         self.started = time.time()
         Animation.start(self)
 
     def tick(self):
         t = (time.time() - self.started) / self.duration
+        if self.jumpstart:
+            # jumpstart mode uses only second half of the function.
+            t = 0.5 + t/2.
 
         # Remap t nonlinearly. Both the input and output are in [0,1].
         #
         t = ( (1.+math.tanh(self.c*(t - 0.5)))/2. - self.ll ) / ( self.ul - self.ll )
 
-        self.animate(max(0, min(t, 1)))
+        if self.jumpstart:
+            t = (t - 0.5)*2.
+
+        t = max(0, min(t, 1))
+        self.t = t
+
+        self.animate(t)
         return (t < 1)
 
     def animate(self, t):
@@ -1491,9 +1647,9 @@ class TanhAnimation(Animation):
 
 class MoveToAnimation(TanhAnimation):
 
-    def __init__(self, dot_widget, target_x, target_y):
+    def __init__(self, dot_widget, target_x, target_y, jumpstart=False):
         Animation.__init__(self, dot_widget)
-        TanhAnimation.__init__(self)
+        TanhAnimation.__init__(self, jumpstart)
         self.source_x = dot_widget.x
         self.source_y = dot_widget.y
         self.target_x = target_x
@@ -1509,10 +1665,13 @@ class MoveToAnimation(TanhAnimation):
 
 class ZoomToAnimation(MoveToAnimation):
 
-    def __init__(self, dot_widget, target_x, target_y):
-        MoveToAnimation.__init__(self, dot_widget, target_x, target_y)
+    def __init__(self, dot_widget, target_x, target_y, target_zoom=None, jumpstart=False):
+        MoveToAnimation.__init__(self, dot_widget, target_x, target_y, jumpstart)
         self.source_zoom = dot_widget.zoom_ratio
-        self.target_zoom = self.source_zoom
+        if target_zoom is not None:
+            self.target_zoom = target_zoom
+        else:
+            self.target_zoom = self.source_zoom
         self.extra_zoom = 0
 
         middle_zoom = 0.5 * (self.source_zoom + self.target_zoom)
@@ -1694,13 +1853,16 @@ class DotWidget(gtk.DrawingArea):
         'clicked' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, gtk.gdk.Event))
     }
 
-    filter = 'dot'
+    filter = 'dot'  # default filter (see also main())
 
     def __init__(self):
         gtk.DrawingArea.__init__(self)
 
         self.graph = Graph()
         self.openfilename = None
+
+        self.animate = True  # use pan/zoom animations
+        self.animate_highlight = True  # use highlighting animations
 
         # If set, this function is run at the end of reload().
         # Used by the Find system to re-run the search when the current file is reloaded.
@@ -1730,11 +1892,18 @@ class DotWidget(gtk.DrawingArea):
 
         self.x, self.y = 0.0, 0.0
         self.zoom_ratio = 1.0
+        self.target_zoom_ratio = 1.0  # zoom ratio at end of current animation, if any
         self.zoom_to_fit_on_resize = False
         self.animation = NoAnimation(self)
         self.drag_action = NullAction(self)
         self.presstime = None
         self.highlight = None
+        self.old_highlight = None
+
+    def set_animated(self, animate_view, animate_highlights):
+        # Enable/disable view pan/zoom animations.
+        self.animate = animate_view
+        self.animate_highlight = animate_highlights
 
     def set_filter(self, filter):
         self.filter = filter
@@ -1780,7 +1949,7 @@ class DotWidget(gtk.DrawingArea):
         self.set_dotcode(dotcode, None)
         self.filter = filter_saved
         self.openfilename = ofn_saved
-        self.zoom_to_fit()
+        self.zoom_to_fit(animate=False)
 
     def set_dotcode(self, dotcode, filename=None):
         self.openfilename = None
@@ -1810,6 +1979,10 @@ class DotWidget(gtk.DrawingArea):
 
     def set_xdotcode(self, xdotcode, filename=None):
         #print xdotcode
+
+        # Clear old highlights (and stop animation) when a new graph is rendered.
+        self.reset_highlight_system()
+
         if len(xdotcode) > 0:
             parser = XDotParser(xdotcode)
             self.graph = parser.parse()
@@ -1829,15 +2002,15 @@ class DotWidget(gtk.DrawingArea):
         if len(xdotcode) == 0  or  len(self.graph.nodes) < 1:
             self.set_graph_from_message("[Empty input]")
             self.openfilename = None
-
-#        self.zoom_image(self.zoom_ratio, center=True)
-        self.zoom_to_fit()
+        else:
+#            self.zoom_image(self.zoom_ratio, center=True)
+            self.zoom_to_fit(animate=False)
         return True  # be consistent! (cf. set_dotcode() and callers for both in DotWindow)
 
     def reload(self):
         if self.openfilename is not None:
             try:
-                zr_saved = self.zoom_ratio
+                zr_saved = self.target_zoom_ratio
                 self.set_graph_from_message("[Reloading...]")
 
                 # Change cursor to "busy" and force-redraw the window
@@ -1846,6 +2019,7 @@ class DotWidget(gtk.DrawingArea):
                     gtk.main_iteration_do(True)
 
                 self.zoom_ratio = zr_saved  # restore original zoom ratio
+                self.target_zoom_ratio = zr_saved
 
                 fp = file(self.openfilename, 'rt')
 
@@ -1906,7 +2080,8 @@ class DotWidget(gtk.DrawingArea):
         cr.scale(self.zoom_ratio, self.zoom_ratio)
         cr.translate(-self.x, -self.y)
 
-        self.graph.draw(cr, highlight_items=self.highlight)
+        self.graph.draw(cr, highlight_items=self.highlight,
+                            old_highlight_items=self.old_highlight)
         cr.restore()
 
         self.drag_action.draw(cr)
@@ -1930,45 +2105,89 @@ class DotWidget(gtk.DrawingArea):
         self.y = y
         self.queue_draw()
 
+    def reset_highlight_system(self):
+        global highlight_animation
+        if get_highlight_animation() is not None:
+            highlight_animation.stop()
+        self.highlight = None
+        self.old_highlight = None
+
     def set_highlight(self, items):
         if self.highlight != items:
+            self.old_highlight = self.highlight
             self.highlight = items
+
+            global highlight_animation
+            if self.animate_highlight:
+                # Animated highlights.
+                # Reset the highlight animation if one was already running.
+                #
+                if get_highlight_animation() is not None:
+                    highlight_animation.stop()
+                highlight_animation = ExpDecayAnimation(self)
+                highlight_animation.start()
+            else:
+                if get_highlight_animation() is not None:
+                    highlight_animation = None
+
             self.queue_draw()
 
-    def zoom_image(self, zoom_ratio, center=False, pos=None):
+    def zoom_image(self, zoom_ratio, center=False, pos=None, animate=True):
+        pan = False
         if center:
-            self.x = self.graph.width/2
-            self.y = self.graph.height/2
+            target_x = self.graph.width/2
+            target_y = self.graph.height/2
+            pan = True
         elif pos is not None:
             rect = self.get_allocation()
             x, y = pos
             x -= 0.5*rect.width
             y -= 0.5*rect.height
-            self.x += x / self.zoom_ratio - x / zoom_ratio
-            self.y += y / self.zoom_ratio - y / zoom_ratio
-        self.zoom_ratio = zoom_ratio
+            target_x = self.x + x / self.zoom_ratio - x / zoom_ratio
+            target_y = self.y + y / self.zoom_ratio - y / zoom_ratio
+            pan = True
         self.zoom_to_fit_on_resize = False
+        if self.animate and animate:
+            if pan:
+                self.animate_to(target_x, target_y, zoom_ratio)
+            else:
+                self.animate_to(self.x, self.y, zoom_ratio)
+        else:
+            self.animation.stop()
+            if pan:
+                self.x = target_x
+                self.y = target_y
+            self.zoom_ratio = zoom_ratio
+            self.target_zoom_ratio = zoom_ratio  # no animation
         self.queue_draw()
 
-    def zoom_to_area(self, x1, y1, x2, y2):
+    def zoom_to_area(self, x1, y1, x2, y2, animate=True):
         rect = self.get_allocation()
         width = abs(x1 - x2)
         height = abs(y1 - y2)
         try:
-            self.zoom_ratio = min(
+            zoom_ratio = min(
                 float(rect.width)/float(width),
                 float(rect.height)/float(height)
             )
             self.zoom_to_fit_on_resize = False
-            self.x = (x1 + x2) / 2
-            self.y = (y1 + y2) / 2
+            target_x = (x1 + x2) / 2
+            target_y = (y1 + y2) / 2
+            if self.animate and animate:
+                self.animate_to(target_x, target_y, zoom_ratio)
+            else:
+                self.animation.stop()
+                self.x = target_x
+                self.y = target_y
+                self.zoom_ratio = zoom_ratio
+                self.target_zoom_ratio = zoom_ratio  # no animation
         # The user may try to select an area of zero size with shift-drag.
         # (Actually happened to me. Fixing.)
         except ZeroDivisionError:
             pass
         self.queue_draw()
 
-    def zoom_to_fit(self):
+    def zoom_to_fit(self, animate=True):
         rect = self.get_allocation()
         rect.x += self.ZOOM_TO_FIT_MARGIN
         rect.y += self.ZOOM_TO_FIT_MARGIN
@@ -1978,17 +2197,17 @@ class DotWidget(gtk.DrawingArea):
             float(rect.width)/float(self.graph.width),
             float(rect.height)/float(self.graph.height)
         )
-        self.zoom_image(zoom_ratio, center=True)
+        self.zoom_image(zoom_ratio, center=True, animate=animate)
         self.zoom_to_fit_on_resize = True
 
     ZOOM_INCREMENT = 1.25
     ZOOM_TO_FIT_MARGIN = 12
 
     def on_zoom_in(self, action):
-        self.zoom_image(self.zoom_ratio * self.ZOOM_INCREMENT)
+        self.zoom_in()
 
     def on_zoom_out(self, action):
-        self.zoom_image(self.zoom_ratio / self.ZOOM_INCREMENT)
+        self.zoom_out()
 
     def on_zoom_fit(self, action):
         self.zoom_to_fit()
@@ -1996,9 +2215,19 @@ class DotWidget(gtk.DrawingArea):
     def on_zoom_100(self, action):
         self.zoom_image(1.0)
 
+    def zoom_in(self):
+        # We must use *target* zoom ratio here; this ensures that even if an animation
+        # is aborted (e.g. by repeatedly hitting zoom in quickly), each successive
+        # target zoom ratio is further in than the previous one.
+        #
+        self.zoom_image(self.target_zoom_ratio * self.ZOOM_INCREMENT)
+    def zoom_out(self):
+        self.zoom_image(self.target_zoom_ratio / self.ZOOM_INCREMENT)
+
     POS_INCREMENT = 100
 
     def on_key_press_event(self, widget, event):
+        # XXX/TODO: animated panning?
         if event.keyval == gtk.keysyms.Left:
             self.x -= self.POS_INCREMENT/self.zoom_ratio
             self.queue_draw()
@@ -2019,13 +2248,13 @@ class DotWidget(gtk.DrawingArea):
                             gtk.keysyms.plus,
                             gtk.keysyms.equal,
                             gtk.keysyms.KP_Add):
-            self.zoom_image(self.zoom_ratio * self.ZOOM_INCREMENT)
+            self.zoom_in()
             self.queue_draw()
             return True
         if event.keyval in (gtk.keysyms.Page_Down,
                             gtk.keysyms.minus,
                             gtk.keysyms.KP_Subtract):
-            self.zoom_image(self.zoom_ratio / self.ZOOM_INCREMENT)
+            self.zoom_out()
             self.queue_draw()
             return True
         if event.keyval == gtk.keysyms.Escape:
@@ -2176,8 +2405,32 @@ class DotWidget(gtk.DrawingArea):
         if self.zoom_to_fit_on_resize:
             self.zoom_to_fit()
 
-    def animate_to(self, x, y):
-        self.animation = ZoomToAnimation(self, x, y)
+    def animate_to(self, x, y, target_zoom=None):
+        # Run a combined pan/zoom animation from self.x,self.y,self.zoom_ratio
+        # to x,y,target_zoom.
+        #
+        # If target_zoom is None, the zoom level will not be changed.
+        #
+        # Low-level routine; should not check self.animate, as some less heavy
+        # animations need this too.
+
+        # Save the final zoom level. It will be needed if the animation is
+        # aborted by a new pan/zoom action.
+        #
+        # XXX/TODO: save final position, too
+        #
+        if target_zoom is not None:
+            self.target_zoom_ratio = target_zoom
+        else:
+            self.target_zoom_ratio = self.zoom_ratio
+
+        jumpstart = False
+        if self.animation is not None:
+            if isinstance(self.animation, ZoomToAnimation)  and  self.animation.get_t() < 1.0:
+                jumpstart = True
+            self.animation.stop()  # this changes self.animation to NoAnimation
+
+        self.animation = ZoomToAnimation(self, x, y, target_zoom, jumpstart)
         self.animation.start()
 
     def window2graph(self, x, y):
@@ -2668,6 +2921,10 @@ class DotWindow(gtk.Window):
         self.widget.set_highlight( set( [node] ) )
         self.widget.animate_to( node.x, node.y )
 
+    def set_animated(self, animate_view, animate_highlights):
+        # Enable/disable UI animations.
+        self.widget.set_animated(animate_view, animate_highlights)
+
     def set_filter(self, filter):
         # Set GraphViz filter name for reading .dot files.
         self.widget.set_filter(filter)
@@ -2819,14 +3076,32 @@ def main():
         '-N', '--no-incremental-find',
         action='store_const', const=False, default=True, dest='incremental_find',
         help='disable incremental Find (useful for large graphs on slow computers). When disabled, the Find feature only runs the search when Return or the Go button is pressed.')
+    parser.add_option(
+        '-a', '--no-animate-view',
+        action='store_const', const=False, default=True, dest='animate',
+        help='disable view pan/zoom UI animations (useful on slow computers).')
+    parser.add_option(
+        '-b', '--no-animate-highlight',
+        action='store_const', const=False, default=True, dest='animate_highlight',
+        help='disable highlighting UI animations (useful on slow computers).')
+    parser.add_option(
+        '-A', '--no-animate',
+        action='store_const', const=False, default=True, dest='animate_all',
+        help='disable all heavy UI animations (same as "-a -b").')
 
     (options, args) = parser.parse_args(sys.argv[1:])
     if len(args) > 1:
         parser.error('incorrect number of arguments')
 
+    # NOTE: if True, then we use the individual options.
+    if options.animate_all == False:
+        options.animate = False
+        options.animate_highlight = False
+
     win = DotWindow(incremental_find=options.incremental_find)
     win.connect('destroy', gtk.main_quit)
     win.set_filter(options.filter)
+    win.set_animated(options.animate, options.animate_highlight)
     if len(args) == 0:
         if not sys.stdin.isatty():
             win.set_dotcode(sys.stdin.read())
