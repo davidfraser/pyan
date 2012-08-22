@@ -1665,7 +1665,8 @@ class MoveToAnimation(TanhAnimation):
 
 class ZoomToAnimation(MoveToAnimation):
 
-    def __init__(self, dot_widget, target_x, target_y, target_zoom=None, jumpstart=False):
+    def __init__(self, dot_widget, target_x, target_y, target_zoom=None,
+                 jumpstart=False, allow_extra_zoom=True):
         MoveToAnimation.__init__(self, dot_widget, target_x, target_y, jumpstart)
         self.source_zoom = dot_widget.zoom_ratio
         if target_zoom is not None:
@@ -1681,7 +1682,7 @@ class ZoomToAnimation(MoveToAnimation):
         rect = self.dot_widget.get_allocation()
         visible = min(rect.width, rect.height) / self.dot_widget.zoom_ratio
         visible *= 0.9
-        if distance > 0:
+        if distance > 0  and  allow_extra_zoom:
             desired_middle_zoom = visible / distance
             self.extra_zoom = min(0, 4 * (desired_middle_zoom - middle_zoom))
 
@@ -1891,6 +1892,7 @@ class DotWidget(gtk.DrawingArea):
         gobject.timeout_add(1000, self.update)
 
         self.x, self.y = 0.0, 0.0
+        self.target_x, self.target_y = 0.0, 0.0  # values at end of current animation, if any
         self.zoom_ratio = 1.0
         self.target_zoom_ratio = 1.0  # zoom ratio at end of current animation, if any
         self.zoom_to_fit_on_resize = False
@@ -2151,12 +2153,14 @@ class DotWidget(gtk.DrawingArea):
             if pan:
                 self.animate_to(target_x, target_y, zoom_ratio)
             else:
-                self.animate_to(self.x, self.y, zoom_ratio)
+                self.animate_to(self.target_x, self.target_y, zoom_ratio)
         else:
             self.animation.stop()
             if pan:
                 self.x = target_x
                 self.y = target_y
+                self.target_x = target_x
+                self.target_y = target_y
             self.zoom_ratio = zoom_ratio
             self.target_zoom_ratio = zoom_ratio  # no animation
         self.queue_draw()
@@ -2179,6 +2183,8 @@ class DotWidget(gtk.DrawingArea):
                 self.animation.stop()
                 self.x = target_x
                 self.y = target_y
+                self.target_x = target_x
+                self.target_y = target_y
                 self.zoom_ratio = zoom_ratio
                 self.target_zoom_ratio = zoom_ratio  # no animation
         # The user may try to select an area of zero size with shift-drag.
@@ -2227,21 +2233,47 @@ class DotWidget(gtk.DrawingArea):
     POS_INCREMENT = 100
 
     def on_key_press_event(self, widget, event):
-        # XXX/TODO: animated panning?
         if event.keyval == gtk.keysyms.Left:
-            self.x -= self.POS_INCREMENT/self.zoom_ratio
+            target_x = self.target_x - self.POS_INCREMENT/self.zoom_ratio
+            if self.animate:
+                # Must disable extra zoom (out-and-back-in); not doing that
+                # would make the pan zoom out uncontrollably when the same
+                # pan key is hit repeatedly.
+                #
+                # As a bonus, this makes the pan also look better, because
+                # there is no zoom-out-and-back-in for a basic pan action.
+                #
+                self.animate_to(target_x, self.y, allow_extra_zoom=False)
+            else:
+                self.x = target_x
+                self.target_x = target_x
             self.queue_draw()
             return True
         if event.keyval == gtk.keysyms.Right:
-            self.x += self.POS_INCREMENT/self.zoom_ratio
+            target_x = self.target_x + self.POS_INCREMENT/self.zoom_ratio
+            if self.animate:
+                self.animate_to(target_x, self.y, allow_extra_zoom=False)
+            else:
+                self.x = target_x
+                self.target_x = target_x
             self.queue_draw()
             return True
         if event.keyval == gtk.keysyms.Up:
-            self.y -= self.POS_INCREMENT/self.zoom_ratio
+            target_y = self.target_y - self.POS_INCREMENT/self.zoom_ratio
+            if self.animate:
+                self.animate_to(self.x, target_y, allow_extra_zoom=False)
+            else:
+                self.y = target_y
+                self.target_y = target_y
             self.queue_draw()
             return True
         if event.keyval == gtk.keysyms.Down:
-            self.y += self.POS_INCREMENT/self.zoom_ratio
+            target_y = self.target_y + self.POS_INCREMENT/self.zoom_ratio
+            if self.animate:
+                self.animate_to(self.x, target_y, allow_extra_zoom=False)
+            else:
+                self.y = target_y
+                self.target_y = target_y
             self.queue_draw()
             return True
         if event.keyval in (gtk.keysyms.Page_Up,
@@ -2405,24 +2437,32 @@ class DotWidget(gtk.DrawingArea):
         if self.zoom_to_fit_on_resize:
             self.zoom_to_fit()
 
-    def animate_to(self, x, y, target_zoom=None):
+    def animate_to(self, x, y, target_zoom=None, allow_extra_zoom=True):
         # Run a combined pan/zoom animation from self.x,self.y,self.zoom_ratio
         # to x,y,target_zoom.
         #
         # If target_zoom is None, the zoom level will not be changed.
         #
-        # Low-level routine; should not check self.animate, as some less heavy
+        # The parameter allow_extra_zoom controls the internal behaviour of
+        # ZoomToAnimation: whether it is allowed to temporarily zoom out,
+        # if it thinks that will make the motion look better.
+        # This should almost always be set to True. It is useful to disable this
+        # from the arrow keypress handlers; otherwise, in that particular case,
+        # the extra zooming makes the panning behave unpredictably.
+        #
+        # This is a low-level routine; should not check self.animate, as some less heavy
         # animations need this too.
 
-        # Save the final zoom level. It will be needed if the animation is
-        # aborted by a new pan/zoom action.
-        #
-        # XXX/TODO: save final position, too
+        # Save the final zoom level, if the caller desires to change it.
+        # It will be needed if the animation is aborted by a new pan/zoom action.
         #
         if target_zoom is not None:
             self.target_zoom_ratio = target_zoom
-        else:
-            self.target_zoom_ratio = self.zoom_ratio
+        # Similarly, save final position. (This is needed by the arrow keypress handlers
+        # for animated panning.)
+        #
+        self.target_x = x
+        self.target_y = y
 
         jumpstart = False
         if self.animation is not None:
@@ -2430,7 +2470,8 @@ class DotWidget(gtk.DrawingArea):
                 jumpstart = True
             self.animation.stop()  # this changes self.animation to NoAnimation
 
-        self.animation = ZoomToAnimation(self, x, y, target_zoom, jumpstart)
+        self.animation = ZoomToAnimation(self, x, y, self.target_zoom_ratio,
+                                         jumpstart, allow_extra_zoom)
         self.animation.start()
 
     def window2graph(self, x, y):
