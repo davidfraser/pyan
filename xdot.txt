@@ -5,7 +5,7 @@ Modifications:
 
 - Added a "Find" feature for searching graph elements by the text they display. The search is always case-insensitive. By default the Find system runs in incremental mode; for viewing a large graph on a slow computer, there is a new "-N" command line option to use non-incremental mode.
 
-- The hover-over-node highlight system has been extended to make exploring large graphs easier. See below.
+- The hover-over-node highlight system has been extended to make exploring large graphs easier. See section [Mouse behaviour and keyboard shortcuts] below.
 
 - Keyboard shortcuts added for Zoom to fit (F) and Zoom to 100% (1).
 
@@ -63,6 +63,10 @@ Mouse
 
 Click the end of a link    = Center view to the node at the other end of the link
 Click a node               = Center view to clicked node
+
+Right-click end of link    = Center view to the node at the other end of the link
+                             and zoom to 100%                              [mod. version only]
+Right-click a node         = Center view to clicked node and zoom to 100%  [mod. version only]
 
 Hover on the end of a link = Highlight link and the node at the other end
 Hover on a node            = Highlight node                              [original version]
