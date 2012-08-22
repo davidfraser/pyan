@@ -1,5 +1,4 @@
 xdot TODO:
-  - animated highlighting
   - when mouse cursor enters Find field, re-highlight? (don't require clicking)
   - should have an icon in launcher under Unity shell
     - application icon!
@@ -33,6 +32,8 @@ xdot done:
       - focus previous (if multiple matches)
         - same, with previous match.
     - make incremental an option? (may be slow)
+  x- animated highlighting
+  x- animated zooming
 
 xdot old todo:
 
