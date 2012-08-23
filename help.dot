@@ -1,0 +1,126 @@
+// Dot Viewer help file for version 1.0
+//
+// This is the source file; the actual help text is the xdot version of this.
+// The conversion is done to guarantee having always the same layout, and
+// to make loading faster.
+//
+// To generate the xdot version, use:
+//   dot -Txdot -ohelp.xdot help.dot
+//
+// Juha Jeronen 2012-08-23
+//
+digraph G {
+    welcome [label="Welcome to Dot Viewer 1.0!\n\nFollow the arrows to discover its features.\n\nClick on the starting end of the\noutgoing link to begin.", style="filled", fillcolor="#FFFF66B2", fontsize="16", fontcolor="#000000", group="0"];
+
+
+    step2 [label="Zooming\n\nYou can use the +,- keys,\nmouse wheel, toolbar buttons,\nand Ctrl+drag to zoom the view.\n\nTo select and zoom an area, use Shift+drag.", style="filled", fillcolor="#FFFFAAB2", fontsize="20", fontcolor="#000000", group="0"];
+    step2a [label="Keyboard\n\nZoom in: +, PageUp\nZoom out: -, PageDown\nZoom to fit: F\nZoom to 100%: 1", style="filled", fillcolor="#FFFFCCB2", fontsize="16", fontcolor="#000000", group="0"];
+    step2b [label="Mouse wheel\n\nZoom in: wheel up\nZoom out: wheel down", style="filled", fillcolor="#FFFFCCB2", fontsize="16", fontcolor="#000000", group="0"];
+    step2c [label="Ctrl+drag\n\nZoom in: hold Ctrl, drag up\nZoom out: hold Ctrl, drag down", style="filled", fillcolor="#FFFFCCB2", fontsize="16", fontcolor="#000000", group="0"];
+    step2d [label="Shift+drag\n\nZoom in only. Hold Shift, drag an area.\nView zooms to the selected area\nwhen the mouse button is released.", style="filled", fillcolor="#FFFFCCB2", fontsize="16", fontcolor="#000000", group="0"];
+
+
+    step3 [label="Panning\n\nYou can use the arrow keys and\nmouse dragging to pan the view.", style="filled", fillcolor="#FFFFAAB2", fontsize="20", fontcolor="#000000", group="0"]
+    step3a [label="Mouse\n\nDrag without any modifier keys to pan.", style="filled", fillcolor="#FFFFCCB2", fontsize="16", fontcolor="#000000", group="0"];
+    step3b [label="Keyboard\n\nPan slightly in the direction\npressed: Up, Down, Left, Right", style="filled", fillcolor="#FFFFCCB2", fontsize="16", fontcolor="#000000", group="0"];
+
+
+    step2and3common [label="Dragging in Dot Viewer\n\nDrag accepts both the left and middle\nmouse buttons.", style="filled", fillcolor="#FFFFCCB2", fontsize="16", fontcolor="#000000", group="0"];
+
+
+    step1 [label="Exploration\n\nHere we look into exploring graphs.", style="filled", fillcolor="#FFFFAAB2", fontsize="20", fontcolor="#000000", group="0"]
+    
+    step1a [label="You can highlight nodes by hovering\nthe mouse cursor over them. Highlighting\na node will also highlight all its outgoing links.\n\nAdditionally, holding Shift while hovering also\nhighlights the nodes at the other ends of the links.\n\nGo ahead, try it on this node.", style="filled", fillcolor="#FFFFCCB2", fontcolor="#000000", group="0"];
+    step1aa [label="Highlight\ndemonstration\nnode 1", style="filled", fillcolor="#FFFFDDB2", fontcolor="#000000", group="0"];
+    step1ab [label="Highlight\ndemonstration\nnode 2", style="filled", fillcolor="#FFFFDDB2", fontcolor="#000000", group="0"];
+    step1ac [label="Highlight\ndemonstration\nnode 3", style="filled", fillcolor="#FFFFDDB2", fontcolor="#000000", group="0"];
+
+    step1b [label="If you want to highlight 'what links here',\nhold Ctrl while hovering over a node.\n\nTo highlight incoming links only, hold Alt or AltGr.\n\nTry it on this node.", style="filled", fillcolor="#FFFFCCB2", fontcolor="#000000", group="0"];
+    step1ba [label="Highlight\ndemonstration\nnode 4", style="filled", fillcolor="#FFFFDDB2", fontcolor="#000000", group="0"];
+    step1bb [label="Highlight\ndemonstration\nnode 5", style="filled", fillcolor="#FFFFDDB2", fontcolor="#000000", group="0"];
+    step1bc [label="Highlight\ndemonstration\nnode 6", style="filled", fillcolor="#FFFFDDB2", fontcolor="#000000", group="0"];
+
+    step1c [label="You can highlight a link in the graph by hovering\nthe mouse cursor on the end of a link.\n\nHighlighting a link will also highlight the node at its\n other end, making it easy to visually distinguish where the\nlink leads to.\n\nNote that if the graph is very crowded, this feature\nmay not be able to recognize all the links.\n\nYou can tell that it has recognized a link\nwhen the node itself (at the end where\nyou are hovering) is not highlighted.", style="filled", fillcolor="#FFFFCCB2", fontcolor="#000000", group="0"];
+
+    step1d [label="You can follow links in the graph\nby clicking the end of a link.\n\nWhen either end of a link is clicked, the view\nis centered to the node at the other end of the link.\n\nThis works the same for both\noutgoing and incoming links.\n\nLeft-clicking just centers.\nRight-clicking also zooms to 100%.", style="filled", fillcolor="#FFFFCCB2", fontcolor="#000000", group="0"];
+
+    step1e [label="You can center the view on a node by clicking it.\n\nLeft-clicking just centers.\nRight-clicking also zooms to 100%.", style="filled", fillcolor="#FFFFCCB2", fontcolor="#000000", group="0"];
+
+
+    step4 [label="Finding\n\nWhen you know some text\nyou are looking for.", style="filled", fillcolor="#FFFFAAB2", fontsize="20", fontcolor="#000000", group="0"]
+
+    step4a [label="Modes\n\nBy default, Find is incremental.\nThis means that the search results\nare updated live, as you type.\n\nIncremental mode can be switched off\nwith the '-N' command line option.", style="filled", fillcolor="#FFFFCCB2", fontcolor="#000000", group="0"]
+
+    step4aa [label="Incremental mode\n\nTyping in the Find field searches.\n\nAll matches are highlighted. If there are\nno matches, the background of the Find field\nturns red.\n\nPressing Return or clicking the Go button\njumps to the first match.", style="filled", fillcolor="#FFFFDDB2", fontcolor="#000000", group="0"]
+    step4ab [label="Traditional mode\n\nThe search is run only when Return is pressed\nor the Go button is clicked.\n\nIn this mode, clicking Go highlights all matches.\nThen, Find next highlights the actual first match.", style="filled", fillcolor="#FFFFDDB2", fontcolor="#000000", group="0"]
+
+    step4b [label="Keyboard\n\nFocus the Find field: Ctrl+F\nGo: Return\nNext match: N\nPrevious match: Shift+N\n\nWhen Find field focused:\n\nClear result, exit Find: Escape", style="filled", fillcolor="#FFFFCCB2", fontsize="20", fontcolor="#000000", group="0"]
+
+    step4c [label="Common behaviour\n\nFind is case-insensitive.\n\nMatches can be cycled with N, Shift+N,\nand the Find next/previous buttons.\n\nIf you have pressed Go, clearing the\nFind field returns the view to\nwhere it was before starting Find.\n\nHovering the mouse over the Find field, or\npressing Ctrl+F re-highlights all matches.\n(Highlight is lost when the mouse moves onto the\ngraph viewer section of the window.)", style="filled", fillcolor="#FFFFCCB2", fontsize="20", fontcolor="#000000", group="0"]
+
+    step4d [label="Try it!\n\nWhich nodes in this help screen\ncontain the word 'node'?\n\nHint: zooming to fit after entering the\nsearch term, and then hovering over\nthe Find field, may help to locate them.", style="filled", fillcolor="#FFFFCCB2", fontsize="20", fontcolor="#000000", group="0"]
+
+
+    step5 [label="Advanced\n\nWhen the world is not enough.", style="filled", fillcolor="#FFFFAAB2", fontsize="20", fontcolor="#000000", group="0"]
+
+    step5a [label="Command-line options\n\nDot Viewer comes with various command-line\noptions that can be used to tune its behaviour.\n\nAs of version 1.0, options to set the layout filter (-f, -n),\ndisable incremental find (-N), and\ndisable user interface animations (-a, -b, -A)\nare available.\n\nUse the -h option to see a full, up-to-date list.", style="filled", fillcolor="#FFFFCCB2", fontsize="20", fontcolor="#000000", group="0"]
+
+    step5aa [label="Animations\n\nBy default, the user interface is animated. This is done to\nfacilitate a smoother user experience, and to make it easier\nfor people other than the user at the controls\nto see what is going on.\n\nIf viewing large graphs on a slow computer,\nit may be useful to turn the animations off.\n\nIn version 1.0, the animations come in two groups:\n  -pan and zoom (switch off: -a)\n  -highlighting (switch off: -b)\n\nThe respective command-line options\nmay be used to switch them off if desired.\nThe option '-A' disables both groups.", style="filled", fillcolor="#FFFFDDB2", fontsize="20", fontcolor="#000000", group="0"]
+
+    step5ab [label="Layout filter\n\nThe '-f' option controls the layout filter\nthat is used to generate the layout for dot files.\n\nIn version 1.0, xdot files are always read\nwithout a filter, as they already contain\nthe layout information.\n\nTo see which filters are available, use the '-h' option.\n\nIf you want to read xdot files only, you can\nuse '-n' (--no-filter). This option is\nprovided for compatibility with version 0.4."]
+
+    step5ac [label="Find\n\nThe '-N' option disables incremental find,\nusing traditional find instead."]
+
+    welcome -> step2;
+
+    step2 -> step2a;
+    step2 -> step2b;
+    step2 -> step2c;
+    step2 -> step2d;
+    step2 -> step3;
+
+    step3 -> step3a;
+    step3 -> step3b;
+    step3 -> step1;
+
+    step2c -> step2and3common;
+    step2d -> step2and3common;
+    step3a -> step2and3common;
+
+    step1 -> step1a;
+    step1 -> step1b;
+    step1a -> step1aa;
+    step1a -> step1ab;
+    step1a -> step1ac;
+    step1a -> step1b;
+    step1b -> step1a;
+    step1ba -> step1b;
+    step1bb -> step1b;
+    step1bc -> step1b;
+    step1c -> step1d;
+    step1d -> step1c;
+    step1d -> step1e;
+    step1e -> step1d;
+    step1a -> step1e;
+    step1e -> step1a;
+    step1 -> step1c;
+    step1 -> step1d;
+    step1 -> step1e;
+    step1 -> step4;
+
+    step4 -> step4a;
+    step4 -> step4b;
+    step4a -> step4aa;
+    step4a -> step4ab;
+    step4aa -> step4c;
+    step4ab -> step4c;
+    step4 -> step4c;
+    step4 -> step4d;
+    step4 -> step5;
+
+    step5 -> step5a;
+    step5a -> step5aa;
+    step5a -> step5ab;
+    step5a -> step5ac;
+}
+
