@@ -2612,6 +2612,8 @@ class DotWindow(gtk.Window):
             <toolitem action="FindGo"/>
             <toolitem action="FindPrev"/>
             <toolitem action="FindNext"/>
+            <separator/>
+            <toolitem action="About"/>
         </toolbar>
     </ui>
     '''
@@ -2685,6 +2687,7 @@ class DotWindow(gtk.Window):
             ('FindGo', gtk.STOCK_FIND, findgo_label, "Return", findgo_tooltip, self.on_find_first),
             ('FindPrev', gtk.STOCK_GO_BACK, "Find _previous", "<Shift>N", "Jump to previous match [Shift+N]", self.on_find_prev),
             ('FindNext', gtk.STOCK_GO_FORWARD, "Find n_ext", "N", "Jump to next match [N]", self.on_find_next),
+            ('About', gtk.STOCK_ABOUT, "A_bout...", None, "About Dot Viewer", self.on_about)
         ))
 
         # Add the actiongroup to the uimanager
@@ -2733,6 +2736,39 @@ class DotWindow(gtk.Window):
         vbox.pack_start(self.widget)
         self.set_focus(self.widget)
         self.show_all()
+
+    def on_about(self, action):
+        # The default link opener doesn't seem to work, so we use our own...
+        def open_url(dialog, link):
+            retcode = os.system("sensible-browser \"%s\"" % link)
+            return (retcode == 0)
+
+        about = gtk.AboutDialog()
+        about.connect("activate-link", open_url)
+        about.set_program_name("Dot Viewer")
+        about.set_version(__version__)
+        about.set_comments("Visualize dot graphs via the xdot format.")
+#        about.set_authors(__credits__)     # separate dialog is overkill with just two authors...
+        about.set_copyright(__copyright__)  # ...since copyright already shows them.
+        about.set_license(
+"""This program is free software: you can redistribute it
+and/or modify it under the terms of the GNU Lesser
+General Public License as published by the
+Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be
+useful, but WITHOUT ANY WARRANTY; without even the
+implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE.  See the GNU Lesser General
+Public License for more details.
+
+You should have received a copy of the GNU Lesser
+General Public License along with this program.
+If not, see http://www.gnu.org/licenses/ .""")
+#        about.set_wrap_license(True)
+        about.run()
+        about.destroy()
 
     def clear_find_field(self):
         # Clear the "Find" field, setting its text to the placeholder text
