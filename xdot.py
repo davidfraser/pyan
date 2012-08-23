@@ -2748,8 +2748,11 @@ class DotWindow(gtk.Window):
         about.set_program_name("Dot Viewer")
         about.set_version(__version__)
         about.set_comments("Visualize dot graphs via the xdot format.")
-#        about.set_authors(__credits__)     # separate dialog is overkill with just two authors...
-        about.set_copyright(__copyright__)  # ...since copyright already shows them.
+
+        author_list = ("Jose Fonseca - Original version", "Juha Jeronen - Find, graph exploration tweaks,\n    additional UI animations", "This software uses ColorBrewer Color Schemes\n    by Cynthia Brewer, Mark Harrower, and\n    The Pennsylvania State University;\n    for details, see the license.")
+        about.set_authors(author_list)
+
+        about.set_copyright(__copyright__)
         about.set_license(
 """This program is free software: you can redistribute it
 and/or modify it under the terms of the GNU Lesser
@@ -2765,7 +2768,66 @@ Public License for more details.
 
 You should have received a copy of the GNU Lesser
 General Public License along with this program.
-If not, see http://www.gnu.org/licenses/ .""")
+If not, see http://www.gnu.org/licenses/ .
+
+
+Apache-Style Software License for ColorBrewer
+software and ColorBrewer Color Schemes,
+Version 1.1
+
+Copyright (c) 2002 Cynthia Brewer, Mark Harrower,
+and The Pennsylvania State University.
+All rights reserved.
+
+Redistribution and use in source and binary forms,
+with or without modification, are permitted provided
+that the following conditions are met:
+
+1. Redistributions as source code must retain the
+above copyright notice, this list of conditions
+and the following disclaimer.  
+
+2. The end-user documentation included with the
+redistribution, if any, must include the following
+acknowledgment:
+
+   This product includes color specifications
+   and designs developed by Cynthia Brewer
+   ( http://colorbrewer.org/ ).
+
+Alternately, this acknowledgment may appear in
+the software itself, if and wherever such third-party
+acknowledgments normally appear.  
+
+3. The name "ColorBrewer" must not be used to endorse
+or promote products derived from this software
+without prior written permission. For written
+permission, please contact Cynthia Brewer
+at cbrewer@psu.edu.
+
+4. Products derived from this software may not be
+called "ColorBrewer", nor may "ColorBrewer" appear
+in their name, without prior written permission of
+Cynthia Brewer. 
+
+THIS SOFTWARE IS PROVIDED "AS IS" AND ANY
+EXPRESSED OR IMPLIED WARRANTIES, INCLUDING,
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL CYNTHIA BREWER,
+MARK HARROWER, OR THE PENNSYLVANIA
+STATE UNIVERSITY BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.""")
 #        about.set_wrap_license(True)
         about.run()
         about.destroy()
