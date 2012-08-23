@@ -2507,6 +2507,7 @@ class DotWidget(gtk.DrawingArea):
                 if jump is not None:
                     if event.button == 3:
                         zoom = 1.0
+                        self.zoom_to_fit_on_resize = False  # target zoom will change now!
                     else:
                         zoom = None  # keep current zoom
                     self.animate_to(jump.x, jump.y, zoom)
