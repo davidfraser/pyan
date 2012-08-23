@@ -2748,6 +2748,7 @@ class DotWindow(gtk.Window):
     def on_help(self, action):
         self.set_xdotcode(__online_help_xdotcode__)
         n = self.widget.graph.nodes_by_name["welcome"]
+        self.widget.zoom_to_fit_on_resize = False
         self.widget.animate_to( n.x, n.y, 1.0 )
 
     def on_about(self, action):
