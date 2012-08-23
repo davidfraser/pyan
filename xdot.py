@@ -572,7 +572,7 @@ class Element(CompoundShape):
 
 class Node(Element):
 
-    def __init__(self, x, y, w, h, shapes, url):
+    def __init__(self, x, y, w, h, shapes, url, internal_name=None):
         Element.__init__(self, shapes)
 
         self.x = x
@@ -584,6 +584,7 @@ class Node(Element):
         self.y2 = y + 0.5*h
 
         self.url = url
+        self.internal_name = internal_name
 
     def is_inside(self, x, y):
         return self.x1 <= x and x <= self.x2 and self.y1 <= y and y <= self.y2
@@ -646,6 +647,10 @@ class Graph(Shape):
         # format: (node_obj, list_of_text_strings_in_node)
         self.items_and_texts =       map( lambda obj: (obj, obj.get_texts()), self.nodes )
         self.items_and_texts.extend( map( lambda obj: (obj, obj.get_texts()), self.edges ) )
+
+        self.nodes_by_name = {}
+        for n in self.nodes:
+            self.nodes_by_name[n.internal_name] = n
 
     def get_size(self):
         return self.width, self.height
@@ -1427,7 +1432,7 @@ class XDotParser(DotParser):
                 parser = XDotAttrParser(self, attrs[attr])
                 shapes.extend(parser.parse())
         url = attrs.get('URL', None)
-        node = Node(x, y, w, h, shapes, url)
+        node = Node(x, y, w, h, shapes, url, internal_name=id)
         self.node_by_name[id] = node
         if shapes:
             self.nodes.append(node)
@@ -2742,6 +2747,8 @@ class DotWindow(gtk.Window):
 
     def on_help(self, action):
         self.set_xdotcode(__online_help_xdotcode__)
+        n = self.widget.graph.nodes_by_name["welcome"]
+        self.widget.animate_to( n.x, n.y, 1.0 )
 
     def on_about(self, action):
         # The default link opener doesn't seem to work (Ubuntu 12.04 LTS), so we use our own...
