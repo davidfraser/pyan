@@ -2744,7 +2744,7 @@ class DotWindow(gtk.Window):
         self.set_xdotcode(__online_help_xdotcode__)
 
     def on_about(self, action):
-        # The default link opener doesn't seem to work, so we use our own...
+        # The default link opener doesn't seem to work (Ubuntu 12.04 LTS), so we use our own...
         def open_url(dialog, link):
             retcode = os.system("sensible-browser \"%s\"" % link)
             return (retcode == 0)
@@ -3696,233 +3696,236 @@ POSSIBILITY OF SUCH DAMAGE."""
 #
 __online_help_xdotcode__="""digraph G {
 	node [label="\N"];
-	graph [bb="0,0,4285.3,2566",
-		_draw_="c 9 -#ffffffff C 9 -#ffffffff P 4 0 -1 0 2566 4286 2566 4286 -1 ",
+	graph [bb="0,0,4190.8,2266",
+		_draw_="c 9 -#ffffffff C 9 -#ffffffff P 4 0 -1 0 2266 4192 2266 4192 -1 ",
 		xdotversion="1.2"];
 	welcome [label="Welcome to Dot Viewer 1.0!\n\nFollow the arrows to discover its features.\n\nClick on the starting end of the\noutgoing link to \
-begin.", style=filled, fillcolor="#FFFF66B2", fontsize=16, fontcolor="#000000", group=0, pos="1474,2477", width="6.8611", height="2.4722", _draw_="c 9 -#000000ff C 9 -#ffff66b2 E 1474 2477 247 89 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 1474 2520 0 223 26 -Welcome to Dot Viewer 1.0! F 16.000000 11 -Times-Roman c 9 -#000000ff\
- T 1474 2481 0 333 43 -Follow the arrows to discover its features. F 16.000000 11 -Times-Roman c 9 -#000000ff T 1474 2442 \
-0 248 32 -Click on the starting end of the F 16.000000 11 -Times-Roman c 9 -#000000ff T 1474 2422 0 181 23 -outgoing link to begin.\
+begin.", style=filled, fillcolor="#FFFF66B2", fontsize=16, fontcolor="#000000", group=0, pos="1274,2177", width="6.8611", height="2.4722", _draw_="c 9 -#000000ff C 9 -#ffff66b2 E 1274 2177 247 89 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 1274 2220 0 223 26 -Welcome to Dot Viewer 1.0! F 16.000000 11 -Times-Roman c 9 -#000000ff\
+ T 1274 2181 0 333 43 -Follow the arrows to discover its features. F 16.000000 11 -Times-Roman c 9 -#000000ff T 1274 2142 \
+0 248 32 -Click on the starting end of the F 16.000000 11 -Times-Roman c 9 -#000000ff T 1274 2122 0 181 23 -outgoing link to begin.\
  "];
 	step2 [label="Zooming\n\nYou can use the +,- keys,\nmouse wheel, toolbar buttons,\nand Ctrl+drag to zoom the view.\n\nTo select and zoom an area\
-, use Shift+drag.", style=filled, fillcolor="#FFFFAAB2", fontsize=20, fontcolor="#000000", group=0, pos="1474,2224", width="9.2778", height="3.5556", _draw_="c 9 -#000000ff C 9 -#ffffaab2 E 1474 2224 334 128 ", _ldraw_="F 20.000000 11 -Times-Roman c 9 -#000000ff T 1474 2291 0 91 7 -Zooming F 20.000000 11 -Times-Roman c 9 -#000000ff T 1474 2242 0 \
-261 25 -You can use the +,- keys, F 20.000000 11 -Times-Roman c 9 -#000000ff T 1474 2217 0 315 29 -mouse wheel, toolbar buttons,\
- F 20.000000 11 -Times-Roman c 9 -#000000ff T 1474 2192 0 336 31 -and Ctrl+drag to zoom the view. F 20.000000 11 -Times-Roman c \
-9 -#000000ff T 1474 2143 0 457 43 -To select and zoom an area, use Shift+drag. "];
-	step2a [label="Keyboard\n\nZoom in: +, PageUp\nZoom out: -, PageDown\nZoom to fit: F\nZoom to 100%: 1", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="1005,1970", width="3.9722", height="2.5", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 1005 1970 143 90 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 1005 2014 0 76 8 -Keyboard F 16.000000 11 -Times-Roman c 9 -#000000ff T 1005 1975 0\
- 160 18 -Zoom in: +, PageUp F 16.000000 11 -Times-Roman c 9 -#000000ff T 1005 1955 0 187 21 -Zoom out: -, PageDown F 16.000000 11\
- -Times-Roman c 9 -#000000ff T 1005 1935 0 107 14 -Zoom to fit: F F 16.000000 11 -Times-Roman c 9 -#000000ff T 1005 1915 0 136 \
-15 -Zoom to 100%: 1 "];
-	step2b [label="Mouse wheel\n\nZoom in: wheel up\nZoom out: wheel down", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="1306,1970", width="3.8889", height="1.7083", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 1306 1970 140 62 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 1306 1994 0 104 11 -Mouse wheel F 16.000000 11 -Times-Roman c 9 -#000000ff T 1306 1955\
- 0 148 17 -Zoom in: wheel up F 16.000000 11 -Times-Roman c 9 -#000000ff T 1306 1935 0 182 20 -Zoom out: wheel down "];
-	step2c [label="Ctrl+drag\n\nZoom in: hold Ctrl, drag up\nZoom out: hold Ctrl, drag down", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="1474,1782", width="5.2222", height="1.7083", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 1474 1782 188 62 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 1474 1806 0 79 9 -Ctrl+drag F 16.000000 11 -Times-Roman c 9 -#000000ff T 1474 1767 \
-0 216 27 -Zoom in: hold Ctrl, drag up F 16.000000 11 -Times-Roman c 9 -#000000ff T 1474 1747 0 250 30 -Zoom out: hold Ctrl, drag\
+, use Shift+drag.", style=filled, fillcolor="#FFFFAAB2", fontsize=20, fontcolor="#000000", group=0, pos="1274,1925", width="9.2778", height="3.5139", _draw_="c 9 -#000000ff C 9 -#ffffaab2 E 1274 1925 334 127 ", _ldraw_="F 20.000000 11 -Times-Roman c 9 -#000000ff T 1274 1991 0 91 7 -Zooming F 20.000000 11 -Times-Roman c 9 -#000000ff T 1274 1943 0 \
+261 25 -You can use the +,- keys, F 20.000000 11 -Times-Roman c 9 -#000000ff T 1274 1918 0 315 29 -mouse wheel, toolbar buttons,\
+ F 20.000000 11 -Times-Roman c 9 -#000000ff T 1274 1893 0 336 31 -and Ctrl+drag to zoom the view. F 20.000000 11 -Times-Roman c \
+9 -#000000ff T 1274 1845 0 457 43 -To select and zoom an area, use Shift+drag. "];
+	step2a [label="Keyboard\n\nZoom in: +, PageUp\nZoom out: -, PageDown\nZoom to fit: F\nZoom to 100%: 1", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="805,1672", width="3.9722", height="2.5", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 805 1672 143 90 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 805 1716 0 76 8 -Keyboard F 16.000000 11 -Times-Roman c 9 -#000000ff T 805 1677 0 160\
+ 18 -Zoom in: +, PageUp F 16.000000 11 -Times-Roman c 9 -#000000ff T 805 1657 0 187 21 -Zoom out: -, PageDown F 16.000000 11 -Times-Roman\
+ c 9 -#000000ff T 805 1637 0 107 14 -Zoom to fit: F F 16.000000 11 -Times-Roman c 9 -#000000ff T 805 1617 0 136 15 -Zoom\
+ to 100%: 1 "];
+	step2b [label="Mouse wheel\n\nZoom in: wheel up\nZoom out: wheel down", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="1106,1672", width="3.8889", height="1.7083", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 1106 1672 140 62 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 1106 1696 0 104 11 -Mouse wheel F 16.000000 11 -Times-Roman c 9 -#000000ff T 1106 1657\
+ 0 148 17 -Zoom in: wheel up F 16.000000 11 -Times-Roman c 9 -#000000ff T 1106 1637 0 182 20 -Zoom out: wheel down "];
+	step2c [label="Ctrl+drag\n\nZoom in: hold Ctrl, drag up\nZoom out: hold Ctrl, drag down", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="1274,1484", width="5.2222", height="1.7083", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 1274 1484 188 62 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 1274 1508 0 79 9 -Ctrl+drag F 16.000000 11 -Times-Roman c 9 -#000000ff T 1274 1469 \
+0 216 27 -Zoom in: hold Ctrl, drag up F 16.000000 11 -Times-Roman c 9 -#000000ff T 1274 1449 0 250 30 -Zoom out: hold Ctrl, drag\
  down "];
-	step2d [label="Shift+drag\n\nZoom in only. Hold Shift, drag an area.\nView zooms to the selected area\nwhen the mouse button is released.", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="1732,1970", width="6.3889", height="2.0972", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 1732 1970 230 76 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 1732 2004 0 85 10 -Shift+drag F 16.000000 11 -Times-Roman c 9 -#000000ff T 1732 1965\
- 0 309 39 -Zoom in only. Hold Shift, drag an area. F 16.000000 11 -Times-Roman c 9 -#000000ff T 1732 1945 0 259 31 -View zooms \
-to the selected area F 16.000000 11 -Times-Roman c 9 -#000000ff T 1732 1925 0 287 34 -when the mouse button is released. "];
-	step3 [label="Panning\n\nYou can use the arrow keys and\nmouse dragging to pan the view.", style=filled, fillcolor="#FFFFAAB2", fontsize=20, fontcolor="#000000", group=0, pos="2482,1970", width="6.9722", height="2.0972", _draw_="c 9 -#000000ff C 9 -#ffffaab2 E 2482 1970 251 76 ", _ldraw_="F 20.000000 11 -Times-Roman c 9 -#000000ff T 2482 2000 0 82 7 -Panning F 20.000000 11 -Times-Roman c 9 -#000000ff T 2482 1951 0 \
-325 30 -You can use the arrow keys and F 20.000000 11 -Times-Roman c 9 -#000000ff T 2482 1926 0 339 31 -mouse dragging to pan the\
+	step2d [label="Shift+drag\n\nZoom in only. Hold Shift, drag an area.\nView zooms to the selected area\nwhen the mouse button is released.", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="1532,1672", width="6.3889", height="2.0972", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 1532 1672 230 76 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 1532 1706 0 85 10 -Shift+drag F 16.000000 11 -Times-Roman c 9 -#000000ff T 1532 1667\
+ 0 309 39 -Zoom in only. Hold Shift, drag an area. F 16.000000 11 -Times-Roman c 9 -#000000ff T 1532 1647 0 259 31 -View zooms \
+to the selected area F 16.000000 11 -Times-Roman c 9 -#000000ff T 1532 1627 0 287 34 -when the mouse button is released. "];
+	step3 [label="Panning\n\nYou can use the arrow keys and\nmouse dragging to pan the view.", style=filled, fillcolor="#FFFFAAB2", fontsize=20, fontcolor="#000000", group=0, pos="2265,1672", width="6.9722", height="2.0833", _draw_="c 9 -#000000ff C 9 -#ffffaab2 E 2265 1672 251 75 ", _ldraw_="F 20.000000 11 -Times-Roman c 9 -#000000ff T 2265 1701 0 82 7 -Panning F 20.000000 11 -Times-Roman c 9 -#000000ff T 2265 1653 0 \
+325 30 -You can use the arrow keys and F 20.000000 11 -Times-Roman c 9 -#000000ff T 2265 1628 0 339 31 -mouse dragging to pan the\
  view. "];
-	step3a [label="Mouse\n\nDrag without any modifier keys to pan.", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="2101,1782", width="6.4444", height="1.3194", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 2101 1782 232 47 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 2101 1796 0 52 5 -Mouse F 16.000000 11 -Times-Roman c 9 -#000000ff T 2101 1757 0 312\
+	step3a [label="Mouse\n\nDrag without any modifier keys to pan.", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="1901,1484", width="6.4444", height="1.3194", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 1901 1484 232 47 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 1901 1498 0 52 5 -Mouse F 16.000000 11 -Times-Roman c 9 -#000000ff T 1901 1459 0 312\
  38 -Drag without any modifier keys to pan. "];
-	step3b [label="Keyboard\n\nPan slightly in the direction\npressed: Up, Down, Left, Right", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="3205,1782", width="5.0556", height="1.7083", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 3205 1782 182 62 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 3205 1806 0 76 8 -Keyboard F 16.000000 11 -Times-Roman c 9 -#000000ff T 3205 1767 0\
- 219 29 -Pan slightly in the direction F 16.000000 11 -Times-Roman c 9 -#000000ff T 3205 1747 0 242 30 -pressed: Up, Down, Left,\
+	step3b [label="Keyboard\n\nPan slightly in the direction\npressed: Up, Down, Left, Right", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="2971,1484", width="5.0556", height="1.7083", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 2971 1484 182 62 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 2971 1508 0 76 8 -Keyboard F 16.000000 11 -Times-Roman c 9 -#000000ff T 2971 1469 0\
+ 219 29 -Pan slightly in the direction F 16.000000 11 -Times-Roman c 9 -#000000ff T 2971 1449 0 242 30 -pressed: Up, Down, Left,\
  Right "];
-	step2and3common [label="Dragging in Dot Viewer\n\nDrag accepts both the left and middle\nmouse buttons.", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="1474,1579", width="6.2222", height="1.7083", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 1474 1579 224 62 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 1474 1603 0 186 22 -Dragging in Dot Viewer F 16.000000 11 -Times-Roman c 9 -#000000ff\
- T 1474 1564 0 301 37 -Drag accepts both the left and middle F 16.000000 11 -Times-Roman c 9 -#000000ff T 1474 1544 0 125 14 -mouse\
+	step2and3common [label="Dragging in Dot Viewer\n\nDrag accepts both the left and middle\nmouse buttons.", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="1274,1268", width="6.2222", height="1.7083", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 1274 1268 224 62 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 1274 1292 0 186 22 -Dragging in Dot Viewer F 16.000000 11 -Times-Roman c 9 -#000000ff\
+ T 1274 1253 0 301 37 -Drag accepts both the left and middle F 16.000000 11 -Times-Roman c 9 -#000000ff T 1274 1233 0 125 14 -mouse\
  buttons. "];
-	step1 [label="Exploration\n\nHere we look into exploring graphs.", style=filled, fillcolor="#FFFFAAB2", fontsize=20, fontcolor="#000000", group=0, pos="2734,1782", width="7.5278", height="1.6111", _draw_="c 9 -#000000ff C 9 -#ffffaab2 E 2734 1782 271 58 ", _ldraw_="F 20.000000 11 -Times-Roman c 9 -#000000ff T 2734 1799 0 118 11 -Exploration F 20.000000 11 -Times-Roman c 9 -#000000ff T 2734 1750\
+	step1 [label="Exploration\n\nHere we look into exploring graphs.", style=filled, fillcolor="#FFFFAAB2", fontsize=20, fontcolor="#000000", group=0, pos="2500,1484", width="7.5278", height="1.5972", _draw_="c 9 -#000000ff C 9 -#ffffaab2 E 2500 1484 271 57 ", _ldraw_="F 20.000000 11 -Times-Roman c 9 -#000000ff T 2500 1501 0 118 11 -Exploration F 20.000000 11 -Times-Roman c 9 -#000000ff T 2500 1453\
  0 367 35 -Here we look into exploring graphs. "];
 	step1a [label="You can highlight nodes by hovering\nthe mouse cursor over them. Highlighting\na node will also highlight all its outgoing links.\
 \n\nAdditionally, holding Shift while hovering also\nhighlights the nodes at the other ends of the links.\n\nGo ahead, try it on\
- this node.", style=filled, fillcolor="#FFFFCCB2", fontcolor="#000000", group=0, pos="3496,1579", width="7.2222", height="2.9028", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 3496 1579 260 105 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 3496 1635 0 250 35 -You can highlight nodes by hovering F 14.000000 11 -Times-Roman\
- c 9 -#000000ff T 3496 1617 0 289 40 -the mouse cursor over them. Highlighting F 14.000000 11 -Times-Roman c 9 -#000000ff T 3496\
- 1599 0 319 50 -a node will also highlight all its outgoing links. F 14.000000 11 -Times-Roman c 9 -#000000ff T 3496 1565 0 316 \
-47 -Additionally, holding Shift while hovering also F 14.000000 11 -Times-Roman c 9 -#000000ff T 3496 1547 0 352 52 -highlights \
-the nodes at the other ends of the links. F 14.000000 11 -Times-Roman c 9 -#000000ff T 3496 1513 0 205 30 -Go ahead, try it on this\
+ this node.", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="3297,1268", width="8.1944", height="3.2639", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 3297 1268 295 117 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 3297 1331 0 289 35 -You can highlight nodes by hovering F 16.000000 11 -Times-Roman\
+ c 9 -#000000ff T 3297 1311 0 332 40 -the mouse cursor over them. Highlighting F 16.000000 11 -Times-Roman c 9 -#000000ff T 3297\
+ 1291 0 369 50 -a node will also highlight all its outgoing links. F 16.000000 11 -Times-Roman c 9 -#000000ff T 3297 1252 0 362 \
+47 -Additionally, holding Shift while hovering also F 16.000000 11 -Times-Roman c 9 -#000000ff T 3297 1232 0 402 52 -highlights \
+the nodes at the other ends of the links. F 16.000000 11 -Times-Roman c 9 -#000000ff T 3297 1193 0 235 30 -Go ahead, try it on this\
  node. "];
-	step1aa [label="Highlight\ndemonstration\nnode 1", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="3258,1257", width="2.2778", height="1.2222", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 3258 1257 82 44 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 3258 1270 0 63 9 -Highlight F 14.000000 11 -Times-Roman c 9 -#000000ff T 3258 1252 \
-0 101 13 -demonstration F 14.000000 11 -Times-Roman c 9 -#000000ff T 3258 1234 0 48 6 -node 1 "];
-	step1ab [label="Highlight\ndemonstration\nnode 2", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="3440,1257", width="2.2778", height="1.2222", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 3440 1257 82 44 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 3440 1270 0 63 9 -Highlight F 14.000000 11 -Times-Roman c 9 -#000000ff T 3440 1252 \
-0 101 13 -demonstration F 14.000000 11 -Times-Roman c 9 -#000000ff T 3440 1234 0 48 6 -node 2 "];
-	step1ac [label="Highlight\ndemonstration\nnode 3", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="3622,1257", width="2.2778", height="1.2222", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 3622 1257 82 44 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 3622 1270 0 63 9 -Highlight F 14.000000 11 -Times-Roman c 9 -#000000ff T 3622 1252 \
-0 101 13 -demonstration F 14.000000 11 -Times-Roman c 9 -#000000ff T 3622 1234 0 48 6 -node 3 "];
+	step1aa [label="Highlight\ndemonstration\nnode 1", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="3094,969", width="2.2778", height="1.2222", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 3094 969 82 44 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 3094 982 0 63 9 -Highlight F 14.000000 11 -Times-Roman c 9 -#000000ff T 3094 964 0 \
+101 13 -demonstration F 14.000000 11 -Times-Roman c 9 -#000000ff T 3094 946 0 48 6 -node 1 "];
+	step1ab [label="Highlight\ndemonstration\nnode 2", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="3276,969", width="2.2778", height="1.2222", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 3276 969 82 44 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 3276 982 0 63 9 -Highlight F 14.000000 11 -Times-Roman c 9 -#000000ff T 3276 964 0 \
+101 13 -demonstration F 14.000000 11 -Times-Roman c 9 -#000000ff T 3276 946 0 48 6 -node 2 "];
+	step1ac [label="Highlight\ndemonstration\nnode 3", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="3458,969", width="2.2778", height="1.2222", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 3458 969 82 44 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 3458 982 0 63 9 -Highlight F 14.000000 11 -Times-Roman c 9 -#000000ff T 3458 964 0 \
+101 13 -demonstration F 14.000000 11 -Times-Roman c 9 -#000000ff T 3458 946 0 48 6 -node 3 "];
 	step1b [label="If you want to highlight 'what links here',\nhold Ctrl while hovering over a node.\n\nTo highlight incoming links only, hold Alt\
- or AltGr.\n\nTry it on this node.", style=filled, fillcolor="#FFFFCCB2", fontcolor="#000000", group=0, pos="2905,1257", width="7.0278", height="2.1944", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 2905 1257 253 79 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 2905 1295 0 287 43 -If you want to highlight 'what links here', F 14.000000 11 -Times-Roman\
- c 9 -#000000ff T 2905 1277 0 258 37 -hold Ctrl while hovering over a node. F 14.000000 11 -Times-Roman c 9 -#000000ff T\
- 2905 1243 0 342 52 -To highlight incoming links only, hold Alt or AltGr. F 14.000000 11 -Times-Roman c 9 -#000000ff T 2905 1209\
- 0 130 20 -Try it on this node. "];
-	step1ba [label="Highlight\ndemonstration\nnode 4", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="2954,1579", width="2.2778", height="1.2222", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 2954 1579 82 44 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 2954 1592 0 63 9 -Highlight F 14.000000 11 -Times-Roman c 9 -#000000ff T 2954 1574 \
-0 101 13 -demonstration F 14.000000 11 -Times-Roman c 9 -#000000ff T 2954 1556 0 48 6 -node 4 "];
-	step1bb [label="Highlight\ndemonstration\nnode 5", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="3136,1579", width="2.2778", height="1.2222", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 3136 1579 82 44 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 3136 1592 0 63 9 -Highlight F 14.000000 11 -Times-Roman c 9 -#000000ff T 3136 1574 \
-0 101 13 -demonstration F 14.000000 11 -Times-Roman c 9 -#000000ff T 3136 1556 0 48 6 -node 5 "];
-	step1bc [label="Highlight\ndemonstration\nnode 6", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="2734,1579", width="2.2778", height="1.2222", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 2734 1579 82 44 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 2734 1592 0 63 9 -Highlight F 14.000000 11 -Times-Roman c 9 -#000000ff T 2734 1574 \
-0 101 13 -demonstration F 14.000000 11 -Times-Roman c 9 -#000000ff T 2734 1556 0 48 6 -node 6 "];
+ or AltGr.\n\nTry it on this node.", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="2706,969", width=8, height="2.4722", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 2706 969 288 89 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 2706 1012 0 325 43 -If you want to highlight 'what links here', F 16.000000 11 -Times-Roman\
+ c 9 -#000000ff T 2706 992 0 294 37 -hold Ctrl while hovering over a node. F 16.000000 11 -Times-Roman c 9 -#000000ff T \
+2706 953 0 392 52 -To highlight incoming links only, hold Alt or AltGr. F 16.000000 11 -Times-Roman c 9 -#000000ff T 2706 914 0 \
+150 20 -Try it on this node. "];
+	step1ba [label="Highlight\ndemonstration\nnode 4", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="2720,1268", width="2.2778", height="1.2222", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 2720 1268 82 44 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 2720 1281 0 63 9 -Highlight F 14.000000 11 -Times-Roman c 9 -#000000ff T 2720 1263 \
+0 101 13 -demonstration F 14.000000 11 -Times-Roman c 9 -#000000ff T 2720 1245 0 48 6 -node 4 "];
+	step1bb [label="Highlight\ndemonstration\nnode 5", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="2902,1268", width="2.2778", height="1.2222", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 2902 1268 82 44 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 2902 1281 0 63 9 -Highlight F 14.000000 11 -Times-Roman c 9 -#000000ff T 2902 1263 \
+0 101 13 -demonstration F 14.000000 11 -Times-Roman c 9 -#000000ff T 2902 1245 0 48 6 -node 5 "];
+	step1bc [label="Highlight\ndemonstration\nnode 6", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="2500,1268", width="2.2778", height="1.2222", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 2500 1268 82 44 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 2500 1281 0 63 9 -Highlight F 14.000000 11 -Times-Roman c 9 -#000000ff T 2500 1263 \
+0 101 13 -demonstration F 14.000000 11 -Times-Roman c 9 -#000000ff T 2500 1245 0 48 6 -node 6 "];
 	step1c [label="You can highlight a link in the graph by hovering\nthe mouse cursor on the end of a link.\n\nHighlighting a link will also highlight\
  the node at its\n other end, making it easy to visually distinguish where the\nlink leads to.\n\nNote that if the graph is \
 very crowded, this feature\nmay not be able to recognize all the links.\n\nYou can tell that it has recognized a link\nwhen the \
-node itself (at the end where\nyou are hovering) is not highlighted.", style=filled, fillcolor="#FFFFCCB2", fontcolor="#000000", group=0, pos="3962,304", width="8.3889", height="4.6389", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 3962 304 302 167 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 3962 404 0 337 49 -You can highlight a link in the graph by hovering F 14.000000 11\
- -Times-Roman c 9 -#000000ff T 3962 386 0 264 38 -the mouse cursor on the end of a link. F 14.000000 11 -Times-Roman c 9 -#000000ff\
- T 3962 352 0 357 55 -Highlighting a link will also highlight the node at its F 14.000000 11 -Times-Roman c 9 -#000000ff T 3962\
- 334 0 412 60 - other end, making it easy to visually distinguish where the F 14.000000 11 -Times-Roman c 9 -#000000ff T 3962 \
-316 0 88 14 -link leads to. F 14.000000 11 -Times-Roman c 9 -#000000ff T 3962 282 0 355 52 -Note that if the graph is very crowded\
-, this feature F 14.000000 11 -Times-Roman c 9 -#000000ff T 3962 264 0 290 43 -may not be able to recognize all the links. F 14.000000\
- 11 -Times-Roman c 9 -#000000ff T 3962 230 0 278 42 -You can tell that it has recognized a link F 14.000000 11 -Times-Roman\
- c 9 -#000000ff T 3962 212 0 274 38 -when the node itself (at the end where F 14.000000 11 -Times-Roman c 9 -#000000ff T 3962\
- 194 0 253 37 -you are hovering) is not highlighted. "];
+node itself (at the end where\nyou are hovering) is not highlighted.", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="3834,217", width="9.6111", height="5.2083", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 3834 217 346 187 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 3834 330 0 386 49 -You can highlight a link in the graph by hovering F 16.000000 11\
+ -Times-Roman c 9 -#000000ff T 3834 310 0 307 38 -the mouse cursor on the end of a link. F 16.000000 11 -Times-Roman c 9 -#000000ff\
+ T 3834 271 0 408 55 -Highlighting a link will also highlight the node at its F 16.000000 11 -Times-Roman c 9 -#000000ff T 3834\
+ 251 0 473 60 - other end, making it easy to visually distinguish where the F 16.000000 11 -Times-Roman c 9 -#000000ff T 3834 \
+231 0 103 14 -link leads to. F 16.000000 11 -Times-Roman c 9 -#000000ff T 3834 192 0 404 52 -Note that if the graph is very crowded\
+, this feature F 16.000000 11 -Times-Roman c 9 -#000000ff T 3834 172 0 337 43 -may not be able to recognize all the links. F \
+16.000000 11 -Times-Roman c 9 -#000000ff T 3834 133 0 320 42 -You can tell that it has recognized a link F 16.000000 11 -Times-Roman\
+ c 9 -#000000ff T 3834 113 0 310 38 -when the node itself (at the end where F 16.000000 11 -Times-Roman c 9 -#000000ff T 3834\
+ 93 0 290 37 -you are hovering) is not highlighted. "];
 	step1d [label="You can follow links in the graph\nby clicking the end of a link.\n\nWhen either end of a link is clicked, the view\nis centered\
  to the node at the other end of the link.\n\nThis works the same for both\noutgoing and incoming links.\n\nLeft-clicking just centers.\
-\nRight-clicking also zooms to 100%.", style=filled, fillcolor="#FFFFCCB2", fontcolor="#000000", group=0, pos="3962,842", width="7.3333", height="3.9306", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 3962 842 264 141 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 3962 924 0 225 33 -You can follow links in the graph F 14.000000 11 -Times-Roman c \
-9 -#000000ff T 3962 906 0 193 30 -by clicking the end of a link. F 14.000000 11 -Times-Roman c 9 -#000000ff T 3962 872 0 311 46 \
--When either end of a link is clicked, the view F 14.000000 11 -Times-Roman c 9 -#000000ff T 3962 854 0 358 53 -is centered to the\
- node at the other end of the link. F 14.000000 11 -Times-Roman c 9 -#000000ff T 3962 820 0 203 28 -This works the same for both\
- F 14.000000 11 -Times-Roman c 9 -#000000ff T 3962 802 0 198 28 -outgoing and incoming links. F 14.000000 11 -Times-Roman c 9 \
--#000000ff T 3962 768 0 173 27 -Left-clicking just centers. F 14.000000 11 -Times-Roman c 9 -#000000ff T 3962 750 0 241 34 -Right-clicking\
+\nRight-clicking also zooms to 100%.", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="3834,629", width="8.3889", height="4.4167", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 3834 629 302 159 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 3834 722 0 259 33 -You can follow links in the graph F 16.000000 11 -Times-Roman c \
+9 -#000000ff T 3834 702 0 226 30 -by clicking the end of a link. F 16.000000 11 -Times-Roman c 9 -#000000ff T 3834 663 0 357 46 \
+-When either end of a link is clicked, the view F 16.000000 11 -Times-Roman c 9 -#000000ff T 3834 643 0 411 53 -is centered to the\
+ node at the other end of the link. F 16.000000 11 -Times-Roman c 9 -#000000ff T 3834 604 0 231 28 -This works the same for both\
+ F 16.000000 11 -Times-Roman c 9 -#000000ff T 3834 584 0 232 28 -outgoing and incoming links. F 16.000000 11 -Times-Roman c 9 \
+-#000000ff T 3834 545 0 202 27 -Left-clicking just centers. F 16.000000 11 -Times-Roman c 9 -#000000ff T 3834 525 0 278 34 -Right-clicking\
  also zooms to 100%. "];
-	step1e [label="You can center the view on a node by clicking it.\n\nLeft-clicking just centers.\nRight-clicking also zooms to 100%.", style=filled, fillcolor="#FFFFCCB2", fontcolor="#000000", group=0, pos="3970,1257", width="6.8889", height="1.5278", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 3970 1257 248 55 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 3970 1278 0 335 49 -You can center the view on a node by clicking it. F 14.000000 11\
- -Times-Roman c 9 -#000000ff T 3970 1244 0 173 27 -Left-clicking just centers. F 14.000000 11 -Times-Roman c 9 -#000000ff T 3970\
- 1226 0 241 34 -Right-clicking also zooms to 100%. "];
-	step4 [label="Finding\n\nWhen you know some text\nyou are looking for.", style=filled, fillcolor="#FFFFAAB2", fontsize=20, fontcolor="#000000", group=0, pos="1921,1579", width="5.6944", height="2.0972", _draw_="c 9 -#000000ff C 9 -#ffffaab2 E 1921 1579 205 76 ", _ldraw_="F 20.000000 11 -Times-Roman c 9 -#000000ff T 1921 1609 0 74 7 -Finding F 20.000000 11 -Times-Roman c 9 -#000000ff T 1921 1560 0 \
-274 23 -When you know some text F 20.000000 11 -Times-Roman c 9 -#000000ff T 1921 1535 0 200 20 -you are looking for. "];
+	step1e [label="You can center the view on a node by clicking it.\n\nLeft-clicking just centers.\nRight-clicking also zooms to 100%.", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="3843,969", width="7.9167", height="1.7083", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 3843 969 285 62 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 3843 993 0 388 49 -You can center the view on a node by clicking it. F 16.000000 11\
+ -Times-Roman c 9 -#000000ff T 3843 954 0 202 27 -Left-clicking just centers. F 16.000000 11 -Times-Roman c 9 -#000000ff T 3843 \
+934 0 278 34 -Right-clicking also zooms to 100%. "];
+	step4 [label="Finding\n\nWhen you know some text\nyou are looking for.", style=filled, fillcolor="#FFFFAAB2", fontsize=20, fontcolor="#000000", group=0, pos="1721,1268", width="5.6944", height="2.0833", _draw_="c 9 -#000000ff C 9 -#ffffaab2 E 1721 1268 205 75 ", _ldraw_="F 20.000000 11 -Times-Roman c 9 -#000000ff T 1721 1297 0 74 7 -Finding F 20.000000 11 -Times-Roman c 9 -#000000ff T 1721 1249 0 \
+274 23 -When you know some text F 20.000000 11 -Times-Roman c 9 -#000000ff T 1721 1224 0 200 20 -you are looking for. "];
 	step4a [label="Modes\n\nBy default, Find is incremental.\nThis means that the search results\nare updated live, as you type.\n\nIncremental mode\
- can be switched off\nwith the '-N' command line option.", style=filled, fillcolor="#FFFFCCB2", fontcolor="#000000", group=0, pos="749,1257", width="5.4722", height="2.9028", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 749 1257 197 105 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 749 1313 0 44 5 -Modes F 14.000000 11 -Times-Roman c 9 -#000000ff T 749 1279 0 214 \
-32 -By default, Find is incremental. F 14.000000 11 -Times-Roman c 9 -#000000ff T 749 1261 0 241 34 -This means that the search \
-results F 14.000000 11 -Times-Roman c 9 -#000000ff T 749 1243 0 206 30 -are updated live, as you type. F 14.000000 11 -Times-Roman\
- c 9 -#000000ff T 749 1209 0 263 36 -Incremental mode can be switched off F 14.000000 11 -Times-Roman c 9 -#000000ff T 749 1191\
- 0 238 34 -with the '-N' command line option. "];
+ can be switched off\nwith the '-N' command line option.", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="749,969", width="6.3056", height="3.2639", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 749 969 227 117 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 749 1032 0 52 5 -Modes F 16.000000 11 -Times-Roman c 9 -#000000ff T 749 993 0 249 32\
+ -By default, Find is incremental. F 16.000000 11 -Times-Roman c 9 -#000000ff T 749 973 0 277 34 -This means that the search results\
+ F 16.000000 11 -Times-Roman c 9 -#000000ff T 749 953 0 239 30 -are updated live, as you type. F 16.000000 11 -Times-Roman \
+c 9 -#000000ff T 749 914 0 306 36 -Incremental mode can be switched off F 16.000000 11 -Times-Roman c 9 -#000000ff T 749 894 0 276\
+ 34 -with the '-N' command line option. "];
 	step4aa [label="Incremental mode\n\nTyping in the Find field searches.\n\nAll matches are highlighted. If there are\nno matches, the background \
-of the Find field\nturns red.\n\nPressing Return or clicking the Go button\njumps to the first match.", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="749,842", width="6.3611", height="3.5694", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 749 842 229 129 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 749 915 0 125 16 -Incremental mode F 14.000000 11 -Times-Roman c 9 -#000000ff T 749\
- 881 0 225 34 -Typing in the Find field searches. F 14.000000 11 -Times-Roman c 9 -#000000ff T 749 847 0 276 41 -All matches are\
- highlighted. If there are F 14.000000 11 -Times-Roman c 9 -#000000ff T 749 829 0 308 44 -no matches, the background of the Find\
- field F 14.000000 11 -Times-Roman c 9 -#000000ff T 749 811 0 69 10 -turns red. F 14.000000 11 -Times-Roman c 9 -#000000ff T 749\
- 777 0 286 41 -Pressing Return or clicking the Go button F 14.000000 11 -Times-Roman c 9 -#000000ff T 749 759 0 171 25 -jumps to\
+of the Find field\nturns red.\n\nPressing Return or clicking the Go button\njumps to the first match.", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="749,629", width="6.3611", height="3.5694", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 749 629 229 129 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 749 702 0 125 16 -Incremental mode F 14.000000 11 -Times-Roman c 9 -#000000ff T 749\
+ 668 0 225 34 -Typing in the Find field searches. F 14.000000 11 -Times-Roman c 9 -#000000ff T 749 634 0 276 41 -All matches are\
+ highlighted. If there are F 14.000000 11 -Times-Roman c 9 -#000000ff T 749 616 0 308 44 -no matches, the background of the Find\
+ field F 14.000000 11 -Times-Roman c 9 -#000000ff T 749 598 0 69 10 -turns red. F 14.000000 11 -Times-Roman c 9 -#000000ff T 749\
+ 564 0 286 41 -Pressing Return or clicking the Go button F 14.000000 11 -Times-Roman c 9 -#000000ff T 749 546 0 171 25 -jumps to\
  the first match. "];
 	step4ab [label="Traditional mode\n\nThe search is run only when Return is pressed\nor the Go button is clicked.\n\nIn this mode, clicking Go highlights\
- all matches.\nThen, Find next highlights the actual first match.", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="251,842", width="6.9722", height="2.5556", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 251 842 251 92 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 251 889 0 115 16 -Traditional mode F 14.000000 11 -Times-Roman c 9 -#000000ff T 251\
- 855 0 321 45 -The search is run only when Return is pressed F 14.000000 11 -Times-Roman c 9 -#000000ff T 251 837 0 187 28 -or the\
- Go button is clicked. F 14.000000 11 -Times-Roman c 9 -#000000ff T 251 803 0 328 49 -In this mode, clicking Go highlights all\
- matches. F 14.000000 11 -Times-Roman c 9 -#000000ff T 251 785 0 339 50 -Then, Find next highlights the actual first match. "];
+ all matches.\nThen, Find next highlights the actual first match.", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="251,629", width="6.9722", height="2.5556", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 251 629 251 92 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 251 676 0 115 16 -Traditional mode F 14.000000 11 -Times-Roman c 9 -#000000ff T 251\
+ 642 0 321 45 -The search is run only when Return is pressed F 14.000000 11 -Times-Roman c 9 -#000000ff T 251 624 0 187 28 -or the\
+ Go button is clicked. F 14.000000 11 -Times-Roman c 9 -#000000ff T 251 590 0 328 49 -In this mode, clicking Go highlights all\
+ matches. F 14.000000 11 -Times-Roman c 9 -#000000ff T 251 572 0 339 50 -Then, Find next highlights the actual first match. "];
 	step4b [label="Keyboard\n\nFocus the Find field: Ctrl+F\nGo: Return\nNext match: N\nPrevious match: Shift+N\n\nWhen Find field focused:\n\nClear\
- result, exit Find: Escape", style=filled, fillcolor="#FFFFCCB2", fontsize=20, fontcolor="#000000", group=0, pos="1262,1257", width="6.3333", height="5.0139", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 1262 1257 228 180 ", _ldraw_="F 20.000000 11 -Times-Roman c 9 -#000000ff T 1262 1361 0 97 8 -Keyboard F 20.000000 11 -Times-Roman c 9 -#000000ff T 1262 1312 0\
- 279 28 -Focus the Find field: Ctrl+F F 20.000000 11 -Times-Roman c 9 -#000000ff T 1262 1287 0 111 10 -Go: Return F 20.000000 11\
- -Times-Roman c 9 -#000000ff T 1262 1262 0 148 13 -Next match: N F 20.000000 11 -Times-Roman c 9 -#000000ff T 1262 1237 0 251 23\
- -Previous match: Shift+N F 20.000000 11 -Times-Roman c 9 -#000000ff T 1262 1188 0 253 24 -When Find field focused: F 20.000000 \
-11 -Times-Roman c 9 -#000000ff T 1262 1139 0 307 31 -Clear result, exit Find: Escape "];
+ result, exit Find: Escape", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="1213,969", width="4.9722", height="4.0278", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 1213 969 179 145 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 1213 1052 0 76 8 -Keyboard F 16.000000 11 -Times-Roman c 9 -#000000ff T 1213 1013 0\
+ 215 28 -Focus the Find field: Ctrl+F F 16.000000 11 -Times-Roman c 9 -#000000ff T 1213 993 0 87 10 -Go: Return F 16.000000 11 -Times-Roman\
+ c 9 -#000000ff T 1213 973 0 115 13 -Next match: N F 16.000000 11 -Times-Roman c 9 -#000000ff T 1213 953 0 194 23 -Previous\
+ match: Shift+N F 16.000000 11 -Times-Roman c 9 -#000000ff T 1213 914 0 196 24 -When Find field focused: F 16.000000 11 -Times-Roman\
+ c 9 -#000000ff T 1213 875 0 238 31 -Clear result, exit Find: Escape "];
 	step4c [label="Common behaviour\n\nFind is case-insensitive.\n\nMatches can be cycled with N, Shift+N,\nand the Find next/previous buttons.\n\nIf\
  you have pressed Go, clearing the\nFind field returns the view to\nwhere it was before starting Find.\n\nHovering the mouse over\
  the Find field, or\npressing Ctrl+F re-highlights all matches.\n(Highlight is lost when the mouse moves onto the\ngraph viewer\
- section of the window.)", style=filled, fillcolor="#FFFFCCB2", fontsize=20, fontcolor="#000000", group=0, pos="749,304", width="10.417", height="7.4444", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 749 304 375 268 ", _ldraw_="F 20.000000 11 -Times-Roman c 9 -#000000ff T 749 470 0 202 16 -Common behaviour F 20.000000 11 -Times-Roman c 9 -#000000ff T 749\
- 421 0 244 25 -Find is case-insensitive. F 20.000000 11 -Times-Roman c 9 -#000000ff T 749 372 0 406 38 -Matches can be cycled with\
- N, Shift+N, F 20.000000 11 -Times-Roman c 9 -#000000ff T 749 347 0 366 35 -and the Find next/previous buttons. F 20.000000 11\
- -Times-Roman c 9 -#000000ff T 749 298 0 373 36 -If you have pressed Go, clearing the F 20.000000 11 -Times-Roman c 9 -#000000ff\
- T 749 273 0 295 30 -Find field returns the view to F 20.000000 11 -Times-Roman c 9 -#000000ff T 749 248 0 345 34 -where it was \
-before starting Find. F 20.000000 11 -Times-Roman c 9 -#000000ff T 749 199 0 436 42 -Hovering the mouse over the Find field, or \
-F 20.000000 11 -Times-Roman c 9 -#000000ff T 749 174 0 427 42 -pressing Ctrl+F re-highlights all matches. F 20.000000 11 -Times-Roman\
- c 9 -#000000ff T 749 149 0 514 48 -(Highlight is lost when the mouse moves onto the F 20.000000 11 -Times-Roman c 9 -#000000ff\
- T 749 124 0 381 36 -graph viewer section of the window.) "];
+ section of the window.)", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="749,217", width="8.0556", height="5.9722", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 749 217 290 215 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 749 349 0 156 16 -Common behaviour F 16.000000 11 -Times-Roman c 9 -#000000ff T 749\
+ 310 0 189 25 -Find is case-insensitive. F 16.000000 11 -Times-Roman c 9 -#000000ff T 749 271 0 315 38 -Matches can be cycled with\
+ N, Shift+N, F 16.000000 11 -Times-Roman c 9 -#000000ff T 749 251 0 284 35 -and the Find next/previous buttons. F 16.000000 11\
+ -Times-Roman c 9 -#000000ff T 749 212 0 289 36 -If you have pressed Go, clearing the F 16.000000 11 -Times-Roman c 9 -#000000ff\
+ T 749 192 0 228 30 -Find field returns the view to F 16.000000 11 -Times-Roman c 9 -#000000ff T 749 172 0 267 34 -where it was \
+before starting Find. F 16.000000 11 -Times-Roman c 9 -#000000ff T 749 133 0 335 42 -Hovering the mouse over the Find field, or \
+F 16.000000 11 -Times-Roman c 9 -#000000ff T 749 113 0 331 42 -pressing Ctrl+F re-highlights all matches. F 16.000000 11 -Times-Roman\
+ c 9 -#000000ff T 749 93 0 394 48 -(Highlight is lost when the mouse moves onto the F 16.000000 11 -Times-Roman c 9 -#000000ff\
+ T 749 73 0 292 36 -graph viewer section of the window.) "];
 	step4d [label="Try it!\n\nWhich nodes in this help screen\ncontain the word 'node'?\n\nHint: zooming to fit after entering the\nsearch term, and\
- then hovering over\nthe Find field, may help to locate them.", style=filled, fillcolor="#FFFFCCB2", fontsize=20, fontcolor="#000000", group=0, pos="1808,1257", width="8.3333", height="4.0417", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 1808 1257 300 146 ", _ldraw_="F 20.000000 11 -Times-Roman c 9 -#000000ff T 1808 1336 0 60 7 -Try it! F 20.000000 11 -Times-Roman c 9 -#000000ff T 1808 1287 0 \
-327 31 -Which nodes in this help screen F 20.000000 11 -Times-Roman c 9 -#000000ff T 1808 1262 0 253 24 -contain the word 'node'\
-? F 20.000000 11 -Times-Roman c 9 -#000000ff T 1808 1213 0 388 39 -Hint: zooming to fit after entering the F 20.000000 11 -Times-Roman\
- c 9 -#000000ff T 1808 1188 0 378 35 -search term, and then hovering over F 20.000000 11 -Times-Roman c 9 -#000000ff T 1808\
- 1163 0 408 40 -the Find field, may help to locate them. "];
-	step5 [label="Advanced\n\nWhen the world is not enough.", style=filled, fillcolor="#FFFFAAB2", fontsize=20, fontcolor="#000000", group=0, pos="2361,1257", width="6.5278", height="1.6111", _draw_="c 9 -#000000ff C 9 -#ffffaab2 E 2361 1257 235 58 ", _ldraw_="F 20.000000 11 -Times-Roman c 9 -#000000ff T 2361 1274 0 101 8 -Advanced F 20.000000 11 -Times-Roman c 9 -#000000ff T 2361 1225 \
-0 316 29 -When the world is not enough. "];
+ then hovering over\nthe Find field, may help to locate them.", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="1642,969", width="6.4444", height="3.2639", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 1642 969 232 117 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 1642 1032 0 46 7 -Try it! F 16.000000 11 -Times-Roman c 9 -#000000ff T 1642 993 0 255\
+ 31 -Which nodes in this help screen F 16.000000 11 -Times-Roman c 9 -#000000ff T 1642 973 0 198 24 -contain the word 'node'? \
+F 16.000000 11 -Times-Roman c 9 -#000000ff T 1642 934 0 300 39 -Hint: zooming to fit after entering the F 16.000000 11 -Times-Roman\
+ c 9 -#000000ff T 1642 914 0 292 35 -search term, and then hovering over F 16.000000 11 -Times-Roman c 9 -#000000ff T 1642 894\
+ 0 313 40 -the Find field, may help to locate them. "];
+	step5 [label="Advanced\n\nWhen the world is not enough.", style=filled, fillcolor="#FFFFAAB2", fontsize=20, fontcolor="#000000", group=0, pos="2127,969", width="6.5278", height="1.5972", _draw_="c 9 -#000000ff C 9 -#ffffaab2 E 2127 969 235 57 ", _ldraw_="F 20.000000 11 -Times-Roman c 9 -#000000ff T 2127 986 0 101 8 -Advanced F 20.000000 11 -Times-Roman c 9 -#000000ff T 2127 938 0 \
+316 29 -When the world is not enough. "];
 	step5a [label="Command-line options\n\nDot Viewer comes with various command-line\noptions that can be used to tune its behaviour.\n\nAs of version\
  1.0, options to set the layout filter (-f, -n),\ndisable incremental find (-N), and\ndisable user interface animations (-a,\
- -b, -A)\nare available.\n\nUse the -h option to see a full, up-to-date list.", style=filled, fillcolor="#FFFFCCB2", fontsize=20, fontcolor="#000000", group=0, pos="2361,842", width="11.556", height="5.5", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 2361 842 416 198 ", _ldraw_="F 20.000000 11 -Times-Roman c 9 -#000000ff T 2361 958 0 232 20 -Command-line options F 20.000000 11 -Times-Roman c 9 -#000000ff \
-T 2361 909 0 472 42 -Dot Viewer comes with various command-line F 20.000000 11 -Times-Roman c 9 -#000000ff T 2361 884 0 484 47 -options\
- that can be used to tune its behaviour. F 20.000000 11 -Times-Roman c 9 -#000000ff T 2361 835 0 573 61 -As of version 1.0\
-, options to set the layout filter (-f, -n), F 20.000000 11 -Times-Roman c 9 -#000000ff T 2361 810 0 346 34 -disable incremental\
- find (-N), and F 20.000000 11 -Times-Roman c 9 -#000000ff T 2361 785 0 456 46 -disable user interface animations (-a, -b, -A) \
-F 20.000000 11 -Times-Roman c 9 -#000000ff T 2361 760 0 141 14 -are available. F 20.000000 11 -Times-Roman c 9 -#000000ff T 2361\
- 711 0 474 49 -Use the -h option to see a full, up-to-date list. "];
+ -b, -A)\nare available.\n\nUse the -h option to see a full, up-to-date list.", style=filled, fillcolor="#FFFFCCB2", fontsize=16, fontcolor="#000000", group=0, pos="2127,629", width="8.9722", height="4.4167", _draw_="c 9 -#000000ff C 9 -#ffffccb2 E 2127 629 323 159 ", _ldraw_="F 16.000000 11 -Times-Roman c 9 -#000000ff T 2127 722 0 181 20 -Command-line options F 16.000000 11 -Times-Roman c 9 -#000000ff \
+T 2127 683 0 365 42 -Dot Viewer comes with various command-line F 16.000000 11 -Times-Roman c 9 -#000000ff T 2127 663 0 373 47 -options\
+ that can be used to tune its behaviour. F 16.000000 11 -Times-Roman c 9 -#000000ff T 2127 624 0 441 61 -As of version 1.0\
+, options to set the layout filter (-f, -n), F 16.000000 11 -Times-Roman c 9 -#000000ff T 2127 604 0 269 34 -disable incremental\
+ find (-N), and F 16.000000 11 -Times-Roman c 9 -#000000ff T 2127 584 0 354 46 -disable user interface animations (-a, -b, -A) \
+F 16.000000 11 -Times-Roman c 9 -#000000ff T 2127 564 0 108 14 -are available. F 16.000000 11 -Times-Roman c 9 -#000000ff T 2127\
+ 525 0 364 49 -Use the -h option to see a full, up-to-date list. "];
 	step5aa [label="Animations\n\nBy default, the user interface is animated. This is done to\nfacilitate a smoother user experience, and to make it\
  easier\nfor people other than the user at the controls\nto see what is going on.\n\nIf viewing large graphs on a slow computer,\
 \nit may be useful to turn the animations off.\n\nIn version 1.0, the animations come in two groups:\n  -pan and zoom (switch off\
 : -a)\n  -highlighting (switch off: -b)\n\nThe respective command-line options\nmay be used to switch them off if desired.\nThe\
- option '-A' disables both groups.", style=filled, fillcolor="#FFFFDDB2", fontsize=20, fontcolor="#000000", group=0, pos="2582,304", width="12.5", height="8.4306", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 2582 304 450 303 ", _ldraw_="F 20.000000 11 -Times-Roman c 9 -#000000ff T 2582 495 0 115 10 -Animations F 20.000000 11 -Times-Roman c 9 -#000000ff T 2582 446\
- 0 595 59 -By default, the user interface is animated. This is done to F 20.000000 11 -Times-Roman c 9 -#000000ff T 2582 421 0 621\
- 60 -facilitate a smoother user experience, and to make it easier F 20.000000 11 -Times-Roman c 9 -#000000ff T 2582 396 0 469 \
-46 -for people other than the user at the controls F 20.000000 11 -Times-Roman c 9 -#000000ff T 2582 371 0 247 24 -to see what is\
- going on. F 20.000000 11 -Times-Roman c 9 -#000000ff T 2582 322 0 451 43 -If viewing large graphs on a slow computer, F 20.000000\
- 11 -Times-Roman c 9 -#000000ff T 2582 297 0 445 44 -it may be useful to turn the animations off. F 20.000000 11 -Times-Roman\
- c 9 -#000000ff T 2582 248 0 523 50 -In version 1.0, the animations come in two groups: F 20.000000 11 -Times-Roman c 9 -#000000ff\
- T 2582 223 0 323 32 -  -pan and zoom (switch off: -a) F 20.000000 11 -Times-Roman c 9 -#000000ff T 2582 198 0 299 32 -  -highlighting\
- (switch off: -b) F 20.000000 11 -Times-Roman c 9 -#000000ff T 2582 149 0 388 35 -The respective command-line options F \
-20.000000 11 -Times-Roman c 9 -#000000ff T 2582 124 0 435 42 -may be used to switch them off if desired. F 20.000000 11 -Times-Roman\
- c 9 -#000000ff T 2582 99 0 375 37 -The option '-A' disables both groups. "];
+ option '-A' disables both groups.", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="2656,217", width="8.3889", height="6.0139", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 2656 217 302 216 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 2656 352 0 78 10 -Animations F 14.000000 11 -Times-Roman c 9 -#000000ff T 2656 318 \
+0 397 59 -By default, the user interface is animated. This is done to F 14.000000 11 -Times-Roman c 9 -#000000ff T 2656 300 0 411\
+ 60 -facilitate a smoother user experience, and to make it easier F 14.000000 11 -Times-Roman c 9 -#000000ff T 2656 282 0 316 46\
+ -for people other than the user at the controls F 14.000000 11 -Times-Roman c 9 -#000000ff T 2656 264 0 166 24 -to see what is\
+ going on. F 14.000000 11 -Times-Roman c 9 -#000000ff T 2656 230 0 303 43 -If viewing large graphs on a slow computer, F 14.000000\
+ 11 -Times-Roman c 9 -#000000ff T 2656 212 0 299 44 -it may be useful to turn the animations off. F 14.000000 11 -Times-Roman \
+c 9 -#000000ff T 2656 178 0 353 50 -In version 1.0, the animations come in two groups: F 14.000000 11 -Times-Roman c 9 -#000000ff\
+ T 2656 160 0 217 32 -  -pan and zoom (switch off: -a) F 14.000000 11 -Times-Roman c 9 -#000000ff T 2656 142 0 202 32 -  -highlighting\
+ (switch off: -b) F 14.000000 11 -Times-Roman c 9 -#000000ff T 2656 108 0 257 35 -The respective command-line options F 14.000000\
+ 11 -Times-Roman c 9 -#000000ff T 2656 90 0 290 42 -may be used to switch them off if desired. F 14.000000 11 -Times-Roman\
+ c 9 -#000000ff T 2656 72 0 250 37 -The option '-A' disables both groups. "];
 	step5ab [label="Layout filter\n\nThe '-f' option controls the layout filter\nthat is used to generate the layout for dot files.\n\nIn version 1.0\
-, xdot files are always read\nwithout a filter, as they already contain\nthe layout information.\n\nTo see which filters are available\
-, use the '-h' option.\n\nIf you want to read xdot files only, you can\nuse '-n' (--no-filter). This option is\nprovided \
-for compatibility with version 0.4.", pos="1410,304", width="7.4444", height="4.9444", _draw_="c 9 -#000000ff e 1410 304 268 178 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 1410 412 0 85 13 -Layout filter F 14.000000 11 -Times-Roman c 9 -#000000ff T 1410 378\
- 0 267 42 -The '-f' option controls the layout filter F 14.000000 11 -Times-Roman c 9 -#000000ff T 1410 360 0 329 50 -that is \
-used to generate the layout for dot files. F 14.000000 11 -Times-Roman c 9 -#000000ff T 1410 326 0 282 42 -In version 1.0, xdot \
-files are always read F 14.000000 11 -Times-Roman c 9 -#000000ff T 1410 308 0 276 41 -without a filter, as they already contain \
-F 14.000000 11 -Times-Roman c 9 -#000000ff T 1410 290 0 160 23 -the layout information. F 14.000000 11 -Times-Roman c 9 -#000000ff\
- T 1410 256 0 363 56 -To see which filters are available, use the '-h' option. F 14.000000 11 -Times-Roman c 9 -#000000ff T 1410\
- 222 0 298 44 -If you want to read xdot files only, you can F 14.000000 11 -Times-Roman c 9 -#000000ff T 1410 204 0 230 38 -use\
- '-n' (--no-filter). This option is F 14.000000 11 -Times-Roman c 9 -#000000ff T 1410 186 0 298 44 -provided for compatibility \
-with version 0.4. "];
-	step5ac [label="Find\n\nThe '-N' option disables incremental find,\nusing traditional find instead.", pos="1905,304", width="5.8056", height="1.5278", _draw_="c 9 -#000000ff e 1905 304 209 55 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 1905 325 0 29 4 -Find F 14.000000 11 -Times-Roman c 9 -#000000ff T 1905 291 0 280 42\
- -The '-N' option disables incremental find, F 14.000000 11 -Times-Roman c 9 -#000000ff T 1905 273 0 202 31 -using traditional \
+, xdot files are always read\nwithout a filter, as they already contain\nthe layout information.\n(This check is based on the filename\
+ extension '.xdot'.)\n\nTo see which filters are available, use the '-h' option.\n\nIf you want to read xdot files only, \
+you can\nuse '-n' (--no-filter). This option is\nprovided for compatibility with version 0.4,\nand for reading xdot graphs from \
+stdin on the command line.", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="1592,217", width="8.5556", height="5.6528", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 1592 217 308 204 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 1592 343 0 85 13 -Layout filter F 14.000000 11 -Times-Roman c 9 -#000000ff T 1592 309\
+ 0 267 42 -The '-f' option controls the layout filter F 14.000000 11 -Times-Roman c 9 -#000000ff T 1592 291 0 329 50 -that is \
+used to generate the layout for dot files. F 14.000000 11 -Times-Roman c 9 -#000000ff T 1592 257 0 282 42 -In version 1.0, xdot \
+files are always read F 14.000000 11 -Times-Roman c 9 -#000000ff T 1592 239 0 276 41 -without a filter, as they already contain \
+F 14.000000 11 -Times-Roman c 9 -#000000ff T 1592 221 0 160 23 -the layout information. F 14.000000 11 -Times-Roman c 9 -#000000ff\
+ T 1592 203 0 377 56 -(This check is based on the filename extension '.xdot'.) F 14.000000 11 -Times-Roman c 9 -#000000ff T 1592\
+ 169 0 363 56 -To see which filters are available, use the '-h' option. F 14.000000 11 -Times-Roman c 9 -#000000ff T 1592 135 \
+0 298 44 -If you want to read xdot files only, you can F 14.000000 11 -Times-Roman c 9 -#000000ff T 1592 117 0 230 38 -use '-n' \
+(--no-filter). This option is F 14.000000 11 -Times-Roman c 9 -#000000ff T 1592 99 0 298 44 -provided for compatibility with version\
+ 0.4, F 14.000000 11 -Times-Roman c 9 -#000000ff T 1592 81 0 420 59 -and for reading xdot graphs from stdin on the command line.\
+ "];
+	step5ac [label="Find\n\nThe '-N' option disables incremental find,\nusing traditional find instead.", style=filled, fillcolor="#FFFFDDB2", fontcolor="#000000", group=0, pos="2127,217", width="5.8056", height="1.5278", _draw_="c 9 -#000000ff C 9 -#ffffddb2 E 2127 217 209 55 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 2127 238 0 29 4 -Find F 14.000000 11 -Times-Roman c 9 -#000000ff T 2127 204 0 280 42\
+ -The '-N' option disables incremental find, F 14.000000 11 -Times-Roman c 9 -#000000ff T 2127 186 0 202 31 -using traditional \
 find instead. "];
-	welcome -> step2 [pos="e,1474,2352.3 1474,2387.8 1474,2379.5 1474,2371 1474,2362.4", _draw_="c 9 -#000000ff B 4 1474 2388 1474 2380 1474 2371 1474 2362 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1478 2362 1474 2352 1471 2362 "];
-	step2 -> step2a [pos="e,1108.4,2032.3 1272.3,2121.8 1233.8,2101.7 1194,2080.5 1157,2060 1144,2052.8 1130.5,2045.1 1117.1,2037.4", _draw_="c 9 -#000000ff B 7 1272 2122 1234 2102 1194 2080 1157 2060 1144 2053 1131 2045 1117 2037 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1119 2034 1108 2032 1115 2040 "];
-	step2 -> step2b [pos="e,1345.2,2029.3 1391.7,2099.6 1377.7,2078.3 1363.5,2057 1350.9,2037.9", _draw_="c 9 -#000000ff B 4 1392 2100 1378 2078 1364 2057 1351 2038 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1354 2036 1345 2029 1348 2040 "];
-	step2 -> step2c [pos="e,1474,1843.6 1474,2095.9 1474,2017.1 1474,1919.1 1474,1853.8", _draw_="c 9 -#000000ff B 4 1474 2096 1474 2017 1474 1919 1474 1854 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1478 1854 1474 1844 1471 1854 "];
-	step2 -> step2d [pos="e,1658.9,2041.9 1595.4,2104.4 1614.4,2085.7 1633.6,2066.8 1651.4,2049.3", _draw_="c 9 -#000000ff B 4 1595 2104 1614 2086 1634 2067 1651 2049 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1654 2051 1659 2042 1649 2046 "];
-	step2 -> step3 [pos="e,2289.3,2018.5 1753.1,2153.7 1920,2111.6 2128.3,2059.1 2279.5,2021", _draw_="c 9 -#000000ff B 4 1753 2154 1920 2112 2128 2059 2279 2021 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2280 2024 2289 2019 2279 2018 "];
-	step3 -> step3a [pos="e,2189.9,1825.9 2351.1,1905.4 2301.3,1880.8 2245.4,1853.2 2199.1,1830.4", _draw_="c 9 -#000000ff B 4 2351 1905 2301 1881 2245 1853 2199 1830 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2200 1827 2190 1826 2197 1833 "];
-	step3 -> step3b [pos="e,3076,1825.5 2685.7,1925.8 2785.2,1903.2 2906.4,1874.2 3014,1844 3031,1839.2 3048.7,1833.9 3066.3,1828.5", _draw_="c 9 -#000000ff B 7 2686 1926 2785 1903 2906 1874 3014 1844 3031 1839 3049 1834 3066 1828 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3067 1832 3076 1825 3065 1825 "];
-	step3 -> step1 [pos="e,2659.2,1837.8 2576.2,1899.7 2600.8,1881.4 2627.2,1861.7 2651.1,1843.8", _draw_="c 9 -#000000ff B 4 2576 1900 2601 1881 2627 1862 2651 1844 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2653 1847 2659 1838 2649 1841 "];
-	step2c -> step2and3common [pos="e,1474,1640.8 1474,1720.3 1474,1698.4 1474,1673.6 1474,1651", _draw_="c 9 -#000000ff B 4 1474 1720 1474 1698 1474 1674 1474 1651 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1478 1651 1474 1641 1471 1651 "];
-	step2d -> step2and3common [pos="e,1578.3,1633.6 1727.4,1894.4 1721,1841.7 1706,1771.8 1671,1720 1649.4,1688.1 1618.1,1661 1586.7,1639.3", _draw_="c 9 -#000000ff B 7 1727 1894 1721 1842 1706 1772 1671 1720 1649 1688 1618 1661 1587 1639 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1589 1636 1578 1634 1585 1642 "];
-	step3a -> step2and3common [pos="e,1582.6,1632.8 1937.1,1748.2 1865.6,1731.6 1781.3,1709.7 1707,1684 1668.7,1670.7 1628.1,1653.6 1591.7,1637", _draw_="c 9 -#000000ff B 7 1937 1748 1866 1732 1781 1710 1707 1684 1669 1671 1628 1654 1592 1637 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1593 1634 1583 1633 1590 1640 "];
-	step1 -> step1a [pos="e,3316.8,1654.8 2919.4,1739.6 2950.9,1732.8 2983.3,1726 3014,1720 3108.2,1701.6 3134.5,1709.6 3227,1684 3253.4,1676.7 3280.7,1667.8\
- 3307.4,1658.2", _draw_="c 9 -#000000ff B 10 2919 1740 2951 1733 2983 1726 3014 1720 3108 1702 3134 1710 3227 1684 3253 1677 3281 1668 3307 1658 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3309 1661 3317 1655 3306 1655 "];
-	step1 -> step1b [pos="e,2889.5,1336.1 2796.3,1725.5 2807.3,1712.8 2817.6,1698.7 2825,1684 2867.4,1599.2 2845.5,1567.2 2863,1474 2870.9,1431.9 2879.9,1385.3\
- 2887.5,1346.1", _draw_="c 9 -#000000ff B 10 2796 1726 2807 1713 2818 1699 2825 1684 2867 1599 2846 1567 2863 1474 2871 1432 2880 1385 2887 1346 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2891 1347 2889 1336 2884 1345 "];
-	step1a -> step1aa [pos="e,3274.8,1300.3 3387.8,1483.7 3373.9,1469.1 3360.6,1453.6 3349,1438 3319.5,1398.1 3294.9,1347.2 3278.7,1309.6", _draw_="c 9 -#000000ff B 7 3388 1484 3374 1469 3361 1454 3349 1438 3320 1398 3295 1347 3279 1310 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3282 1308 3275 1300 3275 1311 "];
-	step1a -> step1ab [pos="e,3447.7,1301 3477.8,1474.5 3468.3,1419.9 3457.1,1355.5 3449.4,1311", _draw_="c 9 -#000000ff B 4 3478 1474 3468 1420 3457 1356 3449 1311 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3453 1310 3448 1301 3446 1311 "];
-	step1a -> step1ac [pos="e,3605,1300.4 3536.6,1475.3 3558.1,1420.2 3583.8,1354.7 3601.3,1309.9", _draw_="c 9 -#000000ff B 4 3537 1475 3558 1420 3584 1355 3601 1310 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3605 1311 3605 1300 3598 1308 "];
-	step1a -> step1b [pos="e,2994,1331 3304.1,1508.1 3255.4,1487.4 3204,1463.4 3158,1438 3104.4,1408.4 3048.1,1370.5 3002.2,1337", _draw_="c 9 -#000000ff B 7 3304 1508 3255 1487 3204 1463 3158 1438 3104 1408 3048 1370 3002 1337 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3004 1334 2994 1331 3000 1340 "];
-	step1b -> step1a [pos="e,3313.3,1504.6 3007.8,1329.3 3057.2,1364.5 3118.2,1406.1 3176,1438 3216.4,1460.3 3261.1,1481.6 3303.9,1500.5", _draw_="c 9 -#000000ff B 7 3008 1329 3057 1364 3118 1406 3176 1438 3216 1460 3261 1482 3304 1500 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3303 1504 3313 1505 3306 1497 "];
-	step1ba -> step1b [pos="e,2917,1336.1 2947.3,1534.9 2939.9,1486.5 2927.9,1407.6 2918.6,1346.2", _draw_="c 9 -#000000ff B 4 2947 1535 2940 1487 2928 1408 2919 1346 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2922 1345 2917 1336 2915 1347 "];
-	step1bb -> step1b [pos="e,2960.4,1334.2 3106.5,1537.9 3071.4,1488.9 3011.7,1405.7 2966.4,1342.5", _draw_="c 9 -#000000ff B 4 3107 1538 3071 1489 3012 1406 2966 1343 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2969 1340 2960 1334 2963 1344 "];
-	step1bc -> step1b [pos="e,2863.5,1335.1 2756.5,1536.6 2782.4,1487.8 2825.6,1406.5 2858.7,1344.1", _draw_="c 9 -#000000ff B 4 2757 1537 2782 1488 2826 1407 2859 1344 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2862 1346 2864 1335 2856 1342 "];
-	step1c -> step1d [pos="e,3968,700.3 3968.3,471.45 3968.9,541.27 3968.9,621.8 3968.1,689.91", _draw_="c 9 -#000000ff B 4 3968 471 3969 541 3969 622 3968 690 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3965 690 3968 700 3972 690 "];
-	step1d -> step1c [pos="e,3955.7,471.45 3956,700.3 3955.2,633.38 3955,552.81 3955.6,481.84", _draw_="c 9 -#000000ff B 4 3956 700 3955 633 3955 553 3956 482 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3959 481 3956 471 3952 481 "];
-	step1d -> step1e [pos="e,3973.7,1201.9 3971.2,983.63 3973.2,1054.2 3974.3,1136.2 3973.8,1191.8", _draw_="c 9 -#000000ff B 4 3971 984 3973 1054 3974 1136 3974 1192 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3970 1192 3974 1202 3977 1192 "];
-	step1e -> step1d [pos="e,3958.3,983.63 3964.2,1201.9 3961.4,1148.9 3959.2,1066.5 3958.4,993.81", _draw_="c 9 -#000000ff B 4 3964 1202 3961 1149 3959 1066 3958 994 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3962 994 3958 984 3955 994 "];
-	step1a -> step1e [pos="e,3889.8,1309.2 3627.7,1488.7 3653.1,1472 3679.4,1454.6 3704,1438 3763.5,1397.7 3829.8,1351 3881.4,1315.1", _draw_="c 9 -#000000ff B 7 3628 1489 3653 1472 3679 1455 3704 1438 3764 1398 3830 1351 3881 1315 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3884 1318 3890 1309 3880 1312 "];
-	step1e -> step1a [pos="e,3640.5,1492 3903.9,1310 3854.2,1346.5 3784.4,1395.8 3722,1438 3698.6,1453.8 3673.6,1470.4 3649.1,1486.3", _draw_="c 9 -#000000ff B 7 3904 1310 3854 1346 3784 1396 3722 1438 3699 1454 3674 1470 3649 1486 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3647 1484 3640 1492 3651 1489 "];
-	step1 -> step1c [pos="e,4113.9,448.5 2910.9,1737.9 2944.9,1730.8 2980.4,1724.4 3014,1720 3198.8,1695.8 3674.6,1741.2 3852,1684 4041.7,1622.9 4130.5,1612.4\
- 4227,1438 4312.4,1283.6 4293.6,810.45 4235,644 4210.9,575.46 4166.5,510.51 4120.4,456.11", _draw_="c 9 -#000000ff B 16 2911 1738 2945 1731 2980 1724 3014 1720 3199 1696 3675 1741 3852 1684 4042 1623 4131 1612 4227 1438 4312 1284\
- 4294 810 4235 644 4211 575 4166 511 4120 456 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 4123 454 4114 449 4118 458 "];
-	step1 -> step1d [pos="e,3709.1,882.69 2668.9,1725.7 2658.3,1713.1 2648.9,1699 2643,1684 2618.3,1621.1 2599.6,1127.8 2643,1076 2660,1055.7 3319.1,946.07\
- 3699,884.32", _draw_="c 9 -#000000ff B 10 2669 1726 2658 1713 2649 1699 2643 1684 2618 1621 2600 1128 2643 1076 2660 1056 3319 946 3699 884 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3700 888 3709 883 3699 881 "];
-	step1 -> step1e [pos="e,3961.8,1312.2 2910.9,1738.1 2945,1731 2980.4,1724.5 3014,1720 3096.8,1708.9 3695.4,1730.2 3765,1684 3889.9,1601.2 3940.9,1419.8\
- 3959.9,1322.2", _draw_="c 9 -#000000ff B 10 2911 1738 2945 1731 2980 1724 3014 1720 3097 1709 3695 1730 3765 1684 3890 1601 3941 1420 3960 1322 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3963 1323 3962 1312 3956 1321 "];
-	step1 -> step4 [pos="e,2090.8,1621.4 2557.6,1738 2422.4,1704.2 2236.5,1657.8 2100.5,1623.8", _draw_="c 9 -#000000ff B 4 2558 1738 2422 1704 2236 1658 2101 1624 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2101 1620 2091 1621 2100 1627 "];
-	step4 -> step4a [pos="e,844.27,1348.5 1811.9,1514.9 1779.2,1498.6 1742.6,1483.2 1707,1474 1553,1434.1 1141.7,1491.8 992,1438 941.53,1419.8 892.72,1387.4\
- 852.25,1355", _draw_="c 9 -#000000ff B 10 1812 1515 1779 1499 1743 1483 1707 1474 1553 1434 1142 1492 992 1438 942 1420 893 1387 852 1355 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 854 1352 844 1349 850 1358 "];
-	step4 -> step4b [pos="e,1415.7,1390.7 1807.7,1516 1775.9,1500.3 1740.8,1485 1707,1474 1617.8,1445 1585,1475.6 1499,1438 1473.4,1426.8 1448.1,1412.3 1424.1\
-,1396.4", _draw_="c 9 -#000000ff B 10 1808 1516 1776 1500 1741 1485 1707 1474 1618 1445 1585 1476 1499 1438 1473 1427 1448 1412 1424 1396 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1426 1393 1416 1391 1422 1399 "];
-	step4a -> step4aa [pos="e,749,970.81 749,1152.3 749,1100.4 749,1037.1 749,981.16", _draw_="c 9 -#000000ff B 4 749 1152 749 1100 749 1037 749 981 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 753 981 749 971 746 981 "];
-	step4a -> step4ab [pos="e,352.09,926.24 643.08,1168.7 559.72,1099.3 443.98,1002.8 359.87,932.72", _draw_="c 9 -#000000ff B 4 643 1169 560 1099 444 1003 360 933 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 362 930 352 926 358 935 "];
-	step4aa -> step4c [pos="e,749,572.14 749,713.48 749,673.66 749,628.13 749,582.25", _draw_="c 9 -#000000ff B 4 749 713 749 674 749 628 749 582 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 753 582 749 572 746 582 "];
-	step4ab -> step4c [pos="e,541.97,527.66 331.84,754.66 387.08,694.99 463.04,612.93 535.02,535.17", _draw_="c 9 -#000000ff B 4 332 755 387 695 463 613 535 535 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 538 537 542 528 533 533 "];
-	step4 -> step4c [pos="e,936.2,536.23 1811.8,1514.9 1779.2,1498.7 1742.5,1483.2 1707,1474 1633.6,1454.9 1078.5,1491.8 1025,1438 962.7,1375.4 1015.6,727.58\
- 987,644 975.5,610.35 959.59,577.03 941.39,545.17", _draw_="c 9 -#000000ff B 13 1812 1515 1779 1499 1743 1483 1707 1474 1634 1455 1079 1492 1025 1438 963 1375 1016 728 987 644 975 610 960 \
-577 941 545 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 944 543 936 536 938 547 "];
-	step4 -> step4d [pos="e,1858.4,1400.6 1894.6,1503.9 1884.8,1475.8 1873.2,1442.8 1861.8,1410.2", _draw_="c 9 -#000000ff B 4 1895 1504 1885 1476 1873 1443 1862 1410 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1865 1409 1858 1401 1858 1411 "];
-	step4 -> step5 [pos="e,2287.3,1312.1 2014.9,1511.9 2047.3,1488.6 2083.8,1462.2 2117,1438 2171.3,1398.4 2231.9,1353.4 2279.2,1318.1", _draw_="c 9 -#000000ff B 7 2015 1512 2047 1489 2084 1462 2117 1438 2171 1398 2232 1353 2279 1318 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2281 1321 2287 1312 2277 1315 "];
-	step5 -> step5a [pos="e,2361,1040.4 2361,1198.9 2361,1159.6 2361,1105.1 2361,1050.6", _draw_="c 9 -#000000ff B 4 2361 1199 2361 1160 2361 1105 2361 1051 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2365 1050 2361 1040 2358 1050 "];
-	step5a -> step5aa [pos="e,2461.7,596.8 2440.9,647.39 2446.5,633.95 2452.1,620.23 2457.8,606.4", _draw_="c 9 -#000000ff B 4 2441 647 2446 634 2452 620 2458 606 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2461 607 2462 597 2455 605 "];
-	step5a -> step5ab [pos="e,1528.9,463.65 1991.8,750.51 1888.2,715.33 1778.9,668.61 1687,608 1631.2,571.17 1579.1,520.58 1535.5,471.24", _draw_="c 9 -#000000ff B 7 1992 751 1888 715 1779 669 1687 608 1631 571 1579 521 1536 471 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1538 469 1529 464 1533 473 "];
-	step5a -> step5ac [pos="e,1939.8,358.25 2174.5,664.9 2156.7,646.1 2139.2,626.93 2123,608 2055.4,529.07 1987.2,430.08 1945.5,366.91", _draw_="c 9 -#000000ff B 7 2175 665 2157 646 2139 627 2123 608 2055 529 1987 430 1945 367 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1948 365 1940 358 1942 369 "];
+	welcome -> step2 [pos="e,1274,2051.6 1274,2087.8 1274,2079.3 1274,2070.5 1274,2061.6", _draw_="c 9 -#000000ff B 4 1274 2088 1274 2079 1274 2070 1274 2062 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1278 2062 1274 2052 1271 2062 "];
+	step2 -> step2a [pos="e,908.36,1734.3 1072.7,1823.8 1034,1803.7 994.1,1782.5 957,1762 944.01,1754.8 930.5,1747.1 917.12,1739.4", _draw_="c 9 -#000000ff B 7 1073 1824 1034 1804 994 1783 957 1762 944 1755 930 1747 917 1739 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 919 1736 908 1734 915 1742 "];
+	step2 -> step2b [pos="e,1145.2,1731 1192.5,1802.2 1178.1,1780.6 1163.7,1758.9 1150.8,1739.5", _draw_="c 9 -#000000ff B 4 1192 1802 1178 1781 1164 1759 1151 1739 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1154 1737 1145 1731 1148 1741 "];
+	step2 -> step2c [pos="e,1274,1545.8 1274,1798.3 1274,1719.7 1274,1621.5 1274,1556", _draw_="c 9 -#000000ff B 4 1274 1798 1274 1720 1274 1622 1274 1556 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1278 1556 1274 1546 1271 1556 "];
+	step2 -> step2d [pos="e,1458.8,1743.8 1394.7,1806.6 1413.9,1787.9 1433.3,1768.8 1451.2,1751.2", _draw_="c 9 -#000000ff B 4 1395 1807 1414 1788 1433 1769 1451 1751 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1454 1753 1459 1744 1449 1748 "];
+	step2 -> step3 [pos="e,2073.9,1720.8 1551,1854.3 1713.9,1812.7 1916.2,1761 2063.8,1723.4", _draw_="c 9 -#000000ff B 4 1551 1854 1714 1813 1916 1761 2064 1723 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2065 1727 2074 1721 2063 1720 "];
+	step3 -> step3a [pos="e,1986.7,1528.3 2139.2,1607 2092.1,1582.7 2039.4,1555.5 1995.6,1532.9", _draw_="c 9 -#000000ff B 4 2139 1607 2092 1583 2039 1556 1996 1533 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1997 1530 1987 1528 1994 1536 "];
+	step3 -> step3b [pos="e,2841.7,1527.4 2465.2,1626.6 2560.9,1604 2676.9,1575.3 2780,1546 2796.9,1541.2 2814.6,1535.9 2832,1530.4", _draw_="c 9 -#000000ff B 7 2465 1627 2561 1604 2677 1575 2780 1546 2797 1541 2815 1536 2832 1530 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2833 1534 2842 1527 2831 1527 "];
+	step3 -> step1 [pos="e,2430.2,1539.8 2352.8,1601.7 2375.6,1583.5 2399.9,1564 2422.1,1546.3", _draw_="c 9 -#000000ff B 4 2353 1602 2376 1584 2400 1564 2422 1546 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2425 1549 2430 1540 2420 1543 "];
+	step2c -> step2and3common [pos="e,1274,1329.7 1274,1422.4 1274,1396.6 1274,1366.5 1274,1339.8", _draw_="c 9 -#000000ff B 4 1274 1422 1274 1397 1274 1367 1274 1340 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1278 1340 1274 1330 1271 1340 "];
+	step2d -> step2and3common [pos="e,1370.2,1323.6 1526.6,1596.3 1519.9,1543.9 1504.8,1474.4 1471,1422 1447.5,1385.6 1412.4,1354.2 1378.3,1329.4", _draw_="c 9 -#000000ff B 7 1527 1596 1520 1544 1505 1474 1471 1422 1448 1386 1412 1354 1378 1329 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1380 1327 1370 1324 1376 1332 "];
+	step3a -> step2and3common [pos="e,1371.3,1323.4 1733.1,1451 1662.3,1434.8 1579.5,1413 1507,1386 1464.4,1370.2 1419.5,1348.6 1380.5,1328.3", _draw_="c 9 -#000000ff B 7 1733 1451 1662 1435 1580 1413 1507 1386 1464 1370 1419 1349 1381 1328 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1382 1325 1371 1323 1379 1331 "];
+	step1 -> step1a [pos="e,3093.7,1353.4 2684.2,1441.8 2716.1,1434.9 2749,1428.1 2780,1422 2874.2,1403.6 2900.4,1411.5 2993,1386 3022.8,1377.8 3053.7,1367.7\
+ 3083.9,1356.9", _draw_="c 9 -#000000ff B 10 2684 1442 2716 1435 2749 1428 2780 1422 2874 1404 2900 1412 2993 1386 3023 1378 3054 1368 3084 1357 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3085 1360 3094 1353 3083 1354 "];
+	step1 -> step1b [pos="e,2663.4,1057.2 2562.3,1427.9 2573.4,1415.1 2583.7,1400.9 2591,1386 2637.6,1290.5 2599.5,1252.1 2629,1150 2637,1122.3 2648.1,1093.1\
+ 2659.4,1066.5", _draw_="c 9 -#000000ff B 10 2562 1428 2573 1415 2584 1401 2591 1386 2638 1291 2600 1252 2629 1150 2637 1122 2648 1093 2659 1066 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2663 1068 2663 1057 2656 1065 "];
+	step1a -> step1aa [pos="e,3119.3,1011 3213.5,1155.1 3203.8,1141.3 3194.1,1127.4 3185,1114 3164.2,1083.2 3142,1047.9 3124.8,1019.9", _draw_="c 9 -#000000ff B 7 3214 1155 3204 1141 3194 1127 3185 1114 3164 1083 3142 1048 3125 1020 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3128 1018 3119 1011 3122 1021 "];
+	step1a -> step1ab [pos="e,3279.1,1013.1 3288.7,1150.3 3285.6,1106.4 3282.3,1058.7 3279.8,1023.2", _draw_="c 9 -#000000ff B 4 3289 1150 3286 1106 3282 1059 3280 1023 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3283 1023 3279 1013 3276 1023 "];
+	step1a -> step1ac [pos="e,3435.2,1011.3 3359,1152.8 3383.7,1107 3410.8,1056.7 3430.4,1020.3", _draw_="c 9 -#000000ff B 4 3359 1153 3384 1107 3411 1057 3430 1020 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3434 1022 3435 1011 3427 1018 "];
+	step1a -> step1b [pos="e,2851.8,1045.8 3110.6,1176.9 3030.3,1136.6 2937.5,1089.6 2861,1050.5", _draw_="c 9 -#000000ff B 4 3111 1177 3030 1137 2937 1090 2861 1051 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2862 1047 2852 1046 2859 1053 "];
+	step1b -> step1a [pos="e,3118.3,1174.4 2860.8,1044.3 2936.9,1082.3 3029.1,1128.9 3109.1,1169.7", _draw_="c 9 -#000000ff B 4 2861 1044 2937 1082 3029 1129 3109 1170 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3108 1173 3118 1174 3111 1167 "];
+	step1ba -> step1b [pos="e,2710.2,1058.1 2717.9,1223.9 2716,1183.1 2713.1,1120.9 2710.6,1068.2", _draw_="c 9 -#000000ff B 4 2718 1224 2716 1183 2713 1121 2711 1068 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2714 1068 2710 1058 2707 1068 "];
+	step1bb -> step1b [pos="e,2763.2,1056.3 2874.7,1226.4 2847.5,1184.8 2804.6,1119.4 2768.9,1064.9", _draw_="c 9 -#000000ff B 4 2875 1226 2847 1185 2805 1119 2769 1065 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2772 1063 2763 1056 2766 1067 "];
+	step1bc -> step1b [pos="e,2645.9,1056.3 2528.6,1226.4 2557.4,1184.8 2602.6,1119.1 2640.1,1064.6", _draw_="c 9 -#000000ff B 4 2529 1226 2557 1185 2603 1119 2640 1065 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2643 1066 2646 1056 2637 1063 "];
+	step1c -> step1d [pos="e,3840.6,470 3840.7,404.62 3840.8,423.06 3840.7,441.69 3840.7,459.92", _draw_="c 9 -#000000ff B 4 3841 405 3841 423 3841 442 3841 460 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3837 460 3841 470 3844 460 "];
+	step1d -> step1c [pos="e,3827.3,404.62 3827.4,470 3827.3,451.86 3827.2,433.19 3827.3,414.62", _draw_="c 9 -#000000ff B 4 3827 470 3827 452 3827 433 3827 415 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3831 415 3827 405 3824 415 "];
+	step1d -> step1e [pos="e,3846.7,907.43 3845,788.19 3846,826.43 3846.7,865.4 3846.7,897.32", _draw_="c 9 -#000000ff B 4 3845 788 3846 826 3847 865 3847 897 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3843 897 3847 907 3850 897 "];
+	step1e -> step1d [pos="e,3831.5,788.19 3836,907.43 3834.3,876.6 3832.8,837.6 3831.7,798.64", _draw_="c 9 -#000000ff B 4 3836 907 3834 877 3833 838 3832 799 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3835 798 3831 788 3828 798 "];
+	step1a -> step1e [pos="e,3733.8,1025.8 3466.4,1171.7 3550.2,1125.5 3649.2,1071.4 3724.7,1030.7", _draw_="c 9 -#000000ff B 4 3466 1172 3550 1125 3649 1071 3725 1031 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3727 1034 3734 1026 3723 1027 "];
+	step1e -> step1a [pos="e,3475,1174 3743.1,1026.7 3670.7,1067.1 3570.8,1121.9 3483.9,1169.2", _draw_="c 9 -#000000ff B 4 3743 1027 3671 1067 3571 1122 3484 1169 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3482 1166 3475 1174 3485 1172 "];
+	step1 -> step1c [pos="e,4060.3,358.94 2675.4,1440.1 2709.9,1432.9 2745.9,1426.4 2780,1422 2984,1395.7 3508.5,1446.9 3705,1386 3921.7,1318.9 4024.9,1311.3\
+ 4137,1114 4207.7,989.56 4206.5,599.25 4145,470 4126.6,431.3 4099.1,396.59 4067.8,366.17", _draw_="c 9 -#000000ff B 16 2675 1440 2710 1433 2746 1426 2780 1422 2984 1396 3509 1447 3705 1386 3922 1319 4025 1311 4137 1114 4208 990\
+ 4206 599 4145 470 4127 431 4099 397 4068 366 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 4070 363 4060 359 4065 368 "];
+	step1 -> step1d [pos="e,3534.3,649.24 2435.1,1427.9 2424.4,1415.3 2414.9,1401.1 2409,1386 2386.2,1327.9 2367.9,871.05 2409,824 2481.2,741.25 3127.1,680.14\
+ 3524.1,650.01", _draw_="c 9 -#000000ff B 10 2435 1428 2424 1415 2415 1401 2409 1386 2386 1328 2368 871 2409 824 2481 741 3127 680 3524 650 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3525 653 3534 649 3524 647 "];
+	step1 -> step1e [pos="e,3827.6,1030.5 2675.8,1440.2 2710.2,1433 2746.1,1426.5 2780,1422 2870.5,1410.1 3522.9,1433.3 3601,1386 3728.4,1308.9 3795.6,1137.6\
+ 3824.7,1040.2", _draw_="c 9 -#000000ff B 10 2676 1440 2710 1433 2746 1426 2780 1422 2871 1410 3523 1433 3601 1386 3728 1309 3796 1138 3825 1040 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 3828 1041 3828 1030 3821 1039 "];
+	step1 -> step4 [pos="e,1884.5,1313.3 2335.3,1438.3 2205.8,1402.4 2025.9,1352.5 1894.3,1316", _draw_="c 9 -#000000ff B 4 2335 1438 2206 1402 2026 1353 1894 1316 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1895 1313 1884 1313 1893 1319 "];
+	step4 -> step4a [pos="e,883.11,1064.1 1622.6,1202.1 1587.6,1181.8 1546.9,1161.8 1507,1150 1286.9,1085.1 1210.9,1182.7 992,1114 957.94,1103.3 923.63,1087\
+ 891.97,1069.1", _draw_="c 9 -#000000ff B 10 1623 1202 1588 1182 1547 1162 1507 1150 1287 1085 1211 1183 992 1114 958 1103 924 1087 892 1069 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 894 1066 883 1064 890 1072 "];
+	step4 -> step4b [pos="e,1337,1073.7 1613.7,1204 1580.2,1185.3 1542.6,1165.7 1507,1150 1461.5,1129.9 1444.8,1137.5 1401,1114 1382.3,1103.9 1363.4,1092.1\
+ 1345.3,1079.5", _draw_="c 9 -#000000ff B 10 1614 1204 1580 1185 1543 1166 1507 1150 1461 1130 1445 1138 1401 1114 1382 1104 1363 1092 1345 1079 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1347 1077 1337 1074 1343 1082 "];
+	step4a -> step4aa [pos="e,749,757.78 749,851.04 749,824.22 749,795.49 749,767.89", _draw_="c 9 -#000000ff B 4 749 851 749 824 749 795 749 768 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 753 768 749 758 746 768 "];
+	step4a -> step4ab [pos="e,369.77,710.09 611.6,875.19 538.7,825.42 449.71,764.67 378.38,715.96", _draw_="c 9 -#000000ff B 4 612 875 539 825 450 765 378 716 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 380 713 370 710 376 719 "];
+	step4aa -> step4c [pos="e,749,432.33 749,500.34 749,481.75 749,462.19 749,442.38", _draw_="c 9 -#000000ff B 4 749 500 749 482 749 462 749 442 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 753 442 749 432 746 442 "];
+	step4ab -> step4c [pos="e,555.31,377.24 352.68,544.88 408.83,498.42 480.6,439.05 547.59,383.63", _draw_="c 9 -#000000ff B 4 353 545 409 498 481 439 548 384 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 550 386 555 377 545 381 "];
+	step4 -> step4c [pos="e,933.92,382.92 1622.6,1202.2 1587.6,1181.9 1546.9,1161.9 1507,1150 1455.5,1134.7 1062.7,1152.3 1025,1114 974.71,1062.9 1015.4,535.83\
+ 987,470 975.05,442.27 958.66,415.7 940.04,390.91", _draw_="c 9 -#000000ff B 13 1623 1202 1588 1182 1547 1162 1507 1150 1456 1135 1063 1152 1025 1114 975 1063 1015 536 987 470 975 442 959 \
+416 940 391 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 943 389 934 383 937 393 "];
+	step4 -> step4d [pos="e,1672.8,1085.7 1701.3,1193.3 1693.4,1163.7 1684.2,1128.9 1675.4,1095.5", _draw_="c 9 -#000000ff B 4 1701 1193 1693 1164 1684 1129 1675 1096 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1679 1095 1673 1086 1672 1096 "];
+	step4 -> step5 [pos="e,2052.9,1023.6 1812.4,1200.7 1882.1,1149.3 1977.4,1079.1 2044.8,1029.5", _draw_="c 9 -#000000ff B 4 1812 1201 1882 1149 1977 1079 2045 1030 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2047 1032 2053 1024 2043 1027 "];
+	step5 -> step5a [pos="e,2127,788.16 2127,911.32 2127,879.82 2127,839 2127,798.23", _draw_="c 9 -#000000ff B 4 2127 911 2127 880 2127 839 2127 798 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2131 798 2127 788 2124 798 "];
+	step5a -> step5aa [pos="e,2451.3,376.42 2299.8,494.38 2345.7,458.69 2395.7,419.74 2443.4,382.61", _draw_="c 9 -#000000ff B 4 2300 494 2346 459 2396 420 2443 383 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2446 385 2451 376 2441 380 "];
+	step5a -> step5ab [pos="e,1792.9,371.73 1952.9,494.95 1904.4,457.6 1851.3,416.65 1801,377.93", _draw_="c 9 -#000000ff B 4 1953 495 1904 458 1851 417 1801 378 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 1803 375 1793 372 1799 381 "];
+	step5a -> step5ac [pos="e,2127,272.17 2127,469.71 2127,404.46 2127,332.61 2127,282.26", _draw_="c 9 -#000000ff B 4 2127 470 2127 404 2127 333 2127 282 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 2131 282 2127 272 2124 282 "];
 }"""
 
 
