@@ -20,10 +20,14 @@
 
 '''Visualize dot graphs via the xdot format.'''
 
-__author__ = "Jose Fonseca"
-
-__version__ = "0.4"
-
+# About these fields:
+# http://stackoverflow.com/questions/1523427/python-what-is-the-common-header-format
+__author__ = "Jose Fonseca and Juha Jeronen"
+__copyright__ = "Copyright 2008, Jose Fonseca; 2012, Juha Jeronen"
+__credits__ = ["Jose Fonseca", "Juha Jeronen"]
+__license__ = "LGPL v3"
+__version__ = "1.0"
+__status__ = "Production"
 
 import os
 import sys
