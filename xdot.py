@@ -2750,7 +2750,10 @@ class DotWindow(gtk.Window):
             return (retcode == 0)
 
         about = gtk.AboutDialog()
-        about.connect("activate-link", open_url)
+        try:
+            about.connect("activate-link", open_url)
+        except TypeError:  # old PyGTK (2.17) doesn't have activate-link
+            pass
         about.set_program_name("Dot Viewer")
         about.set_version(__version__)
         about.set_comments("Visualize dot graphs via the xdot format.")
