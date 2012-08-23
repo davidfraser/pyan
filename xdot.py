@@ -2491,6 +2491,7 @@ class DotWidget(gtk.DrawingArea):
         if not self.animate  or  self.animation is None  or  isinstance(self.animation, NoAnimation)  or  self.animation.get_t() >= 1.0:
             self.target_x = self.x
             self.target_y = self.y
+            self.target_zoom_ratio = self.zoom_ratio
 
         if (event.button == 1  or  event.button == 3) and self.is_click(event):
             x, y = int(event.x), int(event.y)
