@@ -2011,7 +2011,7 @@ class DotWidget(gtk.DrawingArea):
             while gtk.events_pending():
                 gtk.main_iteration_do(True)
 
-            # Show at max 25 lines. If GraphViz crashes, the error message
+            # Show at max 20 lines of errors. If GraphViz crashes, the error message
             # can be *long*. This in turn crashes Compiz when the error message
             # is shown.
             #
