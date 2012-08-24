@@ -29,6 +29,13 @@ __license__ = "LGPL v3"
 __version__ = "1.0"
 __status__ = "Production"
 
+# Note: the multiscale sfdp usually requires tweaking -GK=xxx,
+# so it's not useful as an option-free filter.
+#
+__filter_choices__ = ('[None]', 'dot', 'neato', 'twopi', 'circo', 'fdp')
+__no_filter_str__  = '[None]'
+__default_filter__ = 'dot'
+
 import os
 import sys
 import subprocess
@@ -61,6 +68,13 @@ def get_highlight_animation():
     else:
         return highlight_animation
 
+def get_active_text(combobox):
+    # http://www.pygtk.org/pygtk2tutorial/sec-ComboBoxAndComboboxEntry.html
+    model = combobox.get_model()
+    active = combobox.get_active()
+    if active < 0:
+        return None
+    return model[active][0]
 
 def mix_colors(rgb1, rgb2, t):
     """Mix two RGB or RGBA colors.
@@ -1911,7 +1925,8 @@ class DotWidget(gtk.DrawingArea):
         'clicked' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, gtk.gdk.Event))
     }
 
-    filter = 'dot'  # default filter (see also main())
+    global __default_filter__
+    filter = __default_filter__  # set default filter (see also main())
 
     def __init__(self):
         gtk.DrawingArea.__init__(self)
@@ -2604,6 +2619,12 @@ class DotWidget(gtk.DrawingArea):
 
 class DotWindow(gtk.Window):
 
+    # Toolbar layout for UIManager.
+    #
+    # The Find field and filter selector are added manually later.
+    #
+    # Note that we must set_default_size() our window so that all the items fit.
+    #
     ui = '''
     <ui>
         <toolbar name="ToolBar">
@@ -2647,7 +2668,7 @@ class DotWindow(gtk.Window):
         window = self
 
         window.set_title(self.base_title)
-        window.set_default_size(640, 512)
+        window.set_default_size(720, 512)
         vbox = gtk.VBox()
         window.add(vbox)
 
@@ -2720,6 +2741,12 @@ class DotWindow(gtk.Window):
         # Note that everything in a toolbar must be a ToolItem; hence we wrap
         # the text entry widget into a ToolItem before adding it.
         #
+        def toolitemify(widget):
+            item = gtk.ToolItem()
+            item.add(widget)
+            item.set_size_request(*widget.size_request())
+            return item
+
         self.find_displaying_placeholder = True
         self.matching_items = []
         self.match_idx = -1  # currently focused match
@@ -2732,14 +2759,26 @@ class DotWindow(gtk.Window):
         self.find_entry.connect("focus-out-event", self.on_find_entry_focus_out)
         self.find_entry.connect("motion-notify-event", self.on_find_entry_motion_notify)
         self.clear_find_field()
-        item = gtk.ToolItem()
-        item.add(self.find_entry)
-        item.set_size_request(*self.find_entry.size_request())
+        item = toolitemify(self.find_entry)
         if self.incremental_find:
             item.set_tooltip_text("Find [Ctrl+F = Focus, Return = Jump to first match, Escape = Clear]")
         else:
             item.set_tooltip_text("Find [Ctrl+F = Focus, Return = Search, Escape = Clear]")
         toolbar.insert(item, 9)  # 9 = after FindClear
+
+        # Layout filter selector
+        #
+        self.combobox = gtk.combo_box_new_text()
+        self.combobox.connect( 'changed', self.on_filter_change )
+        self.combobox.connect( 'key-press-event', self.on_key_press_event )
+        self.combobox_idx_by_name = {}
+        global __filter_choices__
+        for i,f in enumerate(__filter_choices__):
+            self.combobox.append_text( f )
+            self.combobox_idx_by_name[f] = i
+        item = toolitemify(self.combobox)
+        item.set_tooltip_text("Choose layout filter [Ctrl+I = Focus, Tab = De-focus]")
+        toolbar.insert(item, 2)  # 2 = after Reload
 
         vbox.pack_start(toolbar, False)
         vbox.pack_start(self.widget)
@@ -2884,6 +2923,17 @@ class DotWindow(gtk.Window):
                 self.prepare_find_field()
             self.find_entry.grab_focus()
             return True
+        if event.state & gtk.gdk.CONTROL_MASK  and  event.keyval == gtk.keysyms.i:
+            self.combobox.grab_focus()
+            return True
+
+        # Focus events and is_focus() don't seem to work with ComboBox at least
+        # in Debian Stable.
+        #
+        if self.combobox.is_focus():
+            if event.keyval in [ gtk.keysyms.Return, gtk.keysyms.KP_Enter, gtk.keysyms.Escape ]:
+                self.widget.grab_focus()
+                return True
 
 #        print gtk.gdk.keyval_name(event.keyval), event.state
 
@@ -3123,7 +3173,35 @@ class DotWindow(gtk.Window):
 
     def set_filter(self, filter):
         # Set GraphViz filter name for reading .dot files.
+        global __filter_choices__
+        if filter is not None  and  filter not in __filter_choices__:
+            choices_str = reduce( lambda a,b: a + ', ' + b,  __filter_choices__ )
+            raise ValueError("set_filter(): filter '%s' is not known. Valid filters: %s." % (filter, choices_str))
+
+        # map the special value None
+        if filter is None:
+            global __no_filter_str__
+            guiname = __no_filter_str__
+        else:
+            guiname = filter
+
+        self.combobox.set_active( self.combobox_idx_by_name[guiname] )
         self.widget.set_filter(filter)
+
+    def on_filter_change(self, combobox):
+        filter = get_active_text(combobox)
+
+        # map the special value None
+        global __no_filter_str__
+        if filter == __no_filter_str__:
+            filter = None
+
+        self.set_filter(filter)
+        filename = self.widget.openfilename
+        if filename is not None:
+            # XXX HACK: always load xdot files without filter; otherwise use specified filter
+            if os.path.splitext(filename)[1] != ".xdot":
+                self.widget.reload()
 
     def set_graph_from_message(self, string):
         # Generate a one-node graph from string and render it.
@@ -3258,17 +3336,24 @@ def main():
     import optparse
 
     parser = optparse.OptionParser(
-        usage='\n\t%prog [file]',
+        usage='\n\t%prog [file, or "-" to force stdin on TTY]',
         version='%%prog %s' % __version__)
+
+    global __filter_choices__
+    global __default_filter__
+    global __no_filter_str__
+    choices = filter( lambda s: s != __no_filter_str__,  __filter_choices__ )
+    choices_str = reduce( lambda a,b: a + ', ' + b,  choices )
     parser.add_option(
         '-f', '--filter',
-        type='choice', choices=('dot', 'neato', 'twopi', 'circo', 'fdp'),
-        dest='filter', default='dot',
-        help='graphviz filter: dot, neato, twopi, circo, or fdp [default: %default]')
+        type='choice', choices=choices,
+        dest='filter', default=__default_filter__,
+        help='graphviz filter: one of %s [default: %%default]. This is the filter chosen upon startup; it can be changed from the GUI.' % choices_str)
     parser.add_option(
         '-n', '--no-filter',
         action='store_const', const=None, dest='filter',
-        help='assume input is already filtered into xdot format (use e.g. dot -Txdot)')
+        help='assume input is already filtered into xdot format (use e.g. dot -Txdot). This is useful for loading xdot formatted graphs from stdin.')
+
     parser.add_option(
         '-N', '--no-incremental-find',
         action='store_const', const=False, default=True, dest='incremental_find',
