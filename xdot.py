@@ -3173,10 +3173,21 @@ class DotWindow(gtk.Window):
 
     def set_filter(self, filter):
         # Set GraphViz filter name for reading .dot files.
+
+        # Validate.
         global __filter_choices__
         if filter is not None  and  filter not in __filter_choices__:
             choices_str = reduce( lambda a,b: a + ', ' + b,  __filter_choices__ )
-            raise ValueError("set_filter(): filter '%s' is not known. Valid filters: %s." % (filter, choices_str))
+            error_msg = "set_filter(): filter '%s' is not known. Valid filters: %s." % (filter, choices_str)
+
+            dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+                                    message_format=error_msg,
+                                    buttons=gtk.BUTTONS_OK)
+            dlg.set_title(self.base_title)
+            dlg.run()
+            dlg.destroy()
+
+#            raise ValueError(error_msg)
 
         # map the special value None
         if filter is None:
@@ -3198,7 +3209,7 @@ class DotWindow(gtk.Window):
 
         self.set_filter(filter)
         filename = self.widget.openfilename
-        if filename is not None:
+        if filename is not None  and  filter is not None:
             # XXX HACK: always load xdot files without filter; otherwise use specified filter
             if os.path.splitext(filename)[1] != ".xdot":
                 self.widget.reload()
