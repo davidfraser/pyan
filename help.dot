@@ -10,7 +10,12 @@
 // Juha Jeronen 2012-08-23
 //
 digraph G {
-    welcome [label="Welcome to Dot Viewer 1.0!\n\nFollow the arrows to discover its features.\n\nClick on the starting end of the\noutgoing link to begin.", style="filled", fillcolor="#FFFF66B2", fontsize="16", fontcolor="#000000", group="0"];
+    welcome [label="Welcome to Dot Viewer 1.0!\n\nFollow the arrows to discover its features.", style="filled", fillcolor="#FFFF66B2", fontsize="16", fontcolor="#000000", group="0"];
+
+
+    step3 [label="Panning\n\nYou can use the arrow keys and\nmouse dragging to pan the view.", style="filled", fillcolor="#FFFFAAB2", fontsize="20", fontcolor="#000000", group="0"]
+    step3a [label="Mouse\n\nDrag without any modifier keys to pan.", style="filled", fillcolor="#FFFFCCB2", fontsize="16", fontcolor="#000000", group="0"];
+    step3b [label="Keyboard\n\nPan slightly in the direction\npressed: Up, Down, Left, Right", style="filled", fillcolor="#FFFFCCB2", fontsize="16", fontcolor="#000000", group="0"];
 
 
     step2 [label="Zooming\n\nYou can use the +,- keys,\nmouse wheel, toolbar buttons,\nand Ctrl+drag to zoom the view.\n\nTo select and zoom an area, use Shift+drag.", style="filled", fillcolor="#FFFFAAB2", fontsize="20", fontcolor="#000000", group="0"];
@@ -18,11 +23,6 @@ digraph G {
     step2b [label="Mouse wheel\n\nZoom in: wheel up\nZoom out: wheel down", style="filled", fillcolor="#FFFFCCB2", fontsize="16", fontcolor="#000000", group="0"];
     step2c [label="Ctrl+drag\n\nZoom in: hold Ctrl, drag up\nZoom out: hold Ctrl, drag down", style="filled", fillcolor="#FFFFCCB2", fontsize="16", fontcolor="#000000", group="0"];
     step2d [label="Shift+drag\n\nZoom in only. Hold Shift, drag an area.\nView zooms to the selected area\nwhen the mouse button is released.", style="filled", fillcolor="#FFFFCCB2", fontsize="16", fontcolor="#000000", group="0"];
-
-
-    step3 [label="Panning\n\nYou can use the arrow keys and\nmouse dragging to pan the view.", style="filled", fillcolor="#FFFFAAB2", fontsize="20", fontcolor="#000000", group="0"]
-    step3a [label="Mouse\n\nDrag without any modifier keys to pan.", style="filled", fillcolor="#FFFFCCB2", fontsize="16", fontcolor="#000000", group="0"];
-    step3b [label="Keyboard\n\nPan slightly in the direction\npressed: Up, Down, Left, Right", style="filled", fillcolor="#FFFFCCB2", fontsize="16", fontcolor="#000000", group="0"];
 
 
     step2and3common [label="Dragging in Dot Viewer\n\nDrag accepts both the left and middle\nmouse buttons.", style="filled", fillcolor="#FFFFCCB2", fontsize="16", fontcolor="#000000", group="0"];
@@ -71,17 +71,17 @@ digraph G {
 
     step5ac [label="Find\n\nThe '-N' option disables incremental find,\nusing traditional find instead.", style="filled", fillcolor="#FFFFDDB2", fontcolor="#000000", group="0"]
 
-    welcome -> step2;
+    welcome -> step3;
+
+    step3 -> step3a;
+    step3 -> step3b;
+    step3 -> step2;
 
     step2 -> step2a;
     step2 -> step2b;
     step2 -> step2c;
     step2 -> step2d;
-    step2 -> step3;
-
-    step3 -> step3a;
-    step3 -> step3b;
-    step3 -> step1;
+    step2 -> step1;
 
     step2c -> step2and3common;
     step2d -> step2and3common;
