@@ -2824,7 +2824,7 @@ class DotWindow(gtk.Window):
         about.set_version(__version__)
         about.set_comments("Visualize dot graphs via the xdot format.")
 
-        author_list = ("Jose Fonseca - Original version", "Juha Jeronen - Find, graph exploration tweaks,\n    additional UI animations", "This software uses ColorBrewer Color Schemes\n    by Cynthia Brewer, Mark Harrower, and\n    The Pennsylvania State University;\n    for details, see the license.")
+        author_list = ("Jose Fonseca - Original version", "Juha Jeronen - Find, graph exploration tweaks,\n    additional UI animations, UI improvements", "This software uses ColorBrewer Color Schemes\n    by Cynthia Brewer, Mark Harrower, and\n    The Pennsylvania State University;\n    for details, see the license.")
         about.set_authors(author_list)
         about.set_documenters( ("Juha Jeronen",) )
 
