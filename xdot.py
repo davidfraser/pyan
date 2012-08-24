@@ -3701,7 +3701,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE."""
 
 
-# See the help.dot source file.
+# Online help text.
+#
+# DO NOT EDIT THIS BY HAND; instead, see the help.dot source file,
+# which is meant for easy editing.
+#
+# This can be regenerated from help.dot using GraphViz, via the command
+#   dot -Txdot -ohelp.xdot help.dot
+#
+# The content of the generated help.xdot has been pasted into this string.
 #
 __online_help_xdotcode__="""digraph G {
 	node [label="\N"];
