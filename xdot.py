@@ -2716,7 +2716,7 @@ class DotWindow(gtk.Window):
             ('FindGo', gtk.STOCK_FIND, findgo_label, "Return", findgo_tooltip, self.on_find_first),
             ('FindPrev', gtk.STOCK_GO_BACK, "Find _previous", "<Shift>N", "Jump to previous match [Shift+N]", self.on_find_prev),
             ('FindNext', gtk.STOCK_GO_FORWARD, "Find n_ext", "N", "Jump to next match [N]", self.on_find_next),
-            ('Help', gtk.STOCK_HELP, "_Help", None, "Open the online help (replaces current graph)", self.on_help),
+            ('Help', gtk.STOCK_HELP, "_Help", None, "Open the user manual (replaces current graph)", self.on_help),
             ('About', gtk.STOCK_ABOUT, "A_bout...", None, "About Dot Viewer", self.on_about)
         ))
 
@@ -2777,7 +2777,7 @@ class DotWindow(gtk.Window):
             self.combobox.append_text( f )
             self.combobox_idx_by_name[f] = i
         item = toolitemify(self.combobox)
-        item.set_tooltip_text("Choose layout filter for .dot files\n[Ctrl+I = Focus, Tab = De-focus]")
+        item.set_tooltip_text("Choose GraphViz filter for .dot files\n[Ctrl+I = Focus, Tab = De-focus]")
         toolbar.insert(item, 2)  # 2 = after Reload
 
         vbox.pack_start(toolbar, False)
