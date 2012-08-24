@@ -238,8 +238,9 @@ class Shape:
         # to be initialized)).
         #
         if not hasattr(self, 'highlight_pen_final')  and  "highlight_base" in globals():
-            # XXX/TODO: Make animated highlights an option?
-            # XXX/TODO: Disabling them could save two pens per shape if low on memory...
+            # XXX/TODO: Animated highlights are optional.
+            # XXX/TODO: When they are disabled, we could save two pens per shape
+            # XXX/TODO: if low on memory...
             self.highlight_pen_initial = self.pen.highlighted_initial()
             self.highlight_pen_final   = self.pen.highlighted_final()
             # This pen is used as a scratchpad for mixing the other two during animation.
