@@ -41,6 +41,9 @@ xdot done:
     that can be opened with a help button (all required information for the help
     is already written down in the README)
   x- make layout filter change-able at runtime
+  x- keep graph coordinates and zoom level on reload
+    - this is mostly useful, but can be confusing if the layout of the graph
+      has changed significantly.
 
 xdot old todo:
 
