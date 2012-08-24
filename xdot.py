@@ -2777,7 +2777,7 @@ class DotWindow(gtk.Window):
             self.combobox.append_text( f )
             self.combobox_idx_by_name[f] = i
         item = toolitemify(self.combobox)
-        item.set_tooltip_text("Choose layout filter [Ctrl+I = Focus, Tab = De-focus]")
+        item.set_tooltip_text("Choose layout filter for .dot files\n[Ctrl+I = Focus, Tab = De-focus]")
         toolbar.insert(item, 2)  # 2 = after Reload
 
         vbox.pack_start(toolbar, False)
