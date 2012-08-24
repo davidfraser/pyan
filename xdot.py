@@ -2005,6 +2005,27 @@ class DotWidget(gtk.DrawingArea):
         xdotcode, error = p.communicate(dotcode)
         sys.stderr.write(error)
         if p.returncode != 0:
+            self.set_graph_from_message("[Layout failed, load cancelled.]")
+            # Change to neutral mouse cursor and force-redraw the window
+            self.reset_mouse_cursor()
+            while gtk.events_pending():
+                gtk.main_iteration_do(True)
+
+            # Show at max 25 lines. If GraphViz crashes, the error message
+            # can be *long*. This in turn crashes Compiz when the error message
+            # is shown.
+            #
+            max_lines = 20
+            n_lines = error.count('\n')
+            if n_lines > max_lines:
+                n_excess = n_lines - max_lines
+                plural_s = "s" if n_excess != 1 else ""
+
+                pos = error.find('\n')
+                for j in xrange(max_lines-1):
+                    pos = error.find('\n', pos+1)
+                error = error[0:pos]  # max_lines lines, without last linefeed
+                error += "\n... <%d more line%s> ...\n\nLong error message truncated. Run in terminal to capture full output." % (n_excess, plural_s)
             dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
                                        message_format=error,
                                        buttons=gtk.BUTTONS_OK)
