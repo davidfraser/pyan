@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Dot Viewer
+Comment=View GraphViz .dot graphs via the .xdot format
+Icon=xdoticon.png
+Exec=python -m xdot
+Categories=Utilities;
+Type=Application
