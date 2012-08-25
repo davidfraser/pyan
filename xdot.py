@@ -2587,12 +2587,19 @@ class DotWidget(gtk.DrawingArea):
         return False
 
     def on_area_scroll_event(self, area, event):
+        # Mouse wheel handling.
+
+        # pan/zoom animations cause mouse wheel to zoom too slowly; compensate
+        inc = self.ZOOM_INCREMENT
+        if self.animate:
+            inc *= 2.0
+
         if event.direction == gtk.gdk.SCROLL_UP:
-            self.zoom_image(self.zoom_ratio * self.ZOOM_INCREMENT,
+            self.zoom_image(self.zoom_ratio * inc,
                             pos=(event.x, event.y))
             return True
         if event.direction == gtk.gdk.SCROLL_DOWN:
-            self.zoom_image(self.zoom_ratio / self.ZOOM_INCREMENT,
+            self.zoom_image(self.zoom_ratio / inc,
                             pos=(event.x, event.y))
             return True
         return False
