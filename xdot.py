@@ -2480,9 +2480,9 @@ class DotWidget(gtk.DrawingArea):
         # The implementation of this feature has three parts:
         #   - Graph.get_jump()
         #     * highlight set computation
-        #   - NullAction.on_motion_notify()  (this)
+        #   - NullAction.on_motion_notify()
         #     * mouse move handling
-        #   - DotWidget.update_highlight()
+        #   - DotWidget.update_highlight()  (this)
         #     * keypress handling
         #
         # If not one of "our" keys, do nothing.
