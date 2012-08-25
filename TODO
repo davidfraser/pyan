@@ -1,4 +1,5 @@
 xdot TODO:
+  - bug: why doesn't the icon show up in the launcher under Unity shell?
   - refactor the Find UI and logic from DotWindow into a FindBar
   - make the highlight_animation non-global to properly support multiple simultaneous
     instances of DotWindow in the same process
@@ -42,8 +43,7 @@ xdot done:
   x- keep graph coordinates and zoom level on reload
     - this is mostly useful, but can be confusing if the layout of the graph
       has changed significantly.
-  - should have an icon in launcher under Unity shell
-    x- application icon!
+  x- application icon!
 
 xdot old todo:
 
