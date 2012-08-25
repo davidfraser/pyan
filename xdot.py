@@ -3439,7 +3439,18 @@ def main():
         options.animate = False
         options.animate_highlight = False
 
-    gtk.window_set_default_icon( APPICON_PIXBUF )
+    # Set the application icon
+    #
+    icon_loaded = False
+    if os.path.exists("xdoticon.png"):
+        from glib import GError
+        try:
+            gtk.window_set_default_icon_from_file( "xdoticon.png" )
+            icon_loaded = True
+        except GError:
+            pass
+    if not icon_loaded:  # use hardcoded icon if no file available. (This doesn't help in Unity.)
+        gtk.window_set_default_icon( APPICON_PIXBUF )
 
     win = DotWindow(incremental_find=options.incremental_find)
     win.connect('destroy', gtk.main_quit)
