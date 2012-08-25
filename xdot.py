@@ -36,6 +36,15 @@ __filter_choices__ = ('[None]', 'dot', 'neato', 'twopi', 'circo', 'fdp')
 __no_filter_str__  = '[None]'
 __default_filter__ = 'dot'
 
+# Where to find "xdoticon.png" (application icon). Path, including the trailing slash.
+#
+# The icon is optional; an internal fallback icon is used if the file is not found.
+# Note however, that in order to show an icon in the Unity dock, the icon must
+# be available via the current icon theme; window_set_default_icon() is not enough. See
+# http://askubuntu.com/questions/85601/python-application-has-no-icon-in-unity-launcher
+#
+__icon_path__ = "./"
+
 import os
 import sys
 import subprocess
@@ -3441,11 +3450,13 @@ def main():
 
     # Set the application icon
     #
+    global __icon_path__
+    icon_file = "%sxdoticon.png" % __icon_path__
     icon_loaded = False
-    if os.path.exists("xdoticon.png"):
+    if os.path.isfile( icon_file ):
         from glib import GError
         try:
-            gtk.window_set_default_icon_from_file( "xdoticon.png" )
+            gtk.window_set_default_icon_from_file( icon_file )
             icon_loaded = True
         except GError:
             pass
