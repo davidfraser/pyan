@@ -7,6 +7,10 @@ Modifications:
 
 - The hover-over-node highlight system has been extended to make exploring large graphs easier. See section [Mouse behaviour and keyboard shortcuts] below.
 
+- The GraphViz layout filter for .dot files can now be changed in the GUI. Changing it will reload the current graph, using the newly selected layout.
+
+- Files in the .xdot format are now always loaded without a filter. The check is based on the filename extension; the "-n" command-line option is still provided for unfiltered reading of .xdot files from stdin.
+
 - Keyboard shortcuts added for Zoom to fit (F) and Zoom to 100% (1).
 
 - Keyboard shortcut added for Open (Ctrl+O).
