@@ -66,6 +66,8 @@ Modifications:
 
 - Files in the .xdot format are now always loaded without a filter. The check is based on the filename extension; the "-n" command-line option is still provided for unfiltered reading of .xdot files from stdin.
 
+- An integrated help is provided, explaining the harder-to-discover features. This is implemented as a built-in .xdot graph, which is loaded when the help button is clicked.
+
 - Keyboard shortcuts added for Zoom to fit (F) and Zoom to 100% (1).
 
 - Keyboard shortcut added for Open (Ctrl+O).
