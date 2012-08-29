@@ -1,4 +1,8 @@
-This is the Changelog of the original version; from http://code.google.com/p/jrfonseca/wiki/XDot
+Changelog of the modified version:
+
+2012-08-29: Find added, highlight-on-hover system extended, layout filter chooser added to GUI, integrated help added, .xdot is now loaded without filter, animated zooming/panning/highlights, about dialog, minor UI fixes (Juha Jeronen)
+
+Below is the Changelog of the original version 0.4; from http://code.google.com/p/jrfonseca/wiki/XDot
 
 2011-09-01: Fix forward slash escaping ( issue 61 )
 2011-02-13: Show dotted lines in xdot (by djs52uk,  issue 50 )
