@@ -1,5 +1,4 @@
 TODO:
-  - bug: why doesn't the icon show up in the launcher under Unity shell?
   - refactor the Find UI and logic from DotWindow into a FindBar
   - make the highlight_animation non-global to properly support multiple simultaneous
     instances of DotWindow in the same process
@@ -44,3 +43,9 @@ DONE:
     - this is mostly useful, but can be confusing if the layout of the graph
       has changed significantly.
   x- application icon!
+   - bug: why doesn't the icon show up in the launcher under Unity shell?
+    - answer: the icon must be available via the current icon theme;
+      under Unity, window_set_default_icon() is not enough. See
+      http://askubuntu.com/questions/85601/python-application-has-no-icon-in-unity-launcher
+    - cannot be fixed in code; must be taken into account when packaging.
+
