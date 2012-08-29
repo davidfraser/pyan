@@ -23,8 +23,9 @@
 # About these fields:
 # http://stackoverflow.com/questions/1523427/python-what-is-the-common-header-format
 __author__ = "Jose Fonseca and Juha Jeronen"
-__copyright__ = "Copyright 2008-2012, Jose Fonseca; 2012, Juha Jeronen"
-__credits__ = ["Jose Fonseca", "Juha Jeronen"]
+__copyright__ = "Copyright 2008-2012 Jose Fonseca and XDot contributors."
+# Note: when updating this, see set_authors() for AboutDialog, too
+__credits__ = ["Jose Fonseca", "Marius Gedminas", "Jaap Karssenberg", "michael.hliao", "Robert Meerman", "lodatom", "sk", "Alberto Rodriguez", "djs52uk", "Juha Jeronen"]
 __license__ = "LGPL v3"
 __version__ = "1.0"
 __status__ = "Production"
@@ -2870,7 +2871,7 @@ class DotWindow(gtk.Window):
                        "sk - Quit key binding",
                        "Alberto Rodriguez - Image support",
                        "djs52uk - Dotted lines in xdot",
-                       "Juha Jeronen - Find, graph exploration tweaks,\n    additional UI animations, UI improvements", "This software uses ColorBrewer Color Schemes\n    by Cynthia Brewer, Mark Harrower, and\n    The Pennsylvania State University;\n    for details, see the license.")
+                       "Juha Jeronen - Find, graph exploration tweaks,\n    additional UI animations, UI improvements", "\nThis software uses ColorBrewer Color Schemes\n    by Cynthia Brewer, Mark Harrower, and\n    The Pennsylvania State University;\n    for details, see the license.")
         about.set_authors(author_list)
         about.set_documenters( ("Juha Jeronen",) )
 
