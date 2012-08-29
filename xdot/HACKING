@@ -1,0 +1,40 @@
+=======
+General
+=======
+
+The original XDot (version 0.4 by Jose Fonseca) is clearly written and rather easy to understand. Start by examining the classes DotWindow and DotWidget, and it will all make sense.
+
+As of this writing, some features of the modified one could use some refactoring; see TODO.
+
+
+====================
+Integrated resources
+====================
+
+This section explains how to update the integrated resources: the help file and the application icon.
+
+
+---------
+Help file
+---------
+
+1) Make the necessary changes to help.dot with your text editor of choice
+2) Compile the graph into xdot format, using GraphViz:
+      dot -Txdot -ohelp.xdot help.dot
+3) Open xdot.py, search for "__online_help_xdotcode__=" (without quotes)
+4) Paste the content of help.xdot (note the x!) into the string.
+
+
+----------------
+Application icon
+----------------
+
+1) Make the necessary changes to xdoticon.svg. Inkscape is recommended for this.
+2) When done, save changes and then export the drawing as a 64x64 PNG
+3) Convert it to embedded code. Assuming the exported file is called xdoticon.png:
+      ./img_to_pygtk.py xdoticon.png >xdoticon_code.py
+4) Open xdot.py, search for "APPICON_PIXBUF =" (without quotes)
+5) Paste the content of xdoticon_code.py, replacing the old APPICON_PIXBUF.
+
+
+ -JJ 2012-08-29
