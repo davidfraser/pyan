@@ -69,6 +69,7 @@ def get_tables(conn, schemas):
                 WHERE constraint_name = '%s'""" % constraint_name
             cursor.execute(sql)
             to_cols = []
+            to_name = None
             for table_schema, table_name, column_name in cursor.fetchall():
                 to_schema = table_schema
                 to_name = table_name
