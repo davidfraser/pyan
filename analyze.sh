@@ -8,7 +8,7 @@ if [ $# -lt 1 ]; then
 fi
 
 echo -ne "Analyzing...\n"
-python -m pyan $@ -c --dot >temp.dot
+python -m pyan/pyan $@ -c --dot >temp.dot
 if [ $? -eq 0 ]; then
   echo -ne "Generating layout...\n"
   # "fdp" comes from the graphviz package
@@ -16,5 +16,5 @@ if [ $? -eq 0 ]; then
 
   echo -ne "Visualizing...\n"
   # -n = filter off (input already in xdot format)
-  python -m xdot -n temp.xdot
+  python -m xdot/xdot -n temp.xdot
 fi
