@@ -1,0 +1,9 @@
+Written in 2011 by Bjarni R. Einarsson <http://bre.klaki.net/>
+This script is in the Public Domain.
+
+This is a simple tool for converting image files to compact PyGTK code for
+embedding in Python scripts.  It can read whatever formats PyGTK can.
+
+For a more general-purpose Python embedding tool, check out PyBreeder:
+ - http://pagekite.net/wiki/Floss/PyBreeder/
+
