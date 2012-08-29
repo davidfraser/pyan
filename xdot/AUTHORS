@@ -1,0 +1,23 @@
+Jose Fonseca - Original version
+
+Marius Gedminas - Animated jumping between nodes, original highlight code, support for additional xdot language features
+
+Jaap Karssenberg - Unicode input and returncode fixes
+
+michael.hliao - Support for ColorBrewer color schemes
+
+Robert Meerman - Auto-reload for changed file
+
+lodatom - motion-notify fix
+
+sk - Quit key binding
+
+Alberto Rodriguez - Image support
+
+djs52uk - Dotted lines in xdot
+
+Juha Jeronen - Find, graph exploration tweaks, additional UI animations, UI improvements
+
+
+This software uses ColorBrewer Color Schemes by Cynthia Brewer, Mark Harrower, and The Pennsylvania State University; for details, see LICENSE_colorbrewer_color_schemes.
+
