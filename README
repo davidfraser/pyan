@@ -1,0 +1,36 @@
+Modified pyan.py by Juha Jeronen, based on original pyan.py by Edmund Horner.
+
+The modified version has some additional features for GraphViz output that can be useful for working with large projects.
+
+New command-line options are available to:
+
+- Color nodes automatically (-c). A HSL color model is used, picking the hue based on the top-level namespace (effectively, the module). The colors start out light, and then darken for each level of nesting. Seven different hues are available, cycled automatically.
+
+- Group nodes in the same namespace (-g, -e). GraphViz clusters are used for this. The namespace name is used as the cluster label. Groups can be created as standalone (-g, always inside top-level graph) or nested (-e). The nested mode follows the namespace structure of the code.
+
+- Disable generation of links for “defines” relationships (-n). This can make the resulting graph look much clearer, when there are a lot of “uses” relationships. This is especially useful for layout with “fdp”.
+
+- Disable generation of links for “uses” relationships (-N). Can be useful for visualizing just where functions are defined.
+
+
+Other changes:
+
+The “defines” relations are now drawn with gray arrows, so that it’s easier to visually tell them apart from the “uses” relations when there are a lot of edges of both types in the graph. (The dotted line style is the same as in the original.)
+
+Nodes are now always filled (white if color disabled), and made translucent to clearly show arrows passing underneath them. This is useful for large graphs with the fdp filter.
+
+With the exception of the disable switches, which support both output formats, all modifications are for GraphViz output only.
+
+
+This modified version is available at:
+
+https://yousource.it.jyu.fi/jjrandom2/miniprojects/blobs/master/refactoring/
+
+The original version by Edmund Horner is available at:
+
+http://code.google.com/p/ejrh/source/browse/trunk/utils/pyan.py
+
+Explanation by original author:
+
+http://ejrh.wordpress.com/2012/01/31/call-graphs-in-python-part-2/
+
