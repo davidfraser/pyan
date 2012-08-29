@@ -1,4 +1,4 @@
-xdot TODO:
+TODO:
   - bug: why doesn't the icon show up in the launcher under Unity shell?
   - refactor the Find UI and logic from DotWindow into a FindBar
   - make the highlight_animation non-global to properly support multiple simultaneous
@@ -8,7 +8,7 @@ xdot TODO:
     under the Unity shell?
     (take partial screenshot with the windows key, then it bugs out)
 
-xdot done:
+DONE:
 
   x- traverse by clicking: x(t) should follow tanh-like curve, not linear
   x- use the system highlight color
@@ -44,16 +44,3 @@ xdot done:
     - this is mostly useful, but can be confusing if the layout of the graph
       has changed significantly.
   x- application icon!
-
-xdot old todo:
-
-  - highlight system:
-    - make a small animation, so that the target flashes at first
-      when highlighted
-    - if the node has an alpha value, boost it but don't make it
-      completely opaque.
-    - color of the highlight:
-      - keep original color but change lightness?
-        (If dark, lighten; if light, darken)
-      - mix in some blue tint?
-      - change hue by 180 degrees?
