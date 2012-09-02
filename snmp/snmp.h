@@ -1,6 +1,8 @@
 #ifndef SNMP_H
 #define SNMP_H
 
+#include <stdio.h>
+
 enum {
     SNMP_GET_REQUEST_TYPE = 0xA0,
     SNMP_GET_RESPONSE_TYPE = 0xA2,
@@ -23,6 +25,9 @@ void snmp_add_varbind_string(SNMPMessage *message, char *oid, char *value);
 int snmp_message_length(SNMPMessage *message);
 void snmp_render_message(SNMPMessage *message, void *buffer);
 SNMPMessage *snmp_parse_message(void *buffer, int len);
-void snmp_print_message(SNMPMessage *message);
+void snmp_print_message(SNMPMessage *message, FILE *stream);
+
+int snmp_get_pdu_type(SNMPMessage *message);
+int snmp_get_varbind(SNMPMessage *message, int num, char **oid, char **value);
 
 #endif

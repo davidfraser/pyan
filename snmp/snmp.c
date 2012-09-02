@@ -246,37 +246,68 @@ SNMPMessage *snmp_parse_message(void *buffer, int len)
     return message;
 }
 
-void snmp_print_message(SNMPMessage *message)
+void snmp_print_message(SNMPMessage *message, FILE *stream)
 {
     VarbindList *vb;
     
-    printf("SNMP Message:\n");
-    printf("    Version: %d\n", message->version);
-    printf("    Community: %s\n", message->community);
-    printf("    PDU Type: %d\n", message->pdu_type);
-    printf("    Request ID: %d\n", message->request_id);
-    printf("    Error: %d\n", message->error);
-    printf("    Error Index: %d\n", message->error_index);
+    fprintf(stream, "SNMP Message:\n");
+    fprintf(stream, "    Version: %d\n", message->version);
+    fprintf(stream, "    Community: %s\n", message->community);
+    fprintf(stream, "    PDU Type: %d\n", message->pdu_type);
+    fprintf(stream, "    Request ID: %d\n", message->request_id);
+    fprintf(stream, "    Error: %d\n", message->error);
+    fprintf(stream, "    Error Index: %d\n", message->error_index);
     
     vb = message->varbind_list;
     while (vb)
     {
-        printf("        OID: %s\n", vb->oid);
+        fprintf(stream, "        OID: %s\n", vb->oid);
         switch (vb->value_type)
         {
             case SNMP_NULL_TYPE:
-                printf("            Null\n");
+                fprintf(stream, "            Null\n");
                 break;
             case SNMP_INTEGER_TYPE:
-                printf("            Integer: %d\n", vb->value.int_value);
+                fprintf(stream, "            Integer: %d\n", vb->value.int_value);
                 break;
             case SNMP_STRING_TYPE:
-                printf("            String: %s\n", vb->value.str_value);
+                fprintf(stream, "            String: %s\n", vb->value.str_value);
                 break;
         }
         vb = vb->next;
     }
 }
+
+int snmp_get_pdu_type(SNMPMessage *message)
+{
+    return message->pdu_type;
+}
+
+int snmp_get_varbind(SNMPMessage *message, int num, char **oid, char **value)
+{
+    int i;
+    VarbindList *vb = message->varbind_list;
+    
+    while (vb && i >= 0)
+    {
+        if (i == num)
+        {
+            if (oid)
+                *oid = vb->oid;
+            
+            if (value)
+                *value = vb->value.str_value;
+            
+            return 1;
+        }
+        
+        vb = vb->next;
+        i--;
+    }
+    
+    return 0;
+}
+
 
 void test()
 {
@@ -294,7 +325,7 @@ void test()
     snmp_set_error_index(message, 0);
     snmp_add_varbind_null(message, "1.3.6.1.4.1.2680.1.2.7.3.2.0");
     
-    snmp_print_message(message);
+    snmp_print_message(message, stdout);
     
     len = snmp_message_length(message);
     buf = malloc(len);
@@ -308,7 +339,7 @@ void test()
     printf("\n");
     
     message2 = snmp_parse_message(buf, len);
-    snmp_print_message(message2);
+    snmp_print_message(message2, stdout);
     snmp_destroy_message(message2);
     
     free(buf);
