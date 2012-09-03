@@ -2,11 +2,11 @@
 #define ASN1_H
 
 enum {
-    SNMP_INTEGER_TYPE = 0x02,
-    SNMP_STRING_TYPE = 0x04,
-    SNMP_NULL_TYPE = 0x05,
-    SNMP_OID_TYPE = 0x06,
-    SNMP_SEQUENCE_TYPE = 0x30
+    ASN1_INTEGER_TYPE = 0x02,
+    ASN1_STRING_TYPE = 0x04,
+    ASN1_NULL_TYPE = 0x05,
+    ASN1_OID_TYPE = 0x06,
+    ASN1_SEQUENCE_TYPE = 0x30
 };
 
 typedef union {

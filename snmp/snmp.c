@@ -47,7 +47,7 @@ static void destroy_varbind_list(VarbindList *list)
         return;
     
     free(list->oid);
-    if (list->value_type == SNMP_STRING_TYPE)
+    if (list->value_type == ASN1_STRING_TYPE)
         free(list->value.str_value);
     destroy_varbind_list(list->next);
     free(list);
@@ -109,7 +109,7 @@ void snmp_add_varbind_null(SNMPMessage *message, char *oid)
 {
     VarbindList *vb = malloc(sizeof (VarbindList));
     vb->oid = strdup(oid);
-    vb->value_type = SNMP_NULL_TYPE;
+    vb->value_type = ASN1_NULL_TYPE;
     vb->value.str_value = NULL;
     vb->next = NULL;
     
@@ -120,7 +120,7 @@ void snmp_add_varbind_integer(SNMPMessage *message, char *oid, int value)
 {
     VarbindList *vb = malloc(sizeof (VarbindList));
     vb->oid = strdup(oid);
-    vb->value_type = SNMP_INTEGER_TYPE;
+    vb->value_type = ASN1_INTEGER_TYPE;
     vb->value.int_value = value;
     vb->next = NULL;
     
@@ -131,7 +131,7 @@ void snmp_add_varbind_string(SNMPMessage *message, char *oid, char *value)
 {
     VarbindList *vb = malloc(sizeof (VarbindList));
     vb->oid = strdup(oid);
-    vb->value_type = SNMP_STRING_TYPE;
+    vb->value_type = ASN1_STRING_TYPE;
     vb->value.str_value = strdup(value);
     vb->next = NULL;
     
@@ -226,13 +226,13 @@ SNMPMessage *snmp_parse_message(void *buffer, int len)
         
         switch (type)
         {
-            case SNMP_NULL_TYPE:
+            case ASN1_NULL_TYPE:
                 snmp_add_varbind_null(message, oid);
                 break;
-            case SNMP_INTEGER_TYPE:
+            case ASN1_INTEGER_TYPE:
                 snmp_add_varbind_integer(message, oid, value.int_value);
                 break;
-            case SNMP_STRING_TYPE:
+            case ASN1_STRING_TYPE:
                 snmp_add_varbind_string(message, oid, value.str_value);
                 free(value.str_value);
                 break;
@@ -264,13 +264,13 @@ void snmp_print_message(SNMPMessage *message, FILE *stream)
         fprintf(stream, "        OID: %s\n", vb->oid);
         switch (vb->value_type)
         {
-            case SNMP_NULL_TYPE:
+            case ASN1_NULL_TYPE:
                 fprintf(stream, "            Null\n");
                 break;
-            case SNMP_INTEGER_TYPE:
+            case ASN1_INTEGER_TYPE:
                 fprintf(stream, "            Integer: %d\n", vb->value.int_value);
                 break;
-            case SNMP_STRING_TYPE:
+            case ASN1_STRING_TYPE:
                 fprintf(stream, "            String: %s\n", vb->value.str_value);
                 break;
         }

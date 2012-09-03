@@ -93,12 +93,12 @@ void *render_header(int type, int data_len, void *dest)
 
 int sequence_header_length(int data_len)
 {
-    return header_length(SNMP_SEQUENCE_TYPE, data_len);
+    return header_length(ASN1_SEQUENCE_TYPE, data_len);
 }
 
 void *render_sequence_header(int data_len, void *dest)
 {
-    return render_header(SNMP_SEQUENCE_TYPE, data_len, dest);
+    return render_header(ASN1_SEQUENCE_TYPE, data_len, dest);
 }
 
 static int null_length()
@@ -134,7 +134,7 @@ static void *render_integer(int x, void *dest)
 void *render_integer_object(int x, void *dest)
 {
     int data_len = integer_length(x);
-    dest = render_header(SNMP_INTEGER_TYPE, data_len, dest);
+    dest = render_header(ASN1_INTEGER_TYPE, data_len, dest);
     return render_integer(x, dest);
 }
 
@@ -154,7 +154,7 @@ static void *render_string(char *str, void *dest)
 void *render_string_object(char *str, void *dest)
 {
     int data_len = string_length(str);
-    dest = render_header(SNMP_STRING_TYPE, data_len, dest);
+    dest = render_header(ASN1_STRING_TYPE, data_len, dest);
     return render_string(str, dest);
 }
 
@@ -256,7 +256,7 @@ static void *render_oid(char *oid, void *dest)
 void *render_oid_object(char *oid, void *dest)
 {
     int data_len = oid_length(oid);
-    dest = render_header(SNMP_OID_TYPE, data_len, dest);
+    dest = render_header(ASN1_OID_TYPE, data_len, dest);
     return render_oid(oid, dest);
 }
 
@@ -318,11 +318,11 @@ int value_length(int value_type, Value value)
 {
     switch (value_type)
     {
-        case SNMP_NULL_TYPE:
+        case ASN1_NULL_TYPE:
             return null_length();
-        case SNMP_INTEGER_TYPE:
+        case ASN1_INTEGER_TYPE:
             return integer_length(value.int_value);
-        case SNMP_STRING_TYPE:
+        case ASN1_STRING_TYPE:
             return string_length(value.str_value);
         default:
             abort();
@@ -333,11 +333,11 @@ char *render_value(int value_type, Value value, char *dest)
 {
     switch (value_type)
     {
-        case SNMP_NULL_TYPE:
+        case ASN1_NULL_TYPE:
             return render_null(dest);
-        case SNMP_INTEGER_TYPE:
+        case ASN1_INTEGER_TYPE:
             return render_integer(value.int_value, dest);
-        case SNMP_STRING_TYPE:
+        case ASN1_STRING_TYPE:
             return render_string(value.str_value, dest);
         default:
             abort();
@@ -351,11 +351,11 @@ char *render_value_object(int value_type, Value value, char *dest)
     
     switch (value_type)
     {
-        case SNMP_NULL_TYPE:
+        case ASN1_NULL_TYPE:
             return render_null(dest);
-        case SNMP_INTEGER_TYPE:
+        case ASN1_INTEGER_TYPE:
             return render_integer(value.int_value, dest);
-        case SNMP_STRING_TYPE:
+        case ASN1_STRING_TYPE:
             return render_string(value.str_value, dest);
         default:
             abort();
@@ -458,7 +458,7 @@ void asn1_destroy_parser(ASN1Parser *parser)
 int asn1_parse_sequence(ASN1Parser *parser)
 {
     int type;
-    if (next_type(parser) != SNMP_SEQUENCE_TYPE)
+    if (next_type(parser) != ASN1_SEQUENCE_TYPE)
         return 0;
     return asn1_parse_structure(parser, &type);
 }
@@ -486,7 +486,7 @@ int asn1_parse_integer(ASN1Parser *parser, int *dest)
     int i;
     int val;
     
-    if (next_type(parser) != SNMP_INTEGER_TYPE)
+    if (next_type(parser) != ASN1_INTEGER_TYPE)
         return 0;
     size = next_len(parser);
     payload = next_payload(parser);
@@ -510,7 +510,7 @@ int asn1_parse_string(ASN1Parser *parser, char **dest)
     void *payload;
     int i;
     
-    if (next_type(parser) != SNMP_STRING_TYPE)
+    if (next_type(parser) != ASN1_STRING_TYPE)
         return 0;
     size = next_len(parser);
     payload = next_payload(parser);
@@ -534,7 +534,7 @@ int asn1_parse_oid(ASN1Parser *parser, char **dest)
     int size;
     void *payload;
     
-    if (next_type(parser) != SNMP_OID_TYPE)
+    if (next_type(parser) != ASN1_OID_TYPE)
         return 0;
     size = next_len(parser);
     payload = next_payload(parser);
@@ -551,14 +551,14 @@ int asn1_parse_value(ASN1Parser *parser, int *type, Value *value)
     
     switch (*type)
     {
-        case SNMP_NULL_TYPE:
+        case ASN1_NULL_TYPE:
             consume(parser);
             return 1;
         
-        case SNMP_INTEGER_TYPE:
+        case ASN1_INTEGER_TYPE:
             return asn1_parse_integer(parser, &value->int_value);
         
-        case SNMP_STRING_TYPE:
+        case ASN1_STRING_TYPE:
             return asn1_parse_string(parser, &value->str_value);
         
         default:
