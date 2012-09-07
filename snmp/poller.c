@@ -11,6 +11,7 @@
 #include <errno.h>
 
 #include "snmp.h"
+#include "config.h"
 
 #define BUFLEN 65535
 
@@ -18,12 +19,16 @@
 
 #define DEFAULT_AGENT_PORT 161
 
+#define DEFAULT_CONFIG_FILENAME "sample.conf"
+
 typedef struct Options
 {
     int verbose;
     int listen_port;
     char *agent_host;
     int agent_port;
+    char *config_filename;
+    Config *config;
 } Options;
 
 void diep(char *s)
@@ -95,6 +100,8 @@ static void parse_args(int argc, char *argv[], Options *options)
         exit(1);
     }
     
+    options->config_filename = DEFAULT_CONFIG_FILENAME;
+    options->config = NULL;
 }
 
 static void log_message(SNMPMessage *message)
@@ -114,7 +121,7 @@ static void log_message(SNMPMessage *message)
 
 static unsigned int next_request_id = 0;
 
-unsigned int send_request(Options *options, int s, struct sockaddr *target, int target_len)
+unsigned int send_request(Options *options, int s, struct sockaddr *target, int target_len, char *oid)
 {
     SNMPMessage *message;
     int len;
@@ -128,7 +135,7 @@ unsigned int send_request(Options *options, int s, struct sockaddr *target, int 
     snmp_set_request_id(message, request_id);
     snmp_set_error(message, 0);
     snmp_set_error_index(message, 0);
-    snmp_add_varbind_null(message, "1.3.6.1.2.1.1.5.0");
+    snmp_add_varbind_null(message, oid);;
     
     len = snmp_message_length(message);
     buf = malloc(len);
@@ -148,6 +155,24 @@ unsigned int send_request(Options *options, int s, struct sockaddr *target, int 
     free(buf);
     
     return request_id;
+}
+        
+static void check_requests(Options *options, int s, struct sockaddr *target, int target_len)
+{
+    ConfigItem *item = options->config->item_list;
+    
+    while (item != NULL)
+    {
+        item->wait--;
+        
+        if (item->wait <= 0)
+        {
+            send_request(options, s, target, target_len, item->oid);
+            item->wait = item->frequency;
+        }
+        
+        item = item->next;
+    }
 }
 
 static void check_for_responses(Options *options, int s)
@@ -220,13 +245,19 @@ static void run(Options *options)
     
     while (1)
     {
-        int i;
-        send_request(options, s, (struct sockaddr *) &si_other, slen);
-        for (i = 0; i < 5; i++)
+        if (options->config == NULL)
         {
-            check_for_responses(options, s);
-            sleep(1);
+            options->config = load_config(options->config_filename);
+            if (options->verbose)
+            {
+                fprintf(stderr, "Loading config from %s\n", options->config_filename);
+                print_config(options->config, stderr);
+            }
         }
+        
+        check_requests(options, s, (struct sockaddr *) &si_other, slen);
+        check_for_responses(options, s);
+        sleep(1);
     }
     close(s);
 }
