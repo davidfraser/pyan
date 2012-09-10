@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <errno.h>
+#include <time.h>
 
 #include "snmp.h"
 #include "config.h"
@@ -104,13 +105,25 @@ static void parse_args(int argc, char *argv[], Options *options)
     options->config = NULL;
 }
 
-static void log_message(SNMPMessage *message)
+void get_time_str(char *buf, int size)
 {
-    char *host_str = "host";
-    char *timestamp_str = "timestamp";
+    time_t time_buf;
+    struct tm tm_buf;
+    
+    time(&time_buf);
+    localtime_r(&time_buf, &tm_buf);
+    strftime(buf, size, "%Y-%m-%d %H:%M:%S", &tm_buf);    
+}
+
+static void log_message(SNMPMessage *message, struct sockaddr_in *sender, int sender_len)
+{
+    char *host_str = inet_ntoa(sender->sin_addr);
+    char timestamp_str[20];
     char *oid_str;
     char *value_str;
     int i = 0;
+    
+    get_time_str(timestamp_str, sizeof(timestamp_str));
     
     while (snmp_get_varbind(message, i, &oid_str, &value_str))
     {
@@ -204,7 +217,7 @@ static void check_for_responses(Options *options, int s)
             snmp_print_message(message, stderr);
         
         if (snmp_get_pdu_type(message) == SNMP_GET_RESPONSE_TYPE)
-            log_message(message);
+            log_message(message, &si_other, slen);
         
         snmp_destroy_message(message);
     }
