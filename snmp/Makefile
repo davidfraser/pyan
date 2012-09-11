@@ -1,7 +1,7 @@
 CFLAGS = -g -Wall
 
 OBJ=$(patsubst %.c, %.o, $(wildcard *.c))
-HEADERS=snmp.h asn1.h config.h
+HEADERS=snmp.h asn1.h config.h net.h
 
 all: poller
 

@@ -1,16 +1,11 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <netdb.h>
-#include <errno.h>
 #include <time.h>
+#include <unistd.h>
 
+#include "net.h"
 #include "snmp.h"
 #include "config.h"
 
@@ -31,31 +26,6 @@ typedef struct Options
     char *config_filename;
     Config *config;
 } Options;
-
-void diep(char *s)
-{
-    perror(s);
-    exit(1);
-}
-
-static int split_host_port(char *input, int default_port, char **host, int *port)
-{
-    char *p;
-    
-    *host = strdup(input);
-    
-    if ((p = strchr(*host, ':')))
-    {
-        *port = strtol(p+1, NULL, 0);
-        *p = 0;
-    }
-    else
-    {
-        *port = default_port;
-    }
-    
-    return 1;
-}
 
 static void parse_args(int argc, char *argv[], Options *options)
 {
@@ -115,9 +85,9 @@ void get_time_str(char *buf, int size)
     strftime(buf, size, "%Y-%m-%d %H:%M:%S", &tm_buf);    
 }
 
-static void log_message(SNMPMessage *message, struct sockaddr_in *sender, int sender_len)
+static void log_message(SNMPMessage *message, char *sender_host)
 {
-    char *host_str = inet_ntoa(sender->sin_addr);
+    char *host_str = sender_host;
     char timestamp_str[20];
     char *oid_str;
     char *value_str;
@@ -134,7 +104,7 @@ static void log_message(SNMPMessage *message, struct sockaddr_in *sender, int se
 
 static unsigned int next_request_id = 0;
 
-unsigned int send_request(Options *options, int s, struct sockaddr *target, int target_len, char *oid)
+unsigned int send_request(Options *options, int socket, char *oid)
 {
     SNMPMessage *message;
     int len;
@@ -161,16 +131,15 @@ unsigned int send_request(Options *options, int s, struct sockaddr *target, int 
     
     if (options->verbose)
         fprintf(stderr, "Sending datagram to %s:%d\n", options->agent_host, options->agent_port);
-    
-    if (sendto(s, buf, len, 0, target, target_len) == -1)
-        diep("sendto");
+
+    send_udp_datagram(buf, len, socket, options->agent_host, options->agent_port);
     
     free(buf);
     
     return request_id;
 }
         
-static void check_requests(Options *options, int s, struct sockaddr *target, int target_len)
+static void check_requests(Options *options, int socket)
 {
     ConfigItem *item = options->config->item_list;
     
@@ -180,7 +149,7 @@ static void check_requests(Options *options, int s, struct sockaddr *target, int
         
         if (item->wait <= 0)
         {
-            send_request(options, s, target, target_len, item->oid);
+            send_request(options, socket, item->oid);
             item->wait = item->frequency;
         }
         
@@ -188,28 +157,23 @@ static void check_requests(Options *options, int s, struct sockaddr *target, int
     }
 }
 
-static void check_for_responses(Options *options, int s)
+static void check_for_responses(Options *options, int socket)
 {
     while (1)
     {
-        struct sockaddr_in si_other;
-        socklen_t slen = sizeof(si_other);
         char buf[BUFLEN];
         SNMPMessage *message;
-        int nr;
+        char *sender_host;
+        int sender_port;
         
-        nr = recvfrom(s, buf, BUFLEN, MSG_DONTWAIT, (struct sockaddr *) &si_other, &slen);
-        if (nr == -1)
-        {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-                break;
-            
-            diep("recvfrom");
-        }
+        int nr = receive_udp_datagram(buf, BUFLEN, socket, &sender_host, &sender_port);
+        
+        if (nr == 0)
+            break;
         
         if (options->verbose)
             fprintf(stderr, "Received packet from %s:%d\n", 
-                    inet_ntoa(si_other.sin_addr), ntohs(si_other.sin_port));
+                    sender_host, sender_port);
         
         message = snmp_parse_message(buf, nr);
         
@@ -217,7 +181,7 @@ static void check_for_responses(Options *options, int s)
             snmp_print_message(message, stderr);
         
         if (snmp_get_pdu_type(message) == SNMP_GET_RESPONSE_TYPE)
-            log_message(message, &si_other, slen);
+            log_message(message, sender_host);
         
         snmp_destroy_message(message);
     }
@@ -225,36 +189,10 @@ static void check_for_responses(Options *options, int s)
 
 static void run(Options *options)
 {
-    struct sockaddr_in si_me, si_other;
-    int s;
-    socklen_t slen = sizeof(si_other);
-    int reuse = 1;
-    struct hostent *he;
-    
-    if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
-        diep("socket");
-
-    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) != 0)
-        diep("setsockopt");
-
-    memset((char *) &si_me, 0, sizeof(si_me));
-    si_me.sin_family = AF_INET;
-    si_me.sin_port = htons(options->listen_port);
-    si_me.sin_addr.s_addr = htonl(INADDR_ANY);
-    if (bind(s, (struct sockaddr *) &si_me, sizeof(si_me)) != 0)
-        diep("bind");
+    int socket = open_udp_socket(options->listen_port);
 
     if (options->verbose)
         fprintf(stderr, "Opened socket on port %d\n", options->listen_port);
-
-    memset((char *) &si_other, 0, sizeof(si_other));
-    si_other.sin_family = AF_INET;
-    si_other.sin_port = htons(options->agent_port);
-    
-    if (!(he = gethostbyname2(options->agent_host, AF_INET)))
-        diep("gethostbyname2");
-    
-    memmove(&si_other.sin_addr.s_addr, he->h_addr, he->h_length);
     
     while (1)
     {
@@ -268,11 +206,12 @@ static void run(Options *options)
             }
         }
         
-        check_requests(options, s, (struct sockaddr *) &si_other, slen);
-        check_for_responses(options, s);
+        check_requests(options, socket);
+        check_for_responses(options, socket);
         sleep(1);
     }
-    close(s);
+    
+    close(socket);
 }
 
 int main(int argc, char *argv[])
