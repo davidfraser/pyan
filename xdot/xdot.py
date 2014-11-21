@@ -807,7 +807,11 @@ class XDotAttrParser:
         return res
 
     def read_number(self):
-        return int(self.read_code())
+        # Newer versions of GraphViz (e.g. 2.36.0 (20140111.2315) in Ubuntu 14.04) may generate
+        # float positions and sizes.
+        #
+#        return int(self.read_code())
+        return int(self.read_float())
 
     def read_float(self):
         return float(self.read_code())
