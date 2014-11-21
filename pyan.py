@@ -560,7 +560,10 @@ class CallGraphVisitor(object):
 
         # enable clustering
         if grouped:
-            s += """    graph [clusterrank local];\n"""
+            # Newer versions of GraphViz (e.g. 2.36.0 (20140111.2315) in Ubuntu 14.04) have a stricter parser.
+            # http://www.graphviz.org/doc/info/attrs.html#a:clusterrank
+#            s += """    graph [clusterrank local];\n"""
+            s += """    graph [clusterrank="local"];\n"""
 
         vis_node_list = []  # for sorting; will store nodes to be visualized
         def nodecmp(n1, n2):
