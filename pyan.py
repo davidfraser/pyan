@@ -562,7 +562,7 @@ class CallGraphVisitor(object):
 
         # enable clustering
         if grouped:
-            s += """    graph [clusterrank local];\n"""
+            s += """    graph [clusterrank=local];\n"""
 
         vis_node_list = []  # for sorting; will store nodes to be visualized
         def nodecmp(n1, n2):
