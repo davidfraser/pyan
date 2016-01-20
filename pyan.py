@@ -382,17 +382,97 @@ class CallGraphVisitor(object):
         for from_node, to_node in removed_uses_edges:
             self.uses_edges[from_node].remove(to_node)
     
-    def to_dot(self):
+    def to_dot(self, **kwargs):
+        draw_defines = ("draw_defines" in kwargs  and  kwargs["draw_defines"])
+        colored = ("colored" in kwargs  and  kwargs["colored"])
+        grouped = ("grouped" in kwargs  and  kwargs["grouped"])
+
+        # Color nodes by namespace.
+        #
+#        colorscheme_name = "oranges9"
+#        color_names = [ "%s" % j for j in xrange(1,10) ]  # color names in chosen scheme
+#        text_colors = [ "#000000" for j in xrange(8) ]
+#        text_colors.extend( [ "#FFFFFF" for j in xrange(2) ] )
+
+        colorscheme_name = "greens7"
+        color_names = [ "%s" % j for j in xrange(1,8) ]  # color names in chosen scheme
+        text_colors = [ "#000000" for j in xrange(5) ]
+        text_colors.extend( [ "#FFFFFF" for j in xrange(2) ] )
+
+        namespace2coloridx = {}
+        global cidx   # WTF? Python 2.6 won't pass cidx to the inner function without global...
+        cidx = 0  # first free color index
+        def get_color_idx(node):
+            global cidx
+            ns = node.namespace
+            verbose_output("Coloring %s (namespace %s)" % (node.get_short_name(), ns))
+            if ns not in namespace2coloridx:  # not seen yet
+                namespace2coloridx[ns] = cidx
+                cidx += 1
+                if cidx >= len(color_names):
+                    cidx = 0  # wrap around
+            return namespace2coloridx[ns]
+
         s = """digraph G {\n"""
+
+        # enable clustering
+        if grouped:
+            s += """graph [clusterrank local]\n"""
+
+        vis_node_list = []  # for sorting; will store nodes to be visualized
+        def nodecmp(n1, n2):
+            if n1.namespace > n2.namespace:
+                return +1
+            elif n1.namespace < n2.namespace:
+                return -1
+            else:
+                return 0
+
+        # find out which nodes are defined (can be visualized)
         for name in self.nodes:
             for n in self.nodes[name]:
                 if n.defined:
-                    s += """    %s [label="%s"];\n""" % (n.get_label(), n.get_short_name())
-        
-        for n in self.defines_edges:
-            for n2 in self.defines_edges[n]:
-                if n2.defined and n2 != n:
-                    s += """    %s -> %s [style="dashed"];\n""" % (n.get_label(), n2.get_label())
+                    vis_node_list.append(n)
+#                    s += """    %s [label="%s"];\n""" % (n.get_label(), n.get_short_name())
+
+        vis_node_list.sort(cmp=nodecmp)  # sort by namespace for clustering
+
+        prev_namespace = ""
+        for n in vis_node_list:
+            # new namespace? (NOTE: nodes sorted by namespace!)
+            if grouped  and  n.namespace != prev_namespace:
+                if prev_namespace != "":
+                    s += """  }\n"""  # terminate previous subgraph
+                prev_namespace = n.namespace
+                # begin new subgraph for this namespace (TODO: refactor the label generation)
+                # (name must begin with "cluster" to be recognized as a cluster by GraphViz)
+                s += """  subgraph cluster_%s {\n""" % n.namespace.replace('.', '__').replace('*', '')
+                if colored:
+                    # translucent bluish gray
+                    s += """    graph [style="filled,rounded", fillcolor="#8080A018", label="%s"]""" % n.namespace
+
+            # add the node itself
+            if colored:
+                idx = get_color_idx(n)
+                c = color_names[idx]
+                t = text_colors[idx]
+                s += """    %s [label="%s", style="filled", colorscheme="%s", fillcolor="%s", fontcolor="%s", group="%s"];\n""" % (n.get_label(), n.get_short_name(), colorscheme_name, c, t, c)
+            else:
+                s += """    %s [label="%s"];\n""" % (n.get_label(), n.get_short_name())
+
+        if grouped:
+            s += """  }\n"""  # terminate last subgraph
+
+        if draw_defines:
+            for n in self.defines_edges:
+                for n2 in self.defines_edges[n]:
+                    if n2.defined and n2 != n:
+                        if colored:
+                            # gray lines (so they won't visually obstruct the "uses" lines)
+                            s += """    %s -> %s [style="dashed", color="azure4"];\n""" % (n.get_label(), n2.get_label())
+                        else:
+                            s += """    %s -> %s [style="dashed"];\n""" % (n.get_label(), n2.get_label())
+
         for n in self.uses_edges:
             for n2 in self.uses_edges[n]:
                 if n2.defined and n2 != n:
@@ -400,7 +480,7 @@ class CallGraphVisitor(object):
         s += """}\n"""
         return s
     
-    def to_tgf(self):
+    def to_tgf(self, **kwargs):
         s = ''
         i = 1
         id_map = {}
@@ -415,12 +495,14 @@ class CallGraphVisitor(object):
         
         s += """#\n"""
         
-        for n in self.defines_edges:
-            for n2 in self.defines_edges[n]:
-                if n2.defined and n2 != n:
-                    i1 = id_map[n]
-                    i2 = id_map[n2]
-                    s += """%d %d D\n""" % (i1, i2)
+        if "draw_defines" in kwargs  and  kwargs["draw_defines"]:
+            for n in self.defines_edges:
+                for n2 in self.defines_edges[n]:
+                    if n2.defined and n2 != n:
+                        i1 = id_map[n]
+                        i2 = id_map[n2]
+                        s += """%d %d D\n""" % (i1, i2)
+
         for n in self.uses_edges:
             for n2 in self.uses_edges[n]:
                 if n2.defined and n2 != n:
@@ -459,6 +541,18 @@ def main():
     parser.add_option("-v", "--verbose",
                       action="store_true", default=False, dest="verbose",
                       help="verbose output")
+    parser.add_option("-d", "--defines",
+                      action="store_true", default=True, dest="draw_defines",
+                      help="add edges for 'defines' relationships [default]")
+    parser.add_option("-n", "--no-defines",
+                      action="store_false", default=True, dest="draw_defines",
+                      help="do not add edges for 'defines' relationships")
+    parser.add_option("-c", "--colored",
+                      action="store_true", default=False, dest="colored",
+                      help="color node backgrounds according to namespace [dot only]")
+    parser.add_option("-g", "--grouped",
+                      action="store_true", default=False, dest="grouped",
+                      help="group nodes (create subgraphs) according to namespace [dot only]")
 
     options, args = parser.parse_args()
     filenames = [fn2 for fn in args for fn2 in glob(fn)]
@@ -493,9 +587,11 @@ def main():
     v.cull_inherited()
     
     if options.dot:
-        print v.to_dot()
+        print v.to_dot(draw_defines=options.draw_defines,
+                       colored=options.colored,
+                       grouped=options.grouped)
     if options.tgf:
-        print v.to_tgf()
+        print v.to_tgf(draw_defines=options.draw_defines)
 
 
 if __name__ == '__main__':
