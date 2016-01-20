@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
     pyan.py - Generate approximate call graphs for Python programs.
     
@@ -12,10 +14,115 @@ import compiler
 from glob import glob
 from optparse import OptionParser
 import os.path
-
+import re
+import math
 
 def verbose_output(msg):
     print >>sys.stderr, msg
+
+
+def hsl2rgb(*args):
+    """Convert HSL color tuple to RGB.
+
+    Parameters:  H,S,L, where
+        H,S,L = HSL values as double-precision floats, with each component in [0,1].
+
+    Return value:
+        R,G,B tuple
+
+    For more information:
+        https://en.wikipedia.org/wiki/HSL_and_HSV#From_HSL
+
+    """
+    if len(args) != 3:
+        raise ValueError("hsl2rgb requires exactly 3 arguments. See docstring.")
+
+    H = args[0]
+    S = args[1]
+    L = args[2]
+
+    if H < 0.0  or  H > 1.0:
+        raise ValueError("H component = %g out of range [0,1]" % H)
+    if S < 0.0  or  S > 1.0:
+        raise ValueError("S component = %g out of range [0,1]" % S)
+    if L < 0.0  or  L > 1.0:
+        raise ValueError("L component = %g out of range [0,1]" % L)
+
+    # hue chunk
+    Hpf = H / (60./360.) # "H prime, float" (H', float)
+    Hp = int(Hpf)  # "H prime" (H', int)
+    if Hp >= 6:  # catch special case 360deg = 0deg
+        Hp = 0
+
+    C = (1.0 - math.fabs(2.0*L - 1.0))*S  # HSL chroma
+    X = C * (1.0 - math.fabs( math.modf(Hpf / 2.0)[0] - 1.0 ))
+
+    if S == 0.0:  # H undefined if S == 0
+        R1,G1,B1 = (0.0, 0.0, 0.0)
+    elif Hp == 0:
+        R1,G1,B1 = (C,   X,   0.0)
+    elif Hp == 1:
+        R1,G1,B1 = (X,   C,   0.0)
+    elif Hp == 2:
+        R1,G1,B1 = (0.0, C,   X  )
+    elif Hp == 3:
+        R1,G1,B1 = (0.0, X,   C  )
+    elif Hp == 4:
+        R1,G1,B1 = (X,   0.0, C  )
+    elif Hp == 5:
+        R1,G1,B1 = (C,   0.0, X  )
+
+    # match the HSL Lightness
+    #
+    m = L - 0.5*C
+    R,G,B = (R1 + m, G1 + m, B1 + m)
+
+    return R,G,B
+
+
+def htmlize_rgb(*args):
+    """HTML-ize an RGB(A) color.
+
+    Parameters:  R,G,B[,alpha], where
+        R,G,B = RGB values as double-precision floats, with each component in [0,1].
+        alpha = optional alpha component for translucency, in [0,1]. (1.0 = opaque)
+
+    Example:
+        htmlize_rgb(1.0, 0.5, 0)       =>  "#FF8000"    (RGB)
+        htmlize_rgb(1.0, 0.5, 0, 0.5)  =>  "#FF800080"  (RGBA)
+
+    """
+    if len(args) < 3:
+        raise ValueError("htmlize_rgb requires 3 or 4 arguments. See docstring.")
+
+    R = args[0]
+    G = args[1]
+    B = args[2]
+
+    if R < 0.0  or  R > 1.0:
+        raise ValueError("R component = %g out of range [0,1]" % R)
+    if G < 0.0  or  G > 1.0:
+        raise ValueError("G component = %g out of range [0,1]" % G)
+    if B < 0.0  or  B > 1.0:
+        raise ValueError("B component = %g out of range [0,1]" % B)
+
+    R = int(255.0*R)
+    G = int(255.0*G)
+    B = int(255.0*B)
+
+    if len(args) > 3:
+        alp = args[3]
+        if alp < 0.0  or  alp > 1.0:
+            raise ValueError("alpha component = %g out of range [0,1]" % alp)
+        alp = int(255.0*alp)
+        make_RGBA = True
+    else:
+        make_RGBA = False
+
+    if make_RGBA:
+        return "#%02X%02X%02X%02X" % (R, G, B, alp)
+    else:
+        return "#%02X%02X%02X" % (R, G, B)
 
 
 class Node(object):
@@ -49,7 +156,30 @@ class Node(object):
             return '*.' + self.name
         else:
             return self.namespace + '.' + self.name
-    
+
+    def get_level(self):
+        """Return the level of this node (in terms of nested namespaces).
+
+        The level is defined as the number of '.' in the namespace, plus one.
+        Top level is level 0.
+
+        """
+        if self.namespace == "":
+            return 0
+        else:
+            return 1 + self.namespace.count('.')
+
+    def get_toplevel_namespace(self):
+        """Return the name of the top-level namespace of this node, or "" if none."""
+        if self.namespace == "":
+            return ""
+
+        idx = self.namespace.find('.')
+        if idx > -1:
+            return self.namespace[0:idx]
+        else:
+            return self.namespace
+
     def get_label(self):
         """Return a label for this node, suitable for use in graph formats.
         Unique nodes should have unique labels; and labels should not contain
@@ -382,25 +512,174 @@ class CallGraphVisitor(object):
         for from_node, to_node in removed_uses_edges:
             self.uses_edges[from_node].remove(to_node)
     
-    def to_dot(self):
+    def to_dot(self, **kwargs):
+        draw_defines = ("draw_defines" in kwargs  and  kwargs["draw_defines"])
+        draw_uses = ("draw_uses" in kwargs  and  kwargs["draw_uses"])
+        colored = ("colored" in kwargs  and  kwargs["colored"])
+        grouped = ("grouped" in kwargs  and  kwargs["grouped"])
+        nested_groups = ("nested_groups" in kwargs  and  kwargs["nested_groups"])
+
+        # Color nodes by top-level namespace. Use HSL: hue = file, lightness = nesting level.
+        #
+        # Map top-level namespaces (typically files) to different hues.
+        #
+        # The "" namespace (for *.py files) gets the first color.
+        #
+        # Since its level is 0, its lightness will be 1.0, i.e. pure white
+        # regardless of the hue. (See the HSL assignment code below.)
+        #
+        # Reference H values (at S=1, L=0.5):
+        #   0 = pure red
+        #  60 = pure yellow
+        # 120 = pure green
+        # 180 = pure cyan 
+        # 240 = pure blue
+        # 300 = pure magenta
+        #
+        # unused, green (120), orange (50), cyan (190), yellow (90),
+        #         deep blue (240), red (0), magenta (300)
+        # See https://en.wikipedia.org/wiki/File:HSV-RGB-comparison.svg
+        # (although this is HSL, the hue should match)
+        #
+        hues = map( lambda d: d/360., [ 0, 120, 50, 190, 90, 240, 0, 300 ] )
+        top_ns_to_hue_idx = {}
+        global cidx   # WTF? Python 2.6 won't pass cidx to the inner function without global...
+        cidx = 0  # first free hue index
+        def get_hue_idx(node):
+            global cidx
+            ns = node.get_toplevel_namespace()
+            verbose_output("Coloring %s (top-level namespace %s)" % (node.get_short_name(), ns))
+            if ns not in top_ns_to_hue_idx:  # not seen yet
+                top_ns_to_hue_idx[ns] = cidx
+                cidx += 1
+                if cidx >= len(hues):
+                    verbose_output("WARNING: too many top-level namespaces; colors wrapped")
+                    cidx = 0  # wrap around
+            return top_ns_to_hue_idx[ns]
+
+
         s = """digraph G {\n"""
+
+        # enable clustering
+        if grouped:
+            s += """    graph [clusterrank local];\n"""
+
+        vis_node_list = []  # for sorting; will store nodes to be visualized
+        def nodecmp(n1, n2):
+            if n1.namespace > n2.namespace:
+                return +1
+            elif n1.namespace < n2.namespace:
+                return -1
+            else:
+                return 0
+
+        # find out which nodes are defined (can be visualized)
         for name in self.nodes:
             for n in self.nodes[name]:
                 if n.defined:
-                    s += """    %s [label="%s"];\n""" % (n.get_label(), n.get_short_name())
-        
-        for n in self.defines_edges:
-            for n2 in self.defines_edges[n]:
-                if n2.defined and n2 != n:
-                    s += """    %s -> %s [style="dashed"];\n""" % (n.get_label(), n2.get_label())
-        for n in self.uses_edges:
-            for n2 in self.uses_edges[n]:
-                if n2.defined and n2 != n:
-                    s += """    %s -> %s;\n""" % (n.get_label(), n2.get_label())
-        s += """}\n"""
+                    vis_node_list.append(n)
+
+        vis_node_list.sort(cmp=nodecmp)  # sort by namespace for clustering
+
+        # Write nodes and subgraphs
+        #
+        prev_namespace = ""
+        namespace_stack = []
+        indent = ""
+        for n in vis_node_list:
+            # new namespace? (NOTE: nodes sorted by namespace!)
+            if grouped  and  n.namespace != prev_namespace:
+                if nested_groups:
+                    # Pop the stack until the newly found namespace is within one of the
+                    # parent namespaces, or until the stack runs out (i.e. this is a
+                    # sibling).
+                    #
+                    j = len(namespace_stack) - 1
+                    if j >= 0:
+                        m = re.match(namespace_stack[j], n.namespace)
+                        # The '.' check catches siblings in cases like MeshGenerator vs. Mesh.
+                        while m is None  or  n.namespace[m.end()] != '.':
+                            s += """%s}\n""" % indent  # terminate previous subgraph
+                            del namespace_stack[j]
+                            j -= 1
+                            indent = " " * (4*len(namespace_stack))  # 4 spaces per level
+                            if j < 0:
+                                break
+                            m = re.match(namespace_stack[j], n.namespace)
+                    namespace_stack.append( n.namespace )
+                    indent = " " * (4*len(namespace_stack))  # 4 spaces per level
+                else:
+                    if prev_namespace != "":
+                        s += """%s}\n""" % indent  # terminate previous subgraph
+                    else:
+                        # first subgraph begins, start indenting
+                        indent = "    "  # 4 spaces
+                prev_namespace = n.namespace
+                # begin new subgraph for this namespace (TODO: refactor the label generation)
+                # (name must begin with "cluster" to be recognized as a cluster by GraphViz)
+                s += """%ssubgraph cluster_%s {\n""" % (indent, n.namespace.replace('.', '__').replace('*', ''))
+
+                # translucent gray (no hue to avoid visual confusion with any group of colored nodes)
+                s += """%s    graph [style="filled,rounded", fillcolor="#80808018", label="%s"];\n""" % (indent, n.namespace)
+
+            # add the node itself
+            if colored:
+                idx = get_hue_idx(n)
+                H = hues[idx]
+                S = 1.0
+                L = max( [1.0 - 0.1*n.get_level(), 0.1] )
+                A = 0.7  # make nodes translucent (to handle possible overlaps)
+                fill_RGBA = list(hsl2rgb(H,S,L))
+                fill_RGBA.append(A)
+                fill_RGBA = htmlize_rgb( *fill_RGBA )
+
+                if L >= 0.3:
+                    text_RGB = htmlize_rgb( 0.0, 0.0, 0.0 )  # black text on light nodes
+                else:
+                    text_RGB = htmlize_rgb( 1.0, 1.0, 1.0 )  # white text on dark nodes
+
+                s += """%s    %s [label="%s", style="filled", fillcolor="%s", fontcolor="%s", group="%s"];\n""" % (indent, n.get_label(), n.get_short_name(), fill_RGBA, text_RGB, idx)
+            else:
+                fill_RGBA = htmlize_rgb( 1.0, 1.0, 1.0, 0.7 )
+                idx = get_hue_idx(n)
+                s += """%s    %s [label="%s", style="filled", fillcolor="%s", fontcolor="#000000", group="%s"];\n""" % (indent, n.get_label(), n.get_short_name(), fill_RGBA, idx)
+
+        if grouped:
+            if nested_groups:
+                j = len(namespace_stack) - 1
+                while j >= 0:
+                    s += """%s}\n""" % indent  # terminate all remaining subgraphs
+                    del namespace_stack[j]
+                    j -= 1
+                    indent = " " * (4*len(namespace_stack))  # 4 spaces per level
+            else:
+                s += """%s}\n""" % indent  # terminate last subgraph
+
+        # Write defines relationships
+        #
+        if draw_defines:
+            for n in self.defines_edges:
+                for n2 in self.defines_edges[n]:
+                    if n2.defined and n2 != n:
+                        # gray lines (so they won't visually obstruct the "uses" lines)
+                        s += """    %s -> %s [style="dashed", color="azure4"];\n""" % (n.get_label(), n2.get_label())
+
+        # Write uses relationships
+        #
+        if draw_uses:
+            for n in self.uses_edges:
+                for n2 in self.uses_edges[n]:
+                    if n2.defined and n2 != n:
+                        s += """    %s -> %s;\n""" % (n.get_label(), n2.get_label())
+
+        s += """}\n"""  # terminate "digraph G {"
         return s
+
     
-    def to_tgf(self):
+    def to_tgf(self, **kwargs):
+        draw_defines = ("draw_defines" in kwargs  and  kwargs["draw_defines"])
+        draw_uses = ("draw_uses" in kwargs  and  kwargs["draw_uses"])
+
         s = ''
         i = 1
         id_map = {}
@@ -415,18 +694,21 @@ class CallGraphVisitor(object):
         
         s += """#\n"""
         
-        for n in self.defines_edges:
-            for n2 in self.defines_edges[n]:
-                if n2.defined and n2 != n:
-                    i1 = id_map[n]
-                    i2 = id_map[n2]
-                    s += """%d %d D\n""" % (i1, i2)
-        for n in self.uses_edges:
-            for n2 in self.uses_edges[n]:
-                if n2.defined and n2 != n:
-                    i1 = id_map[n]
-                    i2 = id_map[n2]
-                    s += """%d %d U\n""" % (i1, i2)
+        if draw_defines:
+            for n in self.defines_edges:
+                for n2 in self.defines_edges[n]:
+                    if n2.defined and n2 != n:
+                        i1 = id_map[n]
+                        i2 = id_map[n2]
+                        s += """%d %d D\n""" % (i1, i2)
+
+        if draw_uses:
+            for n in self.uses_edges:
+                for n2 in self.uses_edges[n]:
+                    if n2.defined and n2 != n:
+                        i1 = id_map[n]
+                        i2 = id_map[n2]
+                        s += """%d %d U\n""" % (i1, i2)
         return s
 
 
@@ -459,11 +741,35 @@ def main():
     parser.add_option("-v", "--verbose",
                       action="store_true", default=False, dest="verbose",
                       help="verbose output")
+    parser.add_option("-d", "--defines",
+                      action="store_true", default=True, dest="draw_defines",
+                      help="add edges for 'defines' relationships [default]")
+    parser.add_option("-n", "--no-defines",
+                      action="store_false", default=True, dest="draw_defines",
+                      help="do not add edges for 'defines' relationships")
+    parser.add_option("-u", "--uses",
+                      action="store_true", default=True, dest="draw_uses",
+                      help="add edges for 'uses' relationships [default]")
+    parser.add_option("-N", "--no-uses",
+                      action="store_false", default=True, dest="draw_uses",
+                      help="do not add edges for 'uses' relationships")
+    parser.add_option("-c", "--colored",
+                      action="store_true", default=False, dest="colored",
+                      help="color nodes according to namespace [dot only]")
+    parser.add_option("-g", "--grouped",
+                      action="store_true", default=False, dest="grouped",
+                      help="group nodes (create subgraphs) according to namespace [dot only]")
+    parser.add_option("-e", "--nested-groups",
+                      action="store_true", default=False, dest="nested_groups",
+                      help="create nested groups (subgraphs) for nested namespaces (implies -g) [dot only]")
 
     options, args = parser.parse_args()
     filenames = [fn2 for fn in args for fn2 in glob(fn)]
     if len(args) == 0:
         parser.error('Need one or more filenames to process')
+
+    if options.nested_groups:
+        options.grouped = True
     
     if not options.verbose:
         global verbose_output
@@ -493,9 +799,14 @@ def main():
     v.cull_inherited()
     
     if options.dot:
-        print v.to_dot()
+        print v.to_dot(draw_defines=options.draw_defines,
+                       draw_uses=options.draw_uses,
+                       colored=options.colored,
+                       grouped=options.grouped,
+                       nested_groups=options.nested_groups)
     if options.tgf:
-        print v.to_tgf()
+        print v.to_tgf(draw_defines=options.draw_defines,
+                       draw_uses=options.draw_uses)
 
 
 if __name__ == '__main__':
