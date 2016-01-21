@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
     pyan.py - Generate approximate call graphs for Python programs.
     
