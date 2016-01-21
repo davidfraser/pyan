@@ -22,15 +22,27 @@ Nodes are now always filled (white if color disabled), and made translucent to c
 With the exception of the disable switches, which support both output formats, all modifications are for GraphViz output only.
 
 
-This modified version is available at:
+Note on repositories by David Fraser:
+
+Edmund Horner's original code is now best found in his github repository:
+
+https://github.com/ejrh/ejrh/blob/master/utils/pyan.py.
+
+Juha Jernon's repository is at:
 
 https://yousource.it.jyu.fi/jjrandom2/miniprojects/blobs/master/refactoring/
 
-The original version by Edmund Horner is available at:
+Daffyd Crosby has also made a repository with both versions, but this doesn't have a clear history and leaves the two versions in two files:
 
-http://code.google.com/p/ejrh/source/browse/trunk/utils/pyan.py
+https://github.com/dafyddcrosby/pyan
 
-Explanation by original author:
+Since both original repositories have lots of other software, I've made a clean version combining their contributions into my own repository just for pyan. This contains commits filtered out of their original repositories, and reordered into a logical sequence:
 
-http://ejrh.wordpress.com/2012/01/31/call-graphs-in-python-part-2/
+https://github.com/davidfraser/pyan
+
+Original blog posts:
+
+https://ejrh.wordpress.com/2011/12/23/call-graphs-in-python/
+https://ejrh.wordpress.com/2012/01/31/call-graphs-in-python-part-2/
+https://ejrh.wordpress.com/2012/08/18/coloured-call-graphs/
 
