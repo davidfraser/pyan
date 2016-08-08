@@ -9,7 +9,8 @@ in that way, usually using debugger or profiling trace hooks - for example:
 https://pycallgraph.readthedocs.org/
 
 This code was originally written by Edmund Horner, and then modified by Juha Jeronen.
-See the notes at the end of this file for the original blog posts and links to their repositories.
+See the notes at the end of this file for licensing info, the original blog posts,
+and links to their repositories.
 
 Command-line options
 --------------------
@@ -68,7 +69,7 @@ Original source repositories
 
 - Edmund Horner's original code is now best found in his github repository at:
   https://github.com/ejrh/ejrh/blob/master/utils/pyan.py.
-- Juha Jernon's repository is at:
+- Juha Jeronen's repository is at:
   https://yousource.it.jyu.fi/jjrandom2/miniprojects/blobs/master/refactoring/
 - Daffyd Crosby has also made a repository with both versions, but with two files and no history:
   https://github.com/dafyddcrosby/pyan
@@ -76,4 +77,10 @@ Original source repositories
   I've made this clean version combining their contributions into my own repository just for pyan.
   This contains commits filtered out of their original repositories, and reordered into a logical sequence:
   https://github.com/davidfraser/pyan
+
+Licensing
+---------
+
+This code is made available under the GNU GPL, v2. See the LICENSE.md file,
+or consult https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html for more information.
 
