@@ -559,7 +559,7 @@ class CallGraphVisitor(object):
         # See https://en.wikipedia.org/wiki/File:HSV-RGB-comparison.svg
         # (although this is HSL, the hue should match)
         #
-        hues = map( lambda d: d/360., [ 0, 120, 50, 190, 90, 240, 0, 300 ] )
+        hues = [d/360. for d in [ 0, 120, 50, 190, 90, 240, 0, 300 ]]
         top_ns_to_hue_idx = {}
         global cidx   # WTF? Python 2.6 won't pass cidx to the inner function without global...
         cidx = 0  # first free hue index
