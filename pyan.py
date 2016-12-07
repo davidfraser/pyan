@@ -34,7 +34,9 @@ import re
 import math
 
 def verbose_output(msg):
-    print >>sys.stderr, msg
+    sys.stderr.write(msg)
+    sys.stderr.write("\n")
+    sys.stderr.flush()
 
 
 def hsl2rgb(*args):
@@ -709,7 +711,8 @@ class CallGraphVisitor(object):
                     id_map[n] = i
                     i += 1
                 #else:
-                #    print >>sys.stderr, "ignoring %s" % n
+                #    sys.stderr.write("ignoring %s\n" % n)
+                #    sys.stderr.flush()
         
         s += """#\n"""
         
@@ -816,16 +819,18 @@ def main():
     v.contract_nonexistents()
     v.expand_unknowns()
     v.cull_inherited()
-    
+
+    result = None
     if options.dot:
-        print v.to_dot(draw_defines=options.draw_defines,
-                       draw_uses=options.draw_uses,
-                       colored=options.colored,
-                       grouped=options.grouped,
-                       nested_groups=options.nested_groups)
+        result = v.to_dot(draw_defines=options.draw_defines,
+                          draw_uses=options.draw_uses,
+                          colored=options.colored,
+                          grouped=options.grouped,
+                          nested_groups=options.nested_groups)
     if options.tgf:
-        print v.to_tgf(draw_defines=options.draw_defines,
-                       draw_uses=options.draw_uses)
+        result = v.to_tgf(draw_defines=options.draw_defines,
+                          draw_uses=options.draw_uses)
+    sys.stdout.write(result)
 
 
 if __name__ == '__main__':
