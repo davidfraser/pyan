@@ -534,6 +534,7 @@ class CallGraphVisitor(object):
         colored = ("colored" in kwargs  and  kwargs["colored"])
         grouped = ("grouped" in kwargs  and  kwargs["grouped"])
         nested_groups = ("nested_groups" in kwargs  and  kwargs["nested_groups"])
+        rankdir = kwargs.get("rankdir", "TB")
 
         # Color nodes by top-level namespace. Use HSL: hue = file, lightness = nesting level.
         #
@@ -576,12 +577,17 @@ class CallGraphVisitor(object):
 
         s = """digraph G {\n"""
 
+        graph_opts = {'rankdir': rankdir}
         # enable clustering
         if grouped:
+            graph_opts['clusterrank'] = 'local'
             # Newer versions of GraphViz (e.g. 2.36.0 (20140111.2315) in Ubuntu 14.04) have a stricter parser.
             # http://www.graphviz.org/doc/info/attrs.html#a:clusterrank
 #            s += """    graph [clusterrank local];\n"""
-            s += """    graph [clusterrank="local"];\n"""
+        graph_opts = ', '.join(
+            [key + '="' + value + '"' for key, value in graph_opts.items()]
+        )
+        s += """    graph [""" + graph_opts + """];\n"""
 
         vis_node_list = []  # for sorting; will store nodes to be visualized
         def nodecmp(n1, n2):
@@ -784,6 +790,13 @@ def main():
     parser.add_option("-e", "--nested-groups",
                       action="store_true", default=False, dest="nested_groups",
                       help="create nested groups (subgraphs) for nested namespaces (implies -g) [dot only]")
+    parser.add_option("--dot-rankdir", default="TB", dest="rankdir",
+                      help=(
+                        "specifies the dot graph 'rankdir' property for "
+                        "controlling the direction of the graph. "
+                        "Allowed values: ['TB', 'LR', 'BT', 'RL']. "
+                        "[dot only]"
+                      ))
 
     options, args = parser.parse_args()
     filenames = [fn2 for fn in args for fn2 in glob(fn)]
@@ -825,7 +838,8 @@ def main():
                        draw_uses=options.draw_uses,
                        colored=options.colored,
                        grouped=options.grouped,
-                       nested_groups=options.nested_groups)
+                       nested_groups=options.nested_groups,
+                       rankdir=options.rankdir)
     if options.tgf:
         print v.to_tgf(draw_defines=options.draw_defines,
                        draw_uses=options.draw_uses)
