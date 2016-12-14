@@ -745,7 +745,7 @@ def get_module_name(filename):
         return mod_name
 
     if not os.path.dirname(filename):
-        return mod_name
+        return mod_name or '__init__'
     
     return get_module_name(os.path.dirname(filename)) + '.' + mod_name
 
