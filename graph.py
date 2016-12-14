@@ -3,6 +3,8 @@ import logging
 from colors import Colorizer
 
 
+UNSAFE_IDS = {"graph"}
+
 class GraphNode(object):
     """
     A node.
@@ -31,6 +33,11 @@ class GraphNode(object):
         else:
             return 'GraphNode(' + repr(self.id) + ')'
 
+    @property
+    def safe_id(self):
+        if self.id in UNSAFE_IDS:
+            return "%sX" % self.id
+        return self.id
 
 class GraphEdge(object):
     """
@@ -59,6 +66,12 @@ class Graph(object):
         self.edges = edges or []
         self.subgraphs = subgraphs or []
         self.grouped = grouped
+
+    @property
+    def safe_id(self):
+        if self.id in UNSAFE_IDS:
+            return "%sX" % self.id
+        return self.id
 
     @classmethod
     def from_visitor(cls, visitor, options=None, logger=None):

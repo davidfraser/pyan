@@ -124,7 +124,7 @@ class DotWriter(Writer):
     def start_subgraph(self, graph):
         self.log('Start subgraph %s' % graph.label)
         self.write(
-                "subgraph cluster_%s {\n" % graph.id)
+                "subgraph cluster_%s {\n" % graph.safe_id)
         self.indent()
 
         # translucent gray (no hue to avoid visual confusion with any
@@ -146,7 +146,7 @@ class DotWriter(Writer):
             '%s [label="%s", style="filled", fillcolor="%s",'
             ' fontcolor="%s", group="%s"];'
             % (
-                node.id, node.label,
+                node.safe_id, node.label,
                 node.fill_color, node.text_color, node.group))
 
     def write_edge(self, edge):
@@ -156,11 +156,11 @@ class DotWriter(Writer):
             self.write(
                 '    %s -> %s [style="dashed",'
                 ' color="azure4"];'
-                % (source.id, target.id))
+                % (source.safe_id, target.safe_id))
         else:
             self.write(
                 '    %s -> %s;'
-                % (source.id, target.id))
+                % (source.safe_id, target.safe_id))
 
     def finish_graph(self):
         self.write('}')  # terminate "digraph G {"
@@ -201,7 +201,7 @@ class YedWriter(Writer):
     def start_subgraph(self, graph):
         self.log('Start subgraph %s' % graph.label)
 
-        self.write('<node id="%s:" yfiles.foldertype="group">' % graph.id)
+        self.write('<node id="%s:" yfiles.foldertype="group">' % graph.safe_id)
         self.indent()
         self.write('<data key="d0">')
         self.indent()
@@ -224,7 +224,7 @@ class YedWriter(Writer):
         self.write('</y:ProxyAutoBoundsNode>')
         self.dedent()
         self.write('</data>')
-        self.write('<graph edgedefault="directed" id="%s::">' % graph.id)
+        self.write('<graph edgedefault="directed" id="%s::">' % graph.safe_id)
 
     def finish_subgraph(self, graph):
         self.log('Finish subgraph %s' % graph.label)
@@ -236,7 +236,7 @@ class YedWriter(Writer):
     def write_node(self, node):
         self.log('Write node %s' % node.label)
         width = 20 + 10*len(node.label)
-        self.write('<node id="%s">' % node.id)
+        self.write('<node id="%s">' % node.safe_id)
         self.indent()
         self.write('<data key="d0">')
         self.indent()
@@ -263,7 +263,7 @@ class YedWriter(Writer):
         target = edge.target
         self.write(
                 '<edge id="%s" source="%s" target="%s">'
-                % (self.edge_id, source.id, target.id))
+                % (self.edge_id, source.safe_id, target.safe_id))
         self.indent()
         self.write('<data key="d1">')
         self.indent()
