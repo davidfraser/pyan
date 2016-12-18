@@ -9,6 +9,23 @@
     for rendering by e.g. GraphViz or yEd.
 """
 
+# Copyright (C) 2011-2014 Edmund Horner and Juha Jeronen
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+import sys
 import compiler
 from glob import glob
 from optparse import OptionParser
@@ -487,6 +504,9 @@ def get_module_name(filename):
     if not os.path.exists(init_path):
         return mod_name
 
+    if not os.path.dirname(filename):
+        return mod_name
+    
     return get_module_name(os.path.dirname(filename)) + '.' + mod_name
 
 
