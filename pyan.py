@@ -557,6 +557,13 @@ def main():
                       help=(
                           "create nested groups (subgraphs) "
                           "for nested namespaces (implies -g) [dot only]"))
+    parser.add_option("--dot-rankdir", default="TB", dest="rankdir",
+                      help=(
+                        "specifies the dot graph 'rankdir' property for "
+                        "controlling the direction of the graph. "
+                        "Allowed values: ['TB', 'LR', 'BT', 'RL']. "
+                        "[dot only]"
+                      ))
 
     options, args = parser.parse_args()
     filenames = [fn2 for fn in args for fn2 in glob(fn)]
@@ -590,7 +597,10 @@ def main():
 
     if options.dot:
         writer = DotWriter(
-                graph, output=options.filename, logger=logger)
+                graph, 
+                options=['rankdir='+options.rankdir],
+                output=options.filename, 
+                logger=logger)
         writer.run()
 
     if options.tgf:

@@ -107,19 +107,15 @@ class DotWriter(Writer):
                 logger=logger,
                 tabstop=tabstop)
         options = options or []
-        self.options = ', '.join(['clusterrank="local"'] + options)
+        if graph.grouped:
+            options += 'clusterrank="local"'
+        self.options = ', '.join(options)
         self.grouped = graph.grouped
 
     def start_graph(self):
         self.write('digraph G {')
-        # enable clustering
-        if self.grouped:
-            # Newer versions of GraphViz (e.g. 2.36.0 (20140111.2315) in Ubuntu
-            # 14.04) have a stricter parser.
-            # http://www.graphviz.org/doc/info/attrs.html#a:clusterrank
-            # s += """    graph [clusterrank local];\n"""
-            self.write('    graph [' + self.options + '];')
-            self.indent()
+        self.write('    graph [' + self.options + '];')
+        self.indent()
 
     def start_subgraph(self, graph):
         self.log('Start subgraph %s' % graph.label)
