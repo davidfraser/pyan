@@ -23,7 +23,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA  02110-1301, USA.
 
 import sys
 import compiler
@@ -506,7 +507,7 @@ def get_module_name(filename):
 
     if not os.path.dirname(filename):
         return mod_name
-    
+
     return get_module_name(os.path.dirname(filename)) + '.' + mod_name
 
 
@@ -597,9 +598,9 @@ def main():
 
     if options.dot:
         writer = DotWriter(
-                graph, 
+                graph,
                 options=['rankdir='+options.rankdir],
-                output=options.filename, 
+                output=options.filename,
                 logger=logger)
         writer.run()
 
