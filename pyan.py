@@ -710,12 +710,9 @@ class CallGraphVisitor(object):
         id_map = {}
         for name in self.nodes:
             for n in self.nodes[name]:
-                if n.defined:
-                    s += """%d %s\n""" % (i, n.get_short_name())
-                    id_map[n] = i
-                    i += 1
-                #else:
-                #    print >>sys.stderr, "ignoring %s" % n
+                s += """%d %s\n""" % (i, n.get_short_name())
+                id_map[n] = i
+                i += 1
 
         s += """#\n"""
 
