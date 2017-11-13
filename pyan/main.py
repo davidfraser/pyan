@@ -73,12 +73,11 @@ def main():
         verbosity = MsgLevel.INFO
     m = MsgPrinter(verbosity)
 
-    # Process the set of files, TWICE: so that forward references are picked up
+    # Process the set of files
     v = CallGraphVisitor(filenames, msgprinter=m)
-    for pas in range(2):
-        for filename in filenames:
-            m.message("========== pass %d for file '%s' ==========" % (pas+1, filename), level=MsgLevel.INFO)
-            v.process(filename)
+    for filename in filenames:
+        m.message("========== file '%s' ==========" % (filename), level=MsgLevel.INFO)
+        v.process(filename)
     v.postprocess()
 
     g = GraphGenerator(v, msgprinter=m)

@@ -83,7 +83,10 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.filename = filename
         self.module_name = get_module_name(filename)
         self.analyze_scopes(content, filename)
-        self.visit(ast.parse(content, filename))
+        # Visit twice (without resetting scopes) so that any forward-references are picked up.
+        for pas in range(2):
+            self.msgprinter.message("===== pass %d =====" % (pas+1), level=MsgLevel.INFO)
+            self.visit(ast.parse(content, filename))
         self.module_name = None
         self.filename = None
 
