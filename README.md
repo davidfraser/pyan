@@ -41,11 +41,11 @@ Then render using your favorite GraphViz filter, mainly `dot` or `fdp`:
 
 #### Troubleshooting
 
-If GraphViz complains about *trouble in init_rank*, try adding `-Gnewrank=true`, as in:
+If GraphViz says *trouble in init_rank*, try adding `-Gnewrank=true`, as in:
 
 `dot -Gnewrank=true -Tsvg myuses.dot >myuses.svg`
 
-Usually either old or new rank works; this is a long-standing GraphViz issue with complex graphs.
+Usually either old or new rank (but often not both) works; this is a long-standing GraphViz issue with complex graphs.
 
 
 # Features
