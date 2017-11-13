@@ -239,7 +239,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         from_node = self.get_current_namespace()
         to_node = self.get_node('', tgt_name, node)  # module, in top-level namespace
         if self.add_uses_edge(from_node, to_node):
-            self.msgprinter.message("Use from %s to From %s" % (from_node, to_node), level=MsgLevel.INFO)
+            self.msgprinter.message("Use from %s to ImportFrom %s" % (from_node, to_node), level=MsgLevel.INFO)
 
         if tgt_name in self.module_names:
             mod_name = self.module_names[tgt_name]
