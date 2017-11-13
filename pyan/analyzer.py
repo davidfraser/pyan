@@ -698,6 +698,35 @@ class CallGraphVisitor(ast.NodeVisitor):
         if to_node in self.uses_edges[from_node]:
             return False
         self.uses_edges[from_node].add(to_node)
+
+        # for pass 2: remove uses edge to any matching wildcard target node
+        # if the given to_node has a known namespace.
+        #
+        # Prevents the spurious reference to MyClass.f in this example:
+        #
+        # class MyClass:
+        #     def __init__(self):
+        #         pass
+        #     def f():
+        #         pass
+        #
+        # def main():
+        #     f()
+        #
+        # def f():
+        #     pass
+        #
+        # (caused by reference to *.f in pass 1, combined with
+        #  expand_unknowns() in postprocessing.)
+        #
+        if to_node.namespace is not None:
+            matching_wilds = [n for n in self.uses_edges[from_node] if n.namespace is None and n.name == to_node.name]
+            assert len(matching_wilds) < 2  # the set can have only one wild of matching name
+            if len(matching_wilds):
+                wild_node = matching_wilds[0]
+                self.msgprinter.message("Use from %s to %s resolves %s; removing wildcard" % (from_node, to_node, wild_node), level=MsgLevel.INFO)
+                self.uses_edges[from_node].remove(wild_node)
+
         return True
 
     ###########################################################################
