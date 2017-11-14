@@ -621,6 +621,8 @@ class CallGraphVisitor(ast.NodeVisitor):
         Used to analyze lambda, listcomp et al. (The scope must still be present in self.scopes.)"""
         self.name_stack.append(scopename)
         inner_ns = self.get_current_namespace().get_name()
+        if inner_ns not in self.scopes:
+            raise ValueError("Unknown scope '%s'" % (inner_ns))
         self.scope_stack.append(self.scopes[inner_ns])
         thunk()
         self.scope_stack.pop()
