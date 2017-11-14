@@ -313,7 +313,15 @@ class CallGraphVisitor(ast.NodeVisitor):
             #   setattr c on <Node testpyan.MyClass> to <Node *.a>
 
             # get our Node object corresponding to node.value in the current ns
-            value = self.get_value(get_ast_node_name(node.value))
+            # FIXME: we handle self by its literal name
+            obj_node_name = get_ast_node_name(node.value)
+            current_class = self.get_current_class()
+            if obj_node_name == 'self' and current_class is not None:
+                self.msgprinter.message('name %s maps to %s' % (obj_node_name, current_class), level=MsgLevel.INFO)
+                value = current_class
+            else:
+                value = self.get_value(obj_node_name)
+
             # use the original AST node attached to that Node to look up the object's ns
             ns = self.ast_node_to_namespace[value.ast_node] if value is not None else None
             if ns in self.scopes and node.attr in self.scopes[ns].defs:
