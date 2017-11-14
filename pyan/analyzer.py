@@ -257,18 +257,19 @@ class CallGraphVisitor(ast.NodeVisitor):
             self.set_value(new_name, tgt_id)
             self.msgprinter.message("From setting name %s to %s" % (new_name, tgt_id), level=MsgLevel.INFO)
 
-    # TODO: where are Constants used? (instead of Num, Str, ...)
-    #
-    # Edmund Horner's original post has info on what this fixed in Python 2.
-    # https://ejrh.wordpress.com/2012/01/31/call-graphs-in-python-part-2/
-    #
-    # Essentially, this should make '.'.join(...) see str.join.
-    #
-    def visit_Constant(self, node):
-        self.msgprinter.message("Constant %s" % (node.value), level=MsgLevel.DEBUG)
-        t = type(node.value)
-        tn = t.__name__
-        self.last_value = self.get_node('', tn, node)
+#    # Edmund Horner's original post has info on what this fixed in Python 2.
+#    # https://ejrh.wordpress.com/2012/01/31/call-graphs-in-python-part-2/
+#    #
+#    # Essentially, this should make '.'.join(...) see str.join.
+#    #
+#    # Python 3.4 does not have ast.Constant, but 3.6 does. Disabling for now.
+#    # TODO: revisit this part after upgrading Python.
+#    #
+#    def visit_Constant(self, node):
+#        self.msgprinter.message("Constant %s" % (node.value), level=MsgLevel.DEBUG)
+#        t = type(node.value)
+#        tn = t.__name__
+#        self.last_value = self.get_node('', tn, node)
 
     def resolve_attribute(self, ast_node):
         """Resolve an ast.Attribute.
@@ -310,13 +311,29 @@ class CallGraphVisitor(ast.NodeVisitor):
             #
             return None, ast_node.attr
         else:
-            # Get the Node object corresponding to node.value in the current ns.
+            # Handle some constant types as a special case.
+            # Needed particularly to detect str.join().
             #
-            # (Using the current ns here is correct; this case only gets
-            #  triggered when there are no more levels of recursion,
-            #  and the leftmost name always resides in the current ns.)
-            #
-            obj_node = self.get_value(get_ast_node_name(ast_node.value))  # resolves "self" if needed
+            if isinstance(ast_node.value, (ast.Num, ast.Str)):  # TODO: other types?
+                t = type(ast_node.value)
+                tn = t.__name__
+                # Create a namespace-like Node with no associated AST node.
+                # Constants are builtins, so they should live in the
+                # top-level namespace (same level as module names).
+                #
+                # Since get_node() creates only one node per unique
+                # (namespace,name) pair, the AST node would anyway be
+                # frozen to the first constant of any matching type that
+                # the analyzer encountered in the analyzed source code,
+                # which is not useful.
+                obj_node = self.get_node('', tn, None)
+            else:
+                # Get the Node object corresponding to node.value in the current ns.
+                #
+                # (Using the current ns here is correct; this case only gets
+                #  triggered when there are no more levels of recursion,
+                #  and the leftmost name always resides in the current ns.)
+                obj_node = self.get_value(get_ast_node_name(ast_node.value))  # resolves "self" if needed
             attr_name = ast_node.attr
         return obj_node, attr_name
 
@@ -334,6 +351,17 @@ class CallGraphVisitor(ast.NodeVisitor):
 
         if isinstance(obj_node, Node) and obj_node.namespace is not None:
             ns = obj_node.get_name()  # fully qualified namespace **of attr**
+
+            # Handle some constant types as a special case.
+            # Needed particularly to detect str.join().
+            #
+            # Any attribute is considered valid for these special types,
+            # but only in a load context. (set_attribute() does not have this
+            # special handling, by design.)
+            #
+            if ns in ("Num", "Str"):  # TODO: other types?
+                return self.get_node(ns, attr_name, None)
+
             if ns in self.scopes:
                 sc = self.scopes[ns]
                 if attr_name in sc.defs:
