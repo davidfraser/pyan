@@ -94,6 +94,32 @@ The analyzer **does not currently support**:
  - Async definitions are detected, but passed through to the corresponding non-async analyzers; could be annotated.
  - Cython; could strip or comment out Cython-specific code as a preprocess step, then treat as Python (will need to be careful to get line numbers right).
 
+# How it works
+
+From the viewpoint of graphing the defines and uses relations, the interesting parts of the [AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree) are bindings (defining new names, or assigning new values to existing names), and any name that appears in an `ast.Load` context (i.e. a use). The latter includes function calls; the function's name then appears in a load context inside the `ast.Call` node that represents the call site.
+
+Bindings are tracked, with lexical scoping, to determine which type of object, or which function, each name points to at any given point in the source code being analyzed. This allows tracking things like:
+
+```python
+def some_func()
+    pass
+
+class MyClass:
+    def __init__(self):
+        self.f = some_func
+
+    def dostuff(self)
+        self.f()
+```
+
+By tracking the name `self.f`, the analyzer will see that `MyClass.dostuff()` uses `some_func()`.
+
+The analyzer also needs to keep track of what type of object `self` currently points to. This is currently done by considering the literal `self` a special name in the lexical scope of the class.
+
+Of course, this simple approach cannot correctly track cases where the current binding of `self.f` depends on the order in which the methods of the class are executed. To keep things simple, Pyan decides to ignore this complication, just reads through the code in a linear fashion (twice so that any forward-references are picked up), and uses the most recent binding that is currently in scope.
+
+When a binding statement is encountered, the current namespace determines in which scope to store the new value for the name. Similarly, when encountering a use, the current namespace determines which object type or function to tag as the user.
+
 # Authors
 
 Original [pyan.py](https://github.com/ejrh/ejrh/blob/master/utils/pyan.py) by Edmund Horner. [Original post with explanation](http://ejrh.wordpress.com/2012/01/31/call-graphs-in-python-part-2/).
