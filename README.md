@@ -91,6 +91,7 @@ The analyzer **does not currently support**:
    - Any **uses** on the RHS *at the binding site* are already detected by the name and attribute analyzers, but the binding information from assignments of this form will not be recorded (at least not correctly).
  - Starred assignment `a,*b,c = d,e,f,g,h`  
    - Same note as above.
+ - Slicing and indexing in assignment (`ast.Subscript`)
  - Additional unpacking generalizations ([PEP 448](https://www.python.org/dev/peps/pep-0448/), Python 3.5+).  
    - Same note as above.
  - Type hints ([PEP 484](https://www.python.org/dev/peps/pep-0484/), Python 3.5+).
