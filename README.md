@@ -69,7 +69,8 @@ Usually either old or new rank (but often not both) works; this is a long-standi
  - Nested attribute accesses like `self.a.b` ☆
  - Assignment tracking with lexical scoping  
    - E.g. if `self.a = MyFancyClass()`, the analyzer knows that any references to `self.a` point to `MyFancyClass`
-   - All binding forms are supported (assign, augassign, for, comprehensions, generator expressions) ☆
+   - All binding forms are supported (assign, augassign, for, comprehensions, generator expressions) ☆  
+     - Name clashes between `for` loop counter variables and functions or classes defined elsewhere no longer confuse Pyan.
  - Simple item-by-item tuple assignments like `x,y,z = a,b,c` ☆
  - Chained assignments `a = b = c` ☆
  - Local scope for lambda, listcomp, setcomp, dictcomp, genexpr ☆
