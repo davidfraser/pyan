@@ -82,11 +82,8 @@ class CallGraphVisitor(ast.NodeVisitor):
             content = f.read()
         self.filename = filename
         self.module_name = get_module_name(filename)
-        self.analyze_scopes(content, filename)
-        # Visit twice (without resetting scopes) so that any forward-references are picked up.
-        for pas in range(2):
-            self.msgprinter.message("===== pass %d =====" % (pas+1), level=MsgLevel.INFO)
-            self.visit(ast.parse(content, filename))
+        self.analyze_scopes(content, filename)  # add to the currently known scopes
+        self.visit(ast.parse(content, filename))
         self.module_name = None
         self.filename = None
 
@@ -589,9 +586,19 @@ class CallGraphVisitor(ast.NodeVisitor):
             for t in table.get_children():
                 process(ns, t)
         process(self.module_name, symtable.symtable(code, filename, compile_type="exec"))
-        self.scopes = scopes
 
-        self.msgprinter.message("Scopes: %s" % (scopes), level=MsgLevel.DEBUG)
+        # add to existing scopes (while not overwriting any existing definitions with None)
+        for ns in scopes:
+            if ns not in self.scopes:  # add new scope info
+                self.scopes[ns] = scopes[ns]
+            else:  # update existing scope info
+                sc = scopes[ns]
+                oldsc = self.scopes[ns]
+                for dn in sc.defs:
+                    if dn not in oldsc.defs:
+                        oldsc.defs[dn] = sc.defs[dn]
+
+        self.msgprinter.message("Scopes now: %s" % (self.scopes), level=MsgLevel.DEBUG)
 
     def with_scope(self, scopename, thunk):
         """Run thunk (0-argument function) with the scope stack augmented with an inner scope.
