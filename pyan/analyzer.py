@@ -629,7 +629,9 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.name_stack.pop()
 
     def get_current_class(self):
-        """Return the node representing the current class, or None if not inside a class definition."""
+        """Return the node representing the current class, or None if not inside a class definition.
+
+        This is useful for resolving self."""
         return self.class_stack[-1] if len(self.class_stack) else None
 
     def get_current_namespace(self):
@@ -647,7 +649,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         return self.get_node(namespace, name, None)
 
     def get_value(self, name):
-        """Get the value of name in the current scope. Return None if name is not set to a value."""
+        """Get the value of name in the current scope. Return the Node, or None if name is not set to a value."""
 
         # resolve "self"
         #
@@ -694,7 +696,7 @@ class CallGraphVisitor(ast.NodeVisitor):
             self.msgprinter.message('Get %s in %s: no Node value (or name not in scope)' % (name, self.scope_stack[-1]), level=MsgLevel.DEBUG)
 
     def set_value(self, name, value):
-        """Set the value of name in the current scope."""
+        """Set the value of name in the current scope. Value must be a Node."""
 
         if name == 'self':
             self.msgprinter.message('WARNING: ignoring explicit assignment to special name "self" in %s' % (self.scope_stack[-1]), level=MsgLevel.WARNING)
@@ -776,11 +778,14 @@ class CallGraphVisitor(ast.NodeVisitor):
         Sometimes a function in the analyzed code is first seen in a FromImport
         before its definition has been analyzed. The namespace can be deduced
         correctly already at that point, but the source line number information
-        has to wait until the actual definition is found. However, a graph Node
-        associated with an AST node must be created immediately, to track the
-        uses of that function.
+        has to wait until the actual definition is found (because the line
+        number is contained in the AST node). However, a graph Node must be
+        created immediately when the function is first encountered, in order
+        to have a Node that can act as a "uses" target (namespaced correctly,
+        to avoid the over-reaching unknowns expansion in cases where it is
+        not needed).
 
-        This method re-associates the given graph node with a different
+        This method re-associates the given graph Node with a different
         AST node, which allows updating the context when the definition
         of a function or class is encountered."""
         graph_node.ast_node = ast_node
