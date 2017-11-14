@@ -63,7 +63,6 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.uses_edges = {}
         self.nodes = {}   # Node name: list of Node objects (in possibly different namespaces)
         self.scopes = {}  # fully qualified name of namespace: Scope object
-        self.ast_node_to_namespace = {}  # AST node: fully qualified name of namespace
 
         # current context for analysis
         self.module_name = None
@@ -109,7 +108,6 @@ class CallGraphVisitor(ast.NodeVisitor):
         ns = self.module_name
         self.name_stack.append(ns)
         self.scope_stack.append(self.scopes[ns])
-        self.ast_node_to_namespace[node] = ns  # must be added manually since we don't self.get_node() here
         self.generic_visit(node)  # visit the **children** of node
         self.scope_stack.pop()
         self.name_stack.pop()
@@ -721,21 +719,6 @@ class CallGraphVisitor(ast.NodeVisitor):
 
         n = Node(namespace, name, ast_node, filename)
 
-        # Make the scope info accessible for the visit_*() methods
-        # that only have an AST node.
-        #
-        # In Python 3, symtable and ast are completely separate, so symtable
-        # doesn't see our copy of the AST, and symtable's copy of the AST
-        # is not accessible from the outside.
-        #
-        # The visitor only gets an AST, but must be able to access the scope
-        # information, so we mediate this by saving the full name of the namespace
-        # where each AST node came from when it is get_node()d for the first time.
-        #
-        if ast_node is not None:
-            self.ast_node_to_namespace[ast_node] = namespace
-            self.msgprinter.message("Namespace for AST node %s (%s) recorded as '%s'" % (ast_node, name, namespace), level=MsgLevel.DEBUG)
-
         if name in self.nodes:
             self.nodes[name].append(n)
         else:
@@ -760,9 +743,6 @@ class CallGraphVisitor(ast.NodeVisitor):
         AST node, which allows updating the context when the definition
         of a function or class is encountered."""
         graph_node.ast_node = ast_node
-        if ast_node is not None:
-            # Add also the new AST node to the reverse lookup.
-            self.ast_node_to_namespace[ast_node] = graph_node.namespace
         if filename is not None:
             graph_node.filename = filename
 
