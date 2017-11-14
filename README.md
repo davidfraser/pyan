@@ -79,9 +79,9 @@ Usually either old or new rank (but often not both) works; this is a long-standi
 ## TODO
 
  - This version is currently missing the PRs from [David Fraser's repo](https://github.com/davidfraser/pyan).
- - Get rid of the catch-all `visit_Name()` and `self.last_value`.  
+ - Get rid of `self.last_value`.  
    - Consider each specific kind of expression or statement being handled; get the relevant info directly (or by a more controlled kind of recursion) instead of `self.visit()`.
-   - At some point, may need a second visitor class that is just a catch-all that extracts names, which is then applied to only relevant branches of the AST. (We can then look up the names in the current scope the same way `visit_Attribute()` already does.)
+   - At some point, may need a second visitor class that is just a catch-all that extracts names, which is then applied to only relevant branches of the AST.
 
 The analyzer **does not currently support**:
 
