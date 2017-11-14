@@ -154,6 +154,10 @@ class CallGraphVisitor(ast.NodeVisitor):
 #        # Place instance members at class level in the call graph
 #        # TODO: brittle: breaks analysis if __init__ defines an internal helper class,
 #        # because then the scope lookup will fail. Disabled this special handling for now.
+#        #
+#        # Any assignments in __init__ to self.anything will still be picked up
+#        # correctly, because they use setattr.
+#        #
 #        if node.name == '__init__':
 #            for d in node.args.defaults:
 #                self.visit(d)
@@ -208,6 +212,7 @@ class CallGraphVisitor(ast.NodeVisitor):
 
         # TODO: add support for relative imports (path may be like "....something.something")
         # https://www.python.org/dev/peps/pep-0328/#id10
+        # Do we need to? Seems that at least "from .foo import bar" works already?
 
         for import_item in node.names:
             src_name = import_item.name  # what is being imported
@@ -301,7 +306,7 @@ class CallGraphVisitor(ast.NodeVisitor):
             # not in the analyzed set.
             #
             # In this case, return None for the object to let visit_Attribute()
-            # add a wildcard reference to attr.
+            # add a wildcard reference to *.attr.
             #
             return None, ast_node.attr
         else:
@@ -311,7 +316,7 @@ class CallGraphVisitor(ast.NodeVisitor):
             #  triggered when there are no more levels of recursion,
             #  and the leftmost name always resides in the current ns.)
             #
-            obj_node = self.get_value(get_ast_node_name(ast_node.value))  # get_value() resolves "self" if needed.
+            obj_node = self.get_value(get_ast_node_name(ast_node.value))  # resolves "self" if needed
             attr_name = ast_node.attr
         return obj_node, attr_name
 
@@ -404,10 +409,10 @@ class CallGraphVisitor(ast.NodeVisitor):
             # when we get here, self.last_value has been set by visit_Assign()
             self.set_value(node.id, self.last_value)
 
-        # any name in a load context = a use of the object the name currently points to
+        # A name in a load context is a use of the object the name points to.
         elif isinstance(node.ctx, ast.Load):
             tgt_name = node.id
-            to_node = self.get_value(tgt_name)
+            to_node = self.get_value(tgt_name)  # resolves "self" if needed
             current_class = self.get_current_class()
             if current_class is None or to_node is not current_class:  # add uses edge only if not pointing to "self"
                 ###TODO if the name is a local variable (i.e. in the innermost scope), and
@@ -458,13 +463,13 @@ class CallGraphVisitor(ast.NodeVisitor):
         if len(targets) == len(values):  # handle correctly the most common trivial case "a1,a2,... = b1,b2,..."
             for tgt,value in zip(targets,values):
                 self.visit(value)  # RHS -> set self.last_value to input for this tgt
-                self.visit(tgt)    # LHS
+                self.visit(tgt)    # LHS, name in a store context
                 self.last_value = None
         else:  # FIXME: for now, do the wrong thing in the non-trivial case
             # old code, no tuple unpacking support
             for value in values:
                 self.visit(value)  # set self.last_value to **something** on the RHS and hope for the best
-            for tgt in targets:    # LHS
+            for tgt in targets:    # LHS, name in a store context
                 self.visit(tgt)
             self.last_value = None
 
@@ -501,9 +506,9 @@ class CallGraphVisitor(ast.NodeVisitor):
     # for() is also a binding form.
     #
     # (Without analyzing the bindings, we would get an unknown node for any
-    #  use of the loop counter(s) in the loop body. This can have confusing
+    #  use of the loop counter(s) in the loop body. This would have confusing
     #  consequences in the expand_unknowns() step, if the same name is
-    #  in use elsewhere. Thus, we treat for() properly, as a binding form.)
+    #  in use elsewhere.)
     #
     def visit_For(self, node):
         self.msgprinter.message("For-loop", level=MsgLevel.DEBUG)
@@ -641,9 +646,15 @@ class CallGraphVisitor(ast.NodeVisitor):
 
         # resolve "self"
         #
-        # FIXME: we handle self by its literal name. If we want to change this,
-        # need to capture the name of the first argument in visit_FunctionDef()
-        # on the condition that self.current_class is not None.
+        # FIXME: we handle self by its literal name.
+        #
+        # If we want to change this, we need to capture the name of the first
+        # positional argument in visit_FunctionDef(), on the condition that
+        # self.get_current_class() is not None.
+        #
+        # Then the name of that argument is the special name for "self"
+        # until the FunctionDef exits. Needs a stack, to support also
+        # inner classes defined inside methods.
         #
         current_class = self.get_current_class()
         if current_class is not None and name == 'self':
@@ -655,6 +666,16 @@ class CallGraphVisitor(ast.NodeVisitor):
             for sc in reversed(self.scope_stack):
                 if name in sc.defs and sc.defs[name] is not None:
                     return sc
+
+#        # If we wanted to get rid of a separate scope stack, we could do this:
+#        def find_scope(name):
+#            ns0 = self.get_current_namespace().get_name()
+#            for j in range(ns0.count('.')+1):
+#                ns = ns0.rsplit(".",j)[0]
+#                if ns in self.scopes:
+#                    sc = self.scopes[ns]
+#                    if name in sc.defs and sc.defs[name] is not None:
+#                        return sc
 
         sc = find_scope(name)
         if sc is not None:
@@ -679,6 +700,16 @@ class CallGraphVisitor(ast.NodeVisitor):
             for sc in reversed(self.scope_stack):
                 if name in sc.defs:
                     return sc
+
+#        # If we wanted to get rid of a separate scope stack, we could do this:
+#        def find_scope(name):
+#            ns0 = self.get_current_namespace().get_name()
+#            for j in range(ns0.count('.')+1):
+#                ns = ns0.rsplit(".",j)[0]
+#                if ns in self.scopes:
+#                    sc = self.scopes[ns]
+#                    if name in sc.defs:
+#                        return sc
 
         sc = find_scope(name)
         if sc is not None:
@@ -710,11 +741,16 @@ class CallGraphVisitor(ast.NodeVisitor):
         # Try to figure out which source file this Node belongs to
         # (for annotated output).
         #
+        # Other parts of the analyzer may change the filename later,
+        # if a more authoritative source (e.g. a definition site) is found,
+        # so the filenames should be trusted only after the analysis is
+        # complete.
+        #
         if namespace in self.module_to_filename:
             # If the namespace is one of the modules being analyzed,
             # the the Node belongs to the correponding file.
             filename = self.module_to_filename[namespace]
-        else:  # assume it's defined in the current file
+        else:  # Assume the Node belongs to the current file.
             filename = self.filename
 
         n = Node(namespace, name, ast_node, filename)
