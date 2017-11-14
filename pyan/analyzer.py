@@ -292,13 +292,11 @@ class CallGraphVisitor(ast.NodeVisitor):
             obj_node,attr_name = self.resolve_attribute(ast_node.value)
 
             if isinstance(obj_node, Node) and obj_node.namespace is not None:
-#                ns = self.ast_node_to_namespace[obj_node.ast_node] if isinstance(obj_node, Node) else None
-#                sc = self.scopes[ns]
-#                print(obj_node)
-                ns = obj_node.namespace if len(obj_node.namespace) else self.module_name  # '' refers to module scope
-                sc = self.scopes[ns]
-                if attr_name in sc.defs:
-                    return sc.defs[attr_name], ast_node.attr
+                ns = obj_node.get_name()  # fully qualified namespace **of attr**
+                if ns in self.scopes:  # imported modules not in the set of analyzed files are not seen by Pyan
+                    sc = self.scopes[ns]
+                    if attr_name in sc.defs:
+                        return sc.defs[attr_name], ast_node.attr
 
             # It may happen that ast_node.value has no corresponding graph Node,
             # if this is a forward-reference, or a reference to a file
@@ -331,18 +329,16 @@ class CallGraphVisitor(ast.NodeVisitor):
 
         obj_node,attr_name = self.resolve_attribute(ast_node)
 
-        # use the original AST node attached to the object's Node to look up the object's ns
-        # TODO: do we need to resolve scopes here, or should the name always be directly in the object's ns?
-        ns = self.ast_node_to_namespace[obj_node.ast_node] if isinstance(obj_node, Node) else None
-        if ns in self.scopes:
-            sc = self.scopes[ns]
-            if attr_name in sc.defs:
-                value_node = sc.defs[attr_name]
-            else:
-                value_node = None
-            return obj_node,value_node
-        else:
-            return None,None
+        if isinstance(obj_node, Node) and obj_node.namespace is not None:
+            ns = obj_node.get_name()  # fully qualified namespace **of attr**
+            if ns in self.scopes:
+                sc = self.scopes[ns]
+                if attr_name in sc.defs:
+                    value_node = sc.defs[attr_name]
+                else:
+                    value_node = None
+                return obj_node,value_node
+        return None,None
 
     def set_attribute(self, ast_node, new_value):
         """Assign the Node provided as new_value into the attribute described
@@ -357,12 +353,12 @@ class CallGraphVisitor(ast.NodeVisitor):
         if not isinstance(new_value, Node):
             return obj_node,False
 
-        # use the original AST node attached to the object's Node to look up the object's ns
-        ns = self.ast_node_to_namespace[obj_node.ast_node] if isinstance(obj_node, Node) else None
-        if ns in self.scopes:
-            sc = self.scopes[ns]
-            sc.defs[attr_name] = new_value
-            return obj_node,True
+        if isinstance(obj_node, Node) and obj_node.namespace is not None:
+            ns = obj_node.get_name()  # fully qualified namespace **of attr**
+            if ns in self.scopes:
+                sc = self.scopes[ns]
+                sc.defs[attr_name] = new_value
+                return obj_node,True
         return obj_node,False
 
     # attribute access (node.ctx determines whether set (ast.Store) or get (ast.Load))
@@ -379,10 +375,16 @@ class CallGraphVisitor(ast.NodeVisitor):
             if isinstance(obj_node, Node):
                 self.msgprinter.message('getattr %s on %s returns %s' % (node.attr, get_ast_node_name(node.value), attr_node), level=MsgLevel.INFO)
 
-                # remove resolved wildcard from current site to <*.attr>
-                if obj_node.namespace is not None:
-                    from_node = self.get_current_namespace()
-                    self.remove_wild(from_node, obj_node, node.attr)
+                # add uses edge if we have a node for the target
+                # TODO: maybe need to create the node if not already there?
+                from_node = self.get_current_namespace()
+                if isinstance(attr_node, Node):
+                    if self.add_uses_edge(from_node, attr_node):
+                        self.msgprinter.message("Use from %s to Getattr %s" % (from_node, attr_node), level=MsgLevel.INFO)
+
+                    # remove resolved wildcard from current site to <*.attr>
+                    if attr_node.namespace is not None:
+                        self.remove_wild(from_node, attr_node, node.attr)
 
                 self.last_value = attr_node
             else:  # unknown target obj, add uses edge to a wildcard
