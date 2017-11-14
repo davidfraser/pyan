@@ -296,21 +296,22 @@ class CallGraphVisitor(ast.NodeVisitor):
             #            class InnerClass:
             #                def __init__(self):
             #                    self.a = 3
-            #
             #            self.b = InnerClass()
+            #
+            #        def dostuff(self):
             #            self.c = self.b.a
             #
             # the following incorrect result:
             #
-            #   Assign ['self.c'] ['self.b.a']
-            #   Attribute a of self.b in context <class '_ast.Load'>
-            #   Get self.b: no Node value (or name not in scope)
-            #   AST node <_ast.Attribute object at 0x7f201681b320> (a) has namespace 'None'
-            #   Use from <Node testpyan.MyClass.__init__> to Getattr <Node *.a>
-            #   Attribute c of self in context <class '_ast.Store'>
-            #   Name self in context <class '_ast.Load'>
-            #   name self maps to <Node testpyan.MyClass>
-            #   setattr c on <Node testpyan.MyClass> to <Node *.a>
+            #    Assign ['self.c'] ['self.b.a']
+            #    Attribute a of self.b in context <class '_ast.Load'>
+            #    Get self.b in <Scope: function dostuff>: no Node value (or name not in scope)
+            #    Namespace for AST node <_ast.Attribute object at 0x7f74da972ef0> (a) recorded as 'None'
+            #    Use from <Node testpyan.MyClass.dostuff> to Getattr <Node *.a>
+            #    Attribute c of self in context <class '_ast.Store'>
+            #    Name self in context <class '_ast.Load'>
+            #    name self maps to <Node testpyan.MyClass>
+            #    setattr c on <Node testpyan.MyClass> to <Node *.a>
 
             # get our Node object corresponding to node.value in the current ns
             # FIXME: we handle self by its literal name
@@ -350,13 +351,17 @@ class CallGraphVisitor(ast.NodeVisitor):
             self.set_value(node.id, self.last_value)
 
         elif isinstance(node.ctx, ast.Load):
-            # TODO: we handle self by its name, not by being the first argument in a method
+            # bare "self" in load context
+            #
+            # FIXME: we handle self by its literal name
             current_class = self.get_current_class()
             if node.id == 'self' and current_class is not None:
                 self.msgprinter.message('name %s maps to %s' % (node.id, current_class), level=MsgLevel.INFO)
                 self.last_value = current_class
                 return
 
+            # other bare name in load context
+            #
             tgt_name = node.id
             from_node = self.get_current_namespace()
             to_node = self.get_value(tgt_name)
