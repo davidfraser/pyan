@@ -405,8 +405,10 @@ class CallGraphVisitor(ast.NodeVisitor):
     def visit_Name(self, node):
         self.msgprinter.message("Name %s in context %s" % (node.id, type(node.ctx)), level=MsgLevel.DEBUG)
 
-        # TODO: handle this case in analyze_binding() and in visit_Attribute(),
-        # so we won't need to care about names in a store context here.
+        # TODO: self.last_value is a hack. Handle names in store context (LHS)
+        # in analyze_binding(), so that visit_Name() only needs to handle
+        # the load context (i.e. detect uses of the name).
+        #
         if isinstance(node.ctx, ast.Store):
             # when we get here, self.last_value has been set by visit_Assign()
             self.set_value(node.id, self.last_value)
