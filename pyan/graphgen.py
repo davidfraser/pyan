@@ -169,10 +169,8 @@ class GraphGenerator:
                 A = 0.7  # make nodes translucent (to handle possible overlaps)
                 fill_RGBA = htmlize_rgb(*colorsys.hls_to_rgb(H,L,S), A=A)
 
-                if L >= 0.5:
-                    text_RGB = htmlize_rgb(0.0, 0.0, 0.0)  # black text on light nodes
-                else:
-                    text_RGB = htmlize_rgb(1.0, 1.0, 1.0)  # white text on dark nodes
+                # black text on light nodes, white text on (very) dark nodes.
+                text_RGB = "#000000" if L >= 0.5 else "#FFFFFF"
 
                 s += """%s    %s [label="%s", style="filled", fillcolor="%s", fontcolor="%s", group="%s"];\n""" % (indent, n.get_label(), label_node(n), fill_RGBA, text_RGB, idx)
             else:
@@ -191,13 +189,19 @@ class GraphGenerator:
 
         # Write defines relationships
         #
-        if draw_defines:
+        if draw_defines or not grouped:
+            # If grouped, use gray lines so they won't visually obstruct the "uses" lines.
+            #
+            # If not grouped, create lines for defines, but make them fully transparent.
+            # This helps GraphViz's layout algorithms place closer together those nodes
+            # that are linked by a defines relationship.
+            #
+            color = "azure4" if draw_defines else "#FFFFFF00"
             for n in analyzer.defines_edges:
                 if n.defined:
                     for n2 in analyzer.defines_edges[n]:
                         if n2.defined and n2 != n:
-                            # gray lines (so they won't visually obstruct the "uses" lines)
-                            s += """    %s -> %s [style="dashed", color="azure4"];\n""" % (n.get_label(), n2.get_label())
+                            s += """    %s -> %s [style="dashed", color="%s"];\n""" % (n.get_label(), n2.get_label(), color)
 
         # Write uses relationships
         #
