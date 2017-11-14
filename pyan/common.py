@@ -110,7 +110,7 @@ class Node:
             return '*.' + self.name
         else:
             if self.get_level() >= 1 and self.ast_node is not None:
-                return "%s\n(%s:%d)" % (self.name, self.filename, self.ast_node.lineno)
+                return "%s\\n(%s:%d)" % (self.name, self.filename, self.ast_node.lineno)
             else:
                 return self.name
 
