@@ -84,6 +84,7 @@ Usually either old or new rank (but often not both) works; this is a long-standi
  - Get rid of `self.last_value`.  
    - Consider each specific kind of expression or statement being handled; get the relevant info directly (or by a more controlled kind of recursion) instead of `self.visit()`.
    - At some point, may need a second visitor class that is just a catch-all that extracts names, which is then applied to only relevant branches of the AST.
+ - Publish test cases.
 
 The analyzer **does not currently support**:
 
@@ -92,6 +93,7 @@ The analyzer **does not currently support**:
  - Starred assignment `a,*b,c = d,e,f,g,h`  
    - Same note as above.
  - Slicing and indexing in assignment (`ast.Subscript`)
+   - Same note as above.
  - Additional unpacking generalizations ([PEP 448](https://www.python.org/dev/peps/pep-0448/), Python 3.5+).  
    - Same note as above.
  - Type hints ([PEP 484](https://www.python.org/dev/peps/pep-0484/), Python 3.5+).
