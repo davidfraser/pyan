@@ -263,114 +263,157 @@ class CallGraphVisitor(ast.NodeVisitor):
         tn = t.__name__
         self.last_value = self.get_node('', tn, node)
 
+    def resolve_attribute(self, ast_node):
+        """Resolve an ast.Attribute.
+
+        Nested attributes (a.b.c) are automatically handled by recursion.
+
+        Return (obj,attrname), where obj is a Node (or None on lookup failure),
+        and attrname is the attribute name.
+        """
+
+        if not isinstance(ast_node, ast.Attribute):
+            raise TypeError("Expected ast.Attribute; got %s" % (type(ast_node)))
+
+        self.msgprinter.message("Resolve %s.%s in context %s" % (get_ast_node_name(ast_node.value),
+                                                                 ast_node.attr, type(ast_node.ctx)),
+                                                                level=MsgLevel.DEBUG)
+
+        # Resolve nested attributes
+        #
+        # In pseudocode, e.g. "a.b.c" is represented in the AST as:
+        #    ast.Attribute(attr=c, value=ast.Attribute(attr=b, value=a))
+        #
+        if isinstance(ast_node.value, ast.Attribute):
+            obj_node,attr_name = self.resolve_attribute(ast_node.value)
+
+            if isinstance(obj_node, Node) and obj_node.namespace is not None:
+#                ns = self.ast_node_to_namespace[obj_node.ast_node] if isinstance(obj_node, Node) else None
+#                sc = self.scopes[ns]
+#                print(obj_node)
+                ns = obj_node.namespace if len(obj_node.namespace) else self.module_name  # '' refers to module scope
+                sc = self.scopes[ns]
+                if attr_name in sc.defs:
+                    return sc.defs[attr_name], ast_node.attr
+
+            # It may happen that ast_node.value has no corresponding graph Node,
+            # if this is a forward-reference, or a reference to a file
+            # not in the analyzed set.
+            #
+            # In this case, return None for the object to let visit_Attribute()
+            # add a wildcard reference to attr.
+            #
+            return None, ast_node.attr
+        else:
+            # Get the Node object corresponding to node.value in the current ns.
+            #
+            # (Using the current ns here is correct; this case only gets
+            #  triggered when there are no more levels of recursion,
+            #  and the leftmost name always resides in the current ns.)
+            #
+            obj_node = self.get_value(get_ast_node_name(ast_node.value))
+            attr_name = ast_node.attr
+        return obj_node, attr_name
+
+    def get_attribute(self, ast_node):
+        """Get value of an ast.Attribute.
+
+        Return (obj,attr), where each element is a Node object, or None on
+        lookup failure. (Object not known, or no Node value assigned to its attr.)
+        """
+
+        if not isinstance(ast_node.ctx, ast.Load):
+            raise ValueError("Expected a load context, got %s" % (type(ast_node.ctx)))
+
+        obj_node,attr_name = self.resolve_attribute(ast_node)
+
+        # use the original AST node attached to the object's Node to look up the object's ns
+        # TODO: do we need to resolve scopes here, or should the name always be directly in the object's ns?
+        ns = self.ast_node_to_namespace[obj_node.ast_node] if isinstance(obj_node, Node) else None
+        if ns in self.scopes:
+            sc = self.scopes[ns]
+            if attr_name in sc.defs:
+                value_node = sc.defs[attr_name]
+            else:
+                value_node = None
+            return obj_node,value_node
+        else:
+            return None,None
+
+    def set_attribute(self, ast_node, new_value):
+        """Assign the Node provided as new_value into the attribute described
+        by the AST node ast_node. Return (obj,flag), where obj is a Node or None,
+        and flag is True if assignment was done, False otherwise."""
+
+        if not isinstance(ast_node.ctx, ast.Store):
+            raise ValueError("Expected a store context, got %s" % (type(ast_node.ctx)))
+
+        obj_node,attr_name = self.resolve_attribute(ast_node)
+
+        if not isinstance(new_value, Node):
+            return obj_node,False
+
+        # use the original AST node attached to the object's Node to look up the object's ns
+        ns = self.ast_node_to_namespace[obj_node.ast_node] if isinstance(obj_node, Node) else None
+        if ns in self.scopes:
+            sc = self.scopes[ns]
+            sc.defs[attr_name] = new_value
+            return obj_node,True
+        return obj_node,False
+
     # attribute access (node.ctx determines whether set (ast.Store) or get (ast.Load))
     def visit_Attribute(self, node):
         self.msgprinter.message("Attribute %s of %s in context %s" % (node.attr, get_ast_node_name(node.value), type(node.ctx)), level=MsgLevel.DEBUG)
 
         if isinstance(node.ctx, ast.Store):
-            # this is the value being assigned (set by visit_Assign())
-            save_last_value = self.last_value
-
-            # find the object whose attribute we are accessing
-            # (this munges self.last_value to point to the Node for that object)
-            #
-            self.visit(node.value)
-
-            if isinstance(self.last_value, Node):
-                ns = self.ast_node_to_namespace[self.last_value.ast_node]
-                if ns in self.scopes:
-                    sc = self.scopes[ns]
-                    sc.defs[node.attr] = save_last_value
-                    self.msgprinter.message('setattr %s on %s to %s' % (node.attr, self.last_value, save_last_value), level=MsgLevel.INFO)
-
-            self.last_value = save_last_value
+            obj_node,written = self.set_attribute(node, self.last_value)
+            if written:
+                self.msgprinter.message('setattr %s on %s to %s' % (node.attr, get_ast_node_name(node.value), self.last_value), level=MsgLevel.INFO)
 
         elif isinstance(node.ctx, ast.Load):
+            obj_node,attr_node = self.get_attribute(node)
+            if isinstance(obj_node, Node):
+                self.msgprinter.message('getattr %s on %s returns %s' % (node.attr, get_ast_node_name(node.value), attr_node), level=MsgLevel.INFO)
 
-            # TODO: add proper support for nested attributes
-            #
-            # Right now we get, for this code:
-            #
-            #    class MyClass:
-            #        def __init__(self):
-            #            class InnerClass:
-            #                def __init__(self):
-            #                    self.a = 3
-            #            self.b = InnerClass()
-            #
-            #        def dostuff(self):
-            #            self.c = self.b.a
-            #
-            # the following incorrect result:
-            #
-            #    Assign ['self.c'] ['self.b.a']
-            #    Attribute a of self.b in context <class '_ast.Load'>
-            #    Get self.b in <Scope: function dostuff>: no Node value (or name not in scope)
-            #    Namespace for AST node <_ast.Attribute object at 0x7f74da972ef0> (a) recorded as 'None'
-            #    Use from <Node testpyan.MyClass.dostuff> to Getattr <Node *.a>
-            #    Attribute c of self in context <class '_ast.Store'>
-            #    Name self in context <class '_ast.Load'>
-            #    name self maps to <Node testpyan.MyClass>
-            #    setattr c on <Node testpyan.MyClass> to <Node *.a>
+                # remove resolved wildcard from current site to <*.attr>
+                if obj_node.namespace is not None:
+                    from_node = self.get_current_namespace()
+                    self.remove_wild(from_node, obj_node, node.attr)
 
-            # get our Node object corresponding to node.value in the current ns
-            # FIXME: we handle self by its literal name
-            obj_node_name = get_ast_node_name(node.value)
-            current_class = self.get_current_class()
-            if obj_node_name == 'self' and current_class is not None:
-                self.msgprinter.message('name %s maps to %s' % (obj_node_name, current_class), level=MsgLevel.INFO)
-                value = current_class
-            else:
-                value = self.get_value(obj_node_name)
-
-            # use the original AST node attached to that Node to look up the object's ns
-            ns = self.ast_node_to_namespace[value.ast_node] if value is not None else None
-            if ns in self.scopes and node.attr in self.scopes[ns].defs:
-                result = self.scopes[ns].defs[node.attr]
-                self.msgprinter.message('getattr %s on %s returns %s' % (node.attr, value, result), level=MsgLevel.INFO)
-                self.last_value = result
-                return
-
-            tgt_name = node.attr
-            from_node = self.get_current_namespace()
-            if isinstance(self.last_value, Node) and self.last_value.namespace is not None:
-                to_node = self.get_node(self.last_value.get_name(), tgt_name, node)
-            else:
+                self.last_value = attr_node
+            else:  # unknown target obj, add wildcard
+                tgt_name = node.attr
+                from_node = self.get_current_namespace()
                 to_node = self.get_node(None, tgt_name, node)
-            if self.add_uses_edge(from_node, to_node):
-                self.msgprinter.message("Use from %s to Getattr %s" % (from_node, to_node), level=MsgLevel.INFO)
+                if self.add_uses_edge(from_node, to_node):
+                    self.msgprinter.message("Use from %s to Getattr %s (target object not resolved)" % (from_node, to_node), level=MsgLevel.INFO)
 
-            self.last_value = to_node
+                self.last_value = to_node
 
     # name access (node.ctx determines whether set (ast.Store) or get (ast.Load))
     def visit_Name(self, node):
         self.msgprinter.message("Name %s in context %s" % (node.id, type(node.ctx)), level=MsgLevel.DEBUG)
 
+        # TODO: handle this case in analyze_binding() and in visit_Attribute(),
+        # so we won't need to care about names in a store context here.
         if isinstance(node.ctx, ast.Store):
             # when we get here, self.last_value has been set by visit_Assign()
             self.set_value(node.id, self.last_value)
 
+        # any name in a load context = a use of the object the name currently points to
         elif isinstance(node.ctx, ast.Load):
-            # bare "self" in load context
-            #
-            # FIXME: we handle self by its literal name
-            current_class = self.get_current_class()
-            if node.id == 'self' and current_class is not None:
-                self.msgprinter.message('name %s maps to %s' % (node.id, current_class), level=MsgLevel.INFO)
-                self.last_value = current_class
-                return
-
-            # other bare name in load context
-            #
             tgt_name = node.id
-            from_node = self.get_current_namespace()
             to_node = self.get_value(tgt_name)
-            ###TODO if the name is a local variable (i.e. in the innermost scope), and
-            ###has no known value, then don't try to create a Node for it.
-            if not isinstance(to_node, Node):
-                to_node = self.get_node(None, tgt_name, node)  # namespace=None means we don't know the namespace yet
-            if self.add_uses_edge(from_node, to_node):
-                self.msgprinter.message("Use from %s to Name %s" % (from_node, to_node), level=MsgLevel.INFO)
+            current_class = self.get_current_class()
+            if current_class is None or to_node is not current_class:  # add uses edge only if not pointing to "self"
+                ###TODO if the name is a local variable (i.e. in the innermost scope), and
+                ###has no known value, then don't try to create a Node for it.
+                if not isinstance(to_node, Node):
+                    to_node = self.get_node(None, tgt_name, node)  # namespace=None means we don't know the namespace yet
+
+                from_node = self.get_current_namespace()
+                if self.add_uses_edge(from_node, to_node):
+                    self.msgprinter.message("Use from %s to Name %s" % (from_node, to_node), level=MsgLevel.INFO)
 
             self.last_value = to_node
 
@@ -579,6 +622,17 @@ class CallGraphVisitor(ast.NodeVisitor):
     def get_value(self, name):
         """Get the value of name in the current scope. Return None if name is not set to a value."""
 
+        # resolve "self"
+        #
+        # FIXME: we handle self by its literal name. If we want to change this,
+        # need to capture the name of the first argument in visit_FunctionDef()
+        # on the condition that self.current_class is not None.
+        #
+        current_class = self.get_current_class()
+        if current_class is not None and name == 'self':
+            self.msgprinter.message('name %s maps to %s' % (name, current_class), level=MsgLevel.INFO)
+            name = current_class.name
+
         # get the innermost scope that has name **and where name has a value**
         def find_scope(name):
             for sc in reversed(self.scope_stack):
@@ -595,10 +649,13 @@ class CallGraphVisitor(ast.NodeVisitor):
                 self.msgprinter.message('Get %s in %s, found in %s: value %s is not a Node' % (name, self.scope_stack[-1], sc, value), level=MsgLevel.DEBUG)
         else:
             self.msgprinter.message('Get %s in %s: no Node value (or name not in scope)' % (name, self.scope_stack[-1]), level=MsgLevel.DEBUG)
-        return None
 
     def set_value(self, name, value):
         """Set the value of name in the current scope."""
+
+        if name == 'self':
+            self.msgprinter.message('WARNING: ignoring explicit assignment to special name "self" in %s' % (self.scope_stack[-1]), level=MsgLevel.WARNING)
+            return
 
         # get the innermost scope that has name (should be the current scope unless name is a global)
         def find_scope(name):
@@ -710,6 +767,8 @@ class CallGraphVisitor(ast.NodeVisitor):
             self.uses_edges[from_node] = set()
         if to_node in self.uses_edges[from_node]:
             return False
+        if to_node == from_node:
+            return False
         self.uses_edges[from_node].add(to_node)
 
         # for pass 2: remove uses edge to any matching wildcard target node
@@ -732,15 +791,69 @@ class CallGraphVisitor(ast.NodeVisitor):
         # (caused by reference to *.f in pass 1, combined with
         #  expand_unknowns() in postprocessing.)
         #
+        # TODO: this can still get confused. The wildcard is removed if the
+        # name of *any* resolved uses edge matches, whereas the wildcard
+        # may represent several uses, to different objects.
+        #
         if to_node.namespace is not None:
-            matching_wilds = [n for n in self.uses_edges[from_node] if n.namespace is None and n.name == to_node.name]
-            assert len(matching_wilds) < 2  # the set can have only one wild of matching name
-            if len(matching_wilds):
-                wild_node = matching_wilds[0]
-                self.msgprinter.message("Use from %s to %s resolves %s; removing wildcard" % (from_node, to_node, wild_node), level=MsgLevel.INFO)
-                self.uses_edges[from_node].remove(wild_node)
+            self.remove_wild(from_node, to_node, to_node.name)
 
         return True
+
+    def remove_wild(self, from_node, to_node, name):
+        """Remove uses edge from from_node to wildcard *.name.
+
+        This needs both to_node and name  because in case of a bound name
+        (e.g. attribute lookup) the name field of the *target value* does not
+        necessarily match the formal name in the wildcard.
+
+        Used for cleaning up forward-references once resolved.
+        This prevents spurious edges due to expand_unknowns()."""
+
+        if from_node not in self.uses_edges:  # no uses edges to remove
+            return
+
+        # Here we may prefer to err in one of two ways:
+        #
+        #  a) A node seemingly referring to itself is actually referring
+        #     to somewhere else that was not fully resolved, so don't remove
+        #     the wildcard.
+        #
+        #     Example:
+        #
+        #         import sympy as sy
+        #         def simplify(expr):
+        #             sy.simplify(expr)
+        #
+        #     If the source file of sy.simplify is not included in the set of
+        #     analyzed files, this will generate a reference to *.simplify,
+        #     which is formally satisfied by this function itself.
+        #
+        #  b) A node seemingly referring to itself is actually referring
+        #     to itself (it can be e.g. a recursive function). Remove the wildcard.
+        #
+        #     Bad example:
+        #
+        #         def f(count):
+        #             if count > 0:
+        #                 return 1 + f(count-1)
+        #             return 0
+        #
+        #     (This example is bad, because visit_FunctionDef() will pick up
+        #      the f in the top-level namespace, so no reference to *.f
+        #      should be generated in this particular case.)
+        #
+        # We choose a).
+        #
+        if to_node == from_node:
+            return
+
+        matching_wilds = [n for n in self.uses_edges[from_node] if n.namespace is None and n.name == name]
+        assert len(matching_wilds) < 2  # the set can have only one wild of matching name
+        if len(matching_wilds):
+            wild_node = matching_wilds[0]
+            self.msgprinter.message("Use from %s to %s resolves %s; removing wildcard" % (from_node, to_node, wild_node), level=MsgLevel.INFO)
+            self.uses_edges[from_node].remove(wild_node)
 
     ###########################################################################
     # Postprocessing

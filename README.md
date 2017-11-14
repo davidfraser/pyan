@@ -66,6 +66,7 @@ Usually either old or new rank (but often not both) works; this is a long-standi
  - Name lookup across the given set of files
  - Nested function definitions
  - Nested class definitions ☆
+ - Nested attribute accesses like `self.a.b` ☆
  - Assignment tracking with lexical scoping  
    - E.g. if `self.a = MyFancyClass()`, the analyzer knows that any references to `self.a` point to `MyFancyClass`
    - All binding forms are supported (assign, augassign, for, comprehensions, generator expressions) ☆
@@ -85,7 +86,6 @@ Usually either old or new rank (but often not both) works; this is a long-standi
 
 The analyzer **does not currently support**:
 
- - Nested attribute accesses like `self.a.b` (will detect as reference to `*.b` of an unknown object `self.a`).
  - Tuples/lists as first-class values (will ignore any assignment of a tuple/list to a single name).
  - Starred assignment `a,*b,c = d,e,f,g,h` (will detect some item from the RHS).
  - Additional unpacking generalizations ([PEP 448](https://www.python.org/dev/peps/pep-0448/), Python 3.5+).
