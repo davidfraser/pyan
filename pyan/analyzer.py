@@ -640,8 +640,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         #   - n.name      = name of this namespace
         #   - no associated AST node.
 
-        if not len(self.name_stack):  # the top level is the current module
-            return self.get_node('', self.module_name, None)
+        assert len(self.name_stack)  # name_stack should never be empty (always at least module name)
 
         namespace = '.'.join(self.name_stack[0:-1])
         name = self.name_stack[-1]
