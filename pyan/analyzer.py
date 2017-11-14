@@ -323,8 +323,8 @@ class CallGraphVisitor(ast.NodeVisitor):
     def get_attribute(self, ast_node):
         """Get value of an ast.Attribute.
 
-        Return (obj,attr), where each element is a Node object, or None on
-        lookup failure. (Object not known, or no Node value assigned to its attr.)
+        Return Node object for attr, or None on lookup failure.
+        (Object not known, or no Node value assigned to its attr.)
         """
 
         if not isinstance(ast_node.ctx, ast.Load):
@@ -340,54 +340,56 @@ class CallGraphVisitor(ast.NodeVisitor):
                     value_node = sc.defs[attr_name]
                 else:
                     value_node = None
-                return obj_node,value_node
-        return None,None
+                return value_node
 
     def set_attribute(self, ast_node, new_value):
         """Assign the Node provided as new_value into the attribute described
-        by the AST node ast_node. Return (obj,flag), where obj is a Node or None,
-        and flag is True if assignment was done, False otherwise."""
+        by the AST node ast_node. Return True if assignment was done,
+        False otherwise."""
 
         if not isinstance(ast_node.ctx, ast.Store):
             raise ValueError("Expected a store context, got %s" % (type(ast_node.ctx)))
 
-        obj_node,attr_name = self.resolve_attribute(ast_node)
-
         if not isinstance(new_value, Node):
-            return obj_node,False
+            return False
+
+        obj_node,attr_name = self.resolve_attribute(ast_node)
 
         if isinstance(obj_node, Node) and obj_node.namespace is not None:
             ns = obj_node.get_name()  # fully qualified namespace **of attr**
             if ns in self.scopes:
                 sc = self.scopes[ns]
                 sc.defs[attr_name] = new_value
-                return obj_node,True
-        return obj_node,False
+                return True
+        return False
 
     # attribute access (node.ctx determines whether set (ast.Store) or get (ast.Load))
     def visit_Attribute(self, node):
-        self.msgprinter.message("Attribute %s of %s in context %s" % (node.attr, get_ast_node_name(node.value), type(node.ctx)), level=MsgLevel.DEBUG)
+        objname = get_ast_node_name(node.value)
+        self.msgprinter.message("Attribute %s of %s in context %s" % (node.attr, objname, type(node.ctx)), level=MsgLevel.DEBUG)
 
+        # TODO: self.last_value is a hack. Handle names in store context (LHS)
+        # in analyze_binding(), so that visit_Attribute() only needs to handle
+        # the load context (i.e. detect uses of the name).
+        #
         if isinstance(node.ctx, ast.Store):
-            obj_node,written = self.set_attribute(node, self.last_value)
-            if written:
-                self.msgprinter.message('setattr %s on %s to %s' % (node.attr, get_ast_node_name(node.value), self.last_value), level=MsgLevel.INFO)
+            new_value = self.last_value
+            if self.set_attribute(node, new_value):
+                self.msgprinter.message('setattr %s on %s to %s' % (node.attr, objname, new_value), level=MsgLevel.INFO)
 
         elif isinstance(node.ctx, ast.Load):
-            obj_node,attr_node = self.get_attribute(node)
-            if isinstance(obj_node, Node):
-                self.msgprinter.message('getattr %s on %s returns %s' % (node.attr, get_ast_node_name(node.value), attr_node), level=MsgLevel.INFO)
+            attr_node = self.get_attribute(node)
+            if isinstance(attr_node, Node):
+                self.msgprinter.message('getattr %s on %s returns %s' % (node.attr, objname, attr_node), level=MsgLevel.INFO)
 
                 # add uses edge if we have a node for the target
-                # TODO: maybe need to create the node if not already there?
                 from_node = self.get_current_namespace()
-                if isinstance(attr_node, Node):
-                    if self.add_uses_edge(from_node, attr_node):
-                        self.msgprinter.message("Use from %s to Getattr %s" % (from_node, attr_node), level=MsgLevel.INFO)
+                if self.add_uses_edge(from_node, attr_node):
+                    self.msgprinter.message("Use from %s to %s" % (from_node, attr_node), level=MsgLevel.INFO)
 
-                    # remove resolved wildcard from current site to <*.attr>
-                    if attr_node.namespace is not None:
-                        self.remove_wild(from_node, attr_node, node.attr)
+                # remove resolved wildcard from current site to <Node *.attr>
+                if attr_node.namespace is not None:
+                    self.remove_wild(from_node, attr_node, node.attr)
 
                 self.last_value = attr_node
             else:  # unknown target obj, add uses edge to a wildcard
@@ -395,7 +397,7 @@ class CallGraphVisitor(ast.NodeVisitor):
                 from_node = self.get_current_namespace()
                 to_node = self.get_node(None, tgt_name, node)
                 if self.add_uses_edge(from_node, to_node):
-                    self.msgprinter.message("Use from %s to Getattr %s (target object not resolved)" % (from_node, to_node), level=MsgLevel.INFO)
+                    self.msgprinter.message("Use from %s to %s (target obj %s not resolved; maybe fwd ref or unanalyzed import)" % (from_node, to_node, objname), level=MsgLevel.INFO)
 
                 self.last_value = to_node
 
