@@ -215,11 +215,15 @@ class CallGraphVisitor(ast.NodeVisitor):
             src_name = import_item.name  # what is being imported
             tgt_name = import_item.asname if import_item.asname is not None else src_name  # under which name
 
+            # mark the use site
+            #
             from_node = self.get_current_namespace()      # where it is being imported to, i.e. the **user**
             to_node  = self.get_node('', tgt_name, node)  # the thing **being used** (under the asname, if any)
             if self.add_uses_edge(from_node, to_node):
                 self.msgprinter.message("Use from %s to Import %s" % (from_node, to_node), level=MsgLevel.INFO)
 
+            # bind asname in the current namespace to the imported module
+            #
             # conversion: possible short name -> fully qualified name
             # (when analyzing a set of files in the same directory)
             if src_name in self.module_names:
@@ -254,6 +258,9 @@ class CallGraphVisitor(ast.NodeVisitor):
     #
     # Edmund Horner's original post has info on what this fixed in Python 2.
     # https://ejrh.wordpress.com/2012/01/31/call-graphs-in-python-part-2/
+    #
+    # Essentially, this should make '.'.join(...) see str.join.
+    #
     def visit_Constant(self, node):
         self.msgprinter.message("Constant %s" % (node.value), level=MsgLevel.DEBUG)
         t = type(node.value)
@@ -308,7 +315,7 @@ class CallGraphVisitor(ast.NodeVisitor):
             #  triggered when there are no more levels of recursion,
             #  and the leftmost name always resides in the current ns.)
             #
-            obj_node = self.get_value(get_ast_node_name(ast_node.value))
+            obj_node = self.get_value(get_ast_node_name(ast_node.value))  # get_value() resolves "self" if needed.
             attr_name = ast_node.attr
         return obj_node, attr_name
 
@@ -378,7 +385,7 @@ class CallGraphVisitor(ast.NodeVisitor):
                     self.remove_wild(from_node, obj_node, node.attr)
 
                 self.last_value = attr_node
-            else:  # unknown target obj, add wildcard
+            else:  # unknown target obj, add uses edge to a wildcard
                 tgt_name = node.attr
                 from_node = self.get_current_namespace()
                 to_node = self.get_node(None, tgt_name, node)
@@ -617,7 +624,10 @@ class CallGraphVisitor(ast.NodeVisitor):
     def get_current_namespace(self):
         """Return a node representing the current namespace, based on self.name_stack."""
 
-        # namespace nodes do not have an AST node associated with them.
+        # For a Node n representing a namespace:
+        #   - n.namespace = parent namespaces (empty string if top level)
+        #   - n.name      = name of this namespace
+        #   - no associated AST node.
 
         if not len(self.name_stack):  # the top level is the current module
             return self.get_node('', self.module_name, None)
