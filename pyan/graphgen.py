@@ -52,8 +52,8 @@ class Colorizer:
         return result
 
     def _node_to_idx(self, node):
-        ns = node.get_toplevel_namespace()
-        self.msgprinter.message("Coloring %s (top-level namespace %s)" % (node.get_short_name(), ns), level=MsgLevel.INFO)
+        ns = node.filename
+        self.msgprinter.message("Coloring %s from file '%s'" % (node.get_short_name(), ns), level=MsgLevel.INFO)
         if ns not in self._idx_of:
             self._idx_of[ns] = self._next_idx()
         return self._idx_of[ns]
@@ -106,12 +106,12 @@ class GraphGenerator:
         # Secondary sort by name to make the output have a deterministic ordering.
         vis_node_list.sort(key=lambda x: (x.namespace, x.name))
 
-        def find_toplevel_namespaces():
-            namespaces = set()
+        def find_filenames():
+            filenames = set()
             for node in vis_node_list:
-                namespaces.add(node.get_toplevel_namespace())
-            return namespaces
-        colorizer = Colorizer(n=len(find_toplevel_namespaces())+1)
+                filenames.add(node.filename)
+            return filenames
+        colorizer = Colorizer(n=len(find_filenames())+1)
 
         s = """digraph G {\n"""
 
