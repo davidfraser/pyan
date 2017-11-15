@@ -10,7 +10,7 @@ Pyan takes one or more Python source files, performs a (rather superficial) stat
 
 **Defines** relations are drawn with *dotted gray arrows*.
 
-**Uses** relations are drawn with *black solid arrows*.
+**Uses** relations are drawn with *black solid arrows*. Recursion is indicated by an arrow from a node to itself. [Mutual recursion](https://en.wikipedia.org/wiki/Mutual_recursion#Basic_examples) between nodes X and Y is indicated by a pair of arrows, one pointing from X to Y, and the other from Y to X.
 
 **Nodes** are always filled, and made translucent to clearly show any arrows passing underneath them. This is especially useful for large graphs with GraphViz's `fdp` filter. If colored output is not enabled, the fill is white.
 
@@ -47,6 +47,12 @@ If GraphViz says *trouble in init_rank*, try adding `-Gnewrank=true`, as in:
 
 Usually either old or new rank (but often not both) works; this is a long-standing GraphViz issue with complex graphs.
 
+## Too much detail?
+
+If the graph is visually unreadable due to too much detail, consider visualizing only a subset of the files in your project. Any references to files outside the analyzed set will be considered as undefined, and will not be drawn.
+
+Currently Pyan always operates at the level of individual functions and methods; an option to visualize only relations between namespaces may (or may not) be added in a future version.
+
 
 # Features
 
@@ -57,6 +63,7 @@ Usually either old or new rank (but often not both) works; this is a long-standi
  - Nodes for functions and classes
  - Edges for defines
  - Edges for uses
+   - This includes recursive calls ☆
  - Grouping to represent defines, with or without nesting
  - Coloring of nodes by filename
    - Unlimited number of hues ☆
@@ -67,9 +74,9 @@ Usually either old or new rank (but often not both) works; this is a long-standi
  - Nested function definitions
  - Nested class definitions ☆
  - Nested attribute accesses like `self.a.b` ☆
- - Assignment tracking with lexical scoping  
+ - Assignment tracking with lexical scoping
    - E.g. if `self.a = MyFancyClass()`, the analyzer knows that any references to `self.a` point to `MyFancyClass`
-   - All binding forms are supported (assign, augassign, for, comprehensions, generator expressions) ☆  
+   - All binding forms are supported (assign, augassign, for, comprehensions, generator expressions) ☆
      - Name clashes between `for` loop counter variables and functions or classes defined elsewhere no longer confuse Pyan.
  - `self` is defined by capturing the name of the first argument of a method definition, like Python does. ☆
  - Simple item-by-item tuple assignments like `x,y,z = a,b,c` ☆
@@ -82,9 +89,11 @@ Usually either old or new rank (but often not both) works; this is a long-standi
 ## TODO
 
  - This version is currently missing the PRs from [David Fraser's repo](https://github.com/davidfraser/pyan).
- - Get rid of `self.last_value`.  
+ - Get rid of `self.last_value`?
    - Consider each specific kind of expression or statement being handled; get the relevant info directly (or by a more controlled kind of recursion) instead of `self.visit()`.
    - At some point, may need a second visitor class that is just a catch-all that extracts names, which is then applied to only relevant branches of the AST.
+   - On the other hand, maybe `self.last_value` is the simplest implementation that extracts a value from an expression, and it only needs to be used in a controlled manner (as `analyze_binding()` currently does); i.e. reset before visiting, and reset immediately when done.
+ - Support to visualize relations only between namespaces, useful for large projects.
  - Publish test cases.
 
 The analyzer **does not currently support**:
@@ -92,7 +101,7 @@ The analyzer **does not currently support**:
  - Tuples/lists as first-class values (will ignore any assignment of a tuple/list to a single name).
  - Starred assignment `a,*b,c = d,e,f,g,h`
  - Slicing and indexing in assignment (`ast.Subscript`)
- - Additional unpacking generalizations ([PEP 448](https://www.python.org/dev/peps/pep-0448/), Python 3.5+).  
+ - Additional unpacking generalizations ([PEP 448](https://www.python.org/dev/peps/pep-0448/), Python 3.5+).
    - Any **uses** on the RHS *at the binding site* in all of the above are already detected by the name and attribute analyzers, but the binding information from assignments of these forms will not be recorded (at least not correctly).
  - Distinguishing between different Lambdas in the same namespace (to report uses of a particular `lambda` that has been stored in `self.something`).
  - Type hints ([PEP 484](https://www.python.org/dev/peps/pep-0484/), Python 3.5+).
