@@ -107,6 +107,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.expand_unknowns()
         self.contract_nonexistents()
         self.cull_inherited()
+        self.collapse_inner()
 
     ###########################################################################
     # visitor methods
@@ -762,35 +763,35 @@ class CallGraphVisitor(ast.NodeVisitor):
         """Run thunk (0-argument function) with the scope stack augmented with an inner scope.
         Used to analyze lambda, listcomp et al. (The scope must still be present in self.scopes.)"""
 
-#        # The inner scopes pollute the graph too much. Just run the thunk,
-#        # to combine any uses inside the inner scope with the parent Node
-#        # in the graph.
-#
-#        self.name_stack.append(scopename)
-#        inner_ns = self.get_current_namespace().get_name()
-#        if inner_ns not in self.scopes:
-#            raise ValueError("Unknown scope '%s'" % (inner_ns))
-#        self.scope_stack.append(self.scopes[inner_ns])
-#        self.context_stack.append(scopename)
-        thunk()
-#        self.context_stack.pop()
-#        self.scope_stack.pop()
-#        self.name_stack.pop()
+        # The inner scopes pollute the graph too much; we will need to collapse
+        # them in postprocessing. However, we must use them here to follow
+        # the Python 3 scoping rules correctly.
 
-#        # Add a defines edge, which will mark the inner scope as defined,
-#        # allowing any uses to other objects from inside the lambda/listcomp/etc.
-#        # body to be visualized.
-#        #
-#        # All inner scopes of the same scopename (lambda, listcomp, ...) in the
-#        # current ns will be grouped into a single node, as they have no name.
-#        # We create a namespace-like node that has no associated AST node,
-#        # as it does not represent any unique AST node.
-#        from_node = self.get_current_namespace()
-#        ns = from_node.get_name()
-#        to_node = self.get_node(ns, scopename, None)
-#        if self.add_defines_edge(from_node, to_node):
-#            self.msgprinter.message("Def from %s to %s %s" % (from_node, scopename, to_node), level=MsgLevel.INFO)
-#        self.last_value = to_node  # Make this inner scope node assignable to track its uses.
+        self.name_stack.append(scopename)
+        inner_ns = self.get_current_namespace().get_name()
+        if inner_ns not in self.scopes:
+            raise ValueError("Unknown scope '%s'" % (inner_ns))
+        self.scope_stack.append(self.scopes[inner_ns])
+        self.context_stack.append(scopename)
+        thunk()
+        self.context_stack.pop()
+        self.scope_stack.pop()
+        self.name_stack.pop()
+
+        # Add a defines edge, which will mark the inner scope as defined,
+        # allowing any uses to other objects from inside the lambda/listcomp/etc.
+        # body to be visualized.
+        #
+        # All inner scopes of the same scopename (lambda, listcomp, ...) in the
+        # current ns will be grouped into a single node, as they have no name.
+        # We create a namespace-like node that has no associated AST node,
+        # as it does not represent any unique AST node.
+        from_node = self.get_current_namespace()
+        ns = from_node.get_name()
+        to_node = self.get_node(ns, scopename, None)
+        if self.add_defines_edge(from_node, to_node):
+            self.msgprinter.message("Def from %s to %s %s" % (from_node, scopename, to_node), level=MsgLevel.INFO)
+        self.last_value = to_node  # Make this inner scope node assignable to track its uses.
 
 
     def get_current_class(self):
@@ -1126,3 +1127,26 @@ class CallGraphVisitor(ast.NodeVisitor):
 
         for from_node, to_node in removed_uses_edges:
             self.uses_edges[from_node].remove(to_node)
+
+    def collapse_inner(self):
+        """Combine lambda and comprehension Nodes with their parent Nodes to reduce visual noise.
+        Also mark those original nodes as undefined, so that they won't be visualized."""
+
+        # Lambdas and comprehensions do not define any names in the enclosing
+        # scope, so we only need to treat the uses edges.
+
+        # TODO: currently we handle outgoing uses edges only.
+        #
+        # What about incoming uses edges? E.g. consider a lambda that is saved
+        # in an instance variable, then used elsewhere. How do we want the
+        # graph to look like in that case?
+
+        for name in self.nodes:
+            if name in ('lambda', 'listcomp', 'setcomp', 'dictcomp', 'genexpr'):
+                for n in self.nodes[name]:
+                    nsp,p = n.namespace.rsplit('.', 1)  # parent
+                    pn = self.get_node(nsp, p, None)
+                    for n2 in self.uses_edges[n]:  # outgoing uses edges
+                        self.msgprinter.message("Collapsing inner from %s to %s, uses %s" % (n, pn, n2), level=MsgLevel.INFO)
+                        self.add_uses_edge(pn, n2)
+                    n.defined = False
