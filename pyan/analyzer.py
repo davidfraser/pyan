@@ -539,7 +539,7 @@ class CallGraphVisitor(ast.NodeVisitor):
                 from_node = self.get_current_namespace()
                 to_node = self.get_node(None, tgt_name, node)
                 if self.add_uses_edge(from_node, to_node):
-                    self.msgprinter.message("Use from %s to %s (target obj %s not resolved; maybe fwd ref or unanalyzed import)" % (from_node, to_node, objname), level=MsgLevel.INFO)
+                    self.msgprinter.message("Use from %s to %s (target obj %s not resolved; maybe fwd ref, function argument, or unanalyzed import)" % (from_node, to_node, objname), level=MsgLevel.INFO)
 
                 self.last_value = to_node
 
