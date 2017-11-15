@@ -515,6 +515,11 @@ class CallGraphVisitor(ast.NodeVisitor):
             # import math  # create <Node math>
             # math.sin     # create <Node math.sin> (instead of <Node *.sin> even though math.py is not analyzed)
             #
+            # This sometimes creates silly nodes such as (when analyzing Pyan itself)
+            # <Node pyan.analyzer.CallGraphVisitor.defines_edges.name.namespace>
+            # but these are harmless, as they are considered undefined and
+            # will not be visualized.
+            #
             elif isinstance(obj_node, Node) and obj_node.namespace is not None:
                 tgt_name = node.attr
                 from_node = self.get_current_namespace()
