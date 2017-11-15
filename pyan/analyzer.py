@@ -255,6 +255,19 @@ class CallGraphVisitor(ast.NodeVisitor):
             self.visit(node.body)  # single expr
         self.with_scope("lambda", process)
 
+        # Add a defines edge, which will mark the lambda as defined,
+        # allowing any uses to other objects from inside the lambda body
+        # to be visualized.
+        #
+        # All lambdas in the current ns will be grouped into a single node,
+        # as they have no name. We create a namespace-like node that has
+        # no associated AST node, as it does not represent any unique AST node.
+        from_node = self.get_current_namespace()
+        ns = from_node.get_name()
+        to_node = self.get_node(ns, "lambda", None)
+        if self.add_defines_edge(from_node, to_node):
+            self.msgprinter.message("Def from %s to Lambda %s" % (from_node, to_node), level=MsgLevel.INFO)
+
     def visit_Import(self, node):
         self.msgprinter.message("Import %s" % [format_alias(x) for x in node.names], level=MsgLevel.DEBUG)
 
