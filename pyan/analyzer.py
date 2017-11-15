@@ -71,6 +71,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.scope_stack = []  # the Scope objects
         self.class_stack = []  # object type "self" points to
         self.self_stack  = []  # literal name of "self" (need a stack to account for inner classes inside methods)
+        self.context_stack = []  # track ClassDefs and FunctionDefs (to detect which FunctionDefs are methods)
         self.last_value  = None
 
     def process(self, filename):
@@ -109,7 +110,9 @@ class CallGraphVisitor(ast.NodeVisitor):
         ns = self.module_name
         self.name_stack.append(ns)
         self.scope_stack.append(self.scopes[ns])
+        self.context_stack.append("Module %s" % (ns))
         self.generic_visit(node)  # visit the **children** of node
+        self.context_stack.pop()
         self.scope_stack.pop()
         self.name_stack.pop()
         self.last_value = None
@@ -141,12 +144,14 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.name_stack.append(node.name)
         inner_ns = self.get_current_namespace().get_name()
         self.scope_stack.append(self.scopes[inner_ns])
+        self.context_stack.append("ClassDef %s" % (node.name))
 
         for b in node.bases:  # this will mark uses from a derived class to its bases (via names appearing in a load context).
             self.visit(b)
         for stmt in node.body:
             self.visit(stmt)
 
+        self.context_stack.pop()
         self.scope_stack.pop()
         self.name_stack.pop()
         self.class_stack.pop()
@@ -184,11 +189,12 @@ class CallGraphVisitor(ast.NodeVisitor):
         # literal representing "self" if this is a method definition.
         self_literal = self.analyze_functiondef(node)
         if self_literal is not None:
-            self.self_stack.append(self_literal)
+            self.self_stack.append((self_literal,self.get_current_class()))
 
         self.name_stack.append(node.name)
         inner_ns = self.get_current_namespace().get_name()
         self.scope_stack.append(self.scopes[inner_ns])
+        self.context_stack.append("FunctionDef %s" % (node.name))
 
         for d in node.args.defaults:
             self.visit(d)
@@ -200,6 +206,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         if self_literal is not None:
             self.self_stack.pop()
 
+        self.context_stack.pop()
         self.scope_stack.pop()
         self.name_stack.pop()
 
@@ -214,7 +221,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         if not isinstance(ast_node, ast.FunctionDef):
             raise TypeError("Expected ast.FunctionDef; got %s" % (type(ast_node)))
 
-        # visit decorators
+        # Visit decorators
         self.last_value = None
         deco_names = []
         for deco in ast_node.decorator_list:
@@ -224,9 +231,14 @@ class CallGraphVisitor(ast.NodeVisitor):
                 deco_names.append(deco_node.name)
             self.last_value = None
 
-        # get literal for "self"
-        is_method = self.get_current_class() is not None
-        if is_method and "staticmethod" not in deco_names:
+        # Get literal for "self", if applicable.
+        #
+        # - ignore static methods
+        # - ignore functions defined inside methods (this new FunctionDef
+        #   must be directly in a class namespace)
+        #
+        in_class_ns = self.context_stack[-1].startswith("ClassDef")
+        if in_class_ns and "staticmethod" not in deco_names:
             # We can treat instance methods and class methods the same,
             # since Pyan is only interested in object types, not instances.
             all_args = ast_node.args  # args, vararg (*args), kwonlyargs, kwarg (**kwargs)
@@ -750,10 +762,15 @@ class CallGraphVisitor(ast.NodeVisitor):
 
         # resolve "self"
         #
-        current_class = self.get_current_class()
-        if current_class is not None and len(self.self_stack) and name == self.self_stack[-1]:
-            self.msgprinter.message('Resolve self: name %s maps to %s' % (name, current_class), level=MsgLevel.INFO)
-            name = current_class.name
+        # The loop is needed because a method of an inner class, defined inside
+        # a method of a containing class, may use a different name for self
+        # than the method of the containing class.
+        #
+        for self_literal,class_node in reversed(self.self_stack):
+            if name == self_literal:
+                self.msgprinter.message('Resolve self: name %s maps to %s' % (name, class_node), level=MsgLevel.INFO)
+                name = class_node.name
+                break
 
         # get the innermost scope that has name **and where name has a value**
         def find_scope(name):
@@ -785,11 +802,12 @@ class CallGraphVisitor(ast.NodeVisitor):
     def set_value(self, name, value):
         """Set the value of name in the current scope. Value must be a Node."""
 
-        current_class = self.get_current_class()
-        if current_class is not None and len(self.self_stack) and name == self.self_stack[-1]:
-            # TODO: the name should actually be overwritable, but get_value() would then need to track whether it has been reassigned.
-            self.msgprinter.message('WARNING: ignoring explicit assignment to "self" name %s in %s' % (self.self_stack[-1], self.scope_stack[-1]), level=MsgLevel.WARNING)
-            return
+        for self_literal,class_node in reversed(self.self_stack):
+            if name == self_literal:
+                # TODO: the name should actually be overwritable, but get_value() would then need to track whether it has been reassigned.
+                # Also gets difficult to track which "self" is meant if there is a local name in addition to the stack.
+                self.msgprinter.message('WARNING: ignoring overwrite of "self" name %s of class %s in %s' % (self_literal, class_node, self.scope_stack[-1]), level=MsgLevel.WARNING)
+                return
 
         # get the innermost scope that has name (should be the current scope unless name is a global)
         def find_scope(name):
