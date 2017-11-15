@@ -1046,19 +1046,22 @@ class CallGraphVisitor(ast.NodeVisitor):
     def contract_nonexistents(self):
         """For all use edges to non-existent (i.e. not defined nodes) X.name, replace with edge to *.name."""
 
-        # TODO: this doesn't actually replace, only adds new edges. Should we remove the corresponding old edges?
-
         new_uses_edges = []
+        removed_uses_edges = []
         for n in self.uses_edges:
             for n2 in self.uses_edges[n]:
                 if n2.namespace is not None and not n2.defined:
                     n3 = self.get_node(None, n2.name, n2.ast_node)
                     n3.defined = False
                     new_uses_edges.append((n, n3))
-                    self.msgprinter.message("Contracting non-existent from %s to %s" % (n, n2), level=MsgLevel.INFO)
+                    removed_uses_edges.append((n, n2))
+                    self.msgprinter.message("Contracting non-existent from %s to %s as %s" % (n, n2, n3), level=MsgLevel.INFO)
 
         for from_node, to_node in new_uses_edges:
             self.add_uses_edge(from_node, to_node)
+
+        for from_node, to_node in removed_uses_edges:
+            self.uses_edges[from_node].remove(to_node)
 
     def expand_unknowns(self):
         """For each unknown node *.name, replace all its incoming edges with edges to X.name for all possible Xs.
