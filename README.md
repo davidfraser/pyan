@@ -71,6 +71,7 @@ Usually either old or new rank (but often not both) works; this is a long-standi
    - E.g. if `self.a = MyFancyClass()`, the analyzer knows that any references to `self.a` point to `MyFancyClass`
    - All binding forms are supported (assign, augassign, for, comprehensions, generator expressions) ☆  
      - Name clashes between `for` loop counter variables and functions or classes defined elsewhere no longer confuse Pyan.
+ - `self` is defined by capturing the name of the first argument of a method definition, like Python does. ☆
  - Simple item-by-item tuple assignments like `x,y,z = a,b,c` ☆
  - Chained assignments `a = b = c` ☆
  - Local scope for lambda, listcomp, setcomp, dictcomp, genexpr ☆
@@ -88,16 +89,13 @@ Usually either old or new rank (but often not both) works; this is a long-standi
 
 The analyzer **does not currently support**:
 
- - Tuples/lists as first-class values (will ignore any assignment of a tuple/list to a single name).  
-   - Any **uses** on the RHS *at the binding site* are already detected by the name and attribute analyzers, but the binding information from assignments of this form will not be recorded (at least not correctly).
- - Starred assignment `a,*b,c = d,e,f,g,h`  
-   - Same note as above.
+ - Tuples/lists as first-class values (will ignore any assignment of a tuple/list to a single name).
+ - Lambdas as first-class values (to report uses of a `lambda` that has been stored in `self.something`).
+ - Starred assignment `a,*b,c = d,e,f,g,h`
  - Slicing and indexing in assignment (`ast.Subscript`)
-   - Same note as above.
  - Additional unpacking generalizations ([PEP 448](https://www.python.org/dev/peps/pep-0448/), Python 3.5+).  
-   - Same note as above.
+   - Any **uses** on the RHS *at the binding site* in all of the above are already detected by the name and attribute analyzers, but the binding information from assignments of these forms will not be recorded (at least not correctly).
  - Type hints ([PEP 484](https://www.python.org/dev/peps/pep-0484/), Python 3.5+).
- - Use of `self` is detected by the literal name `self`, not by capturing the name of the first argument of a method definition. (This is rather easy to fix.)
  - Async definitions are detected, but passed through to the corresponding non-async analyzers; could be annotated.
  - Cython; could strip or comment out Cython-specific code as a preprocess step, then treat as Python (will need to be careful to get line numbers right).
 
