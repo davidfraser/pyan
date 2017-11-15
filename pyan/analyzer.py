@@ -141,10 +141,12 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.name_stack.append(node.name)
         inner_ns = self.get_current_namespace().get_name()
         self.scope_stack.append(self.scopes[inner_ns])
-        for b in node.bases:
+
+        for b in node.bases:  # this will mark uses from a derived class to its bases (via names appearing in a load context).
             self.visit(b)
         for stmt in node.body:
             self.visit(stmt)
+
         self.scope_stack.pop()
         self.name_stack.pop()
         self.class_stack.pop()
@@ -684,9 +686,9 @@ class CallGraphVisitor(ast.NodeVisitor):
             else:  # update existing scope info
                 sc = scopes[ns]
                 oldsc = self.scopes[ns]
-                for dn in sc.defs:
-                    if dn not in oldsc.defs:
-                        oldsc.defs[dn] = sc.defs[dn]
+                for name in sc.defs:
+                    if name not in oldsc.defs:
+                        oldsc.defs[name] = sc.defs[name]
 
         self.msgprinter.message("Scopes now: %s" % (self.scopes), level=MsgLevel.DEBUG)
 
