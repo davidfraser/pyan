@@ -901,8 +901,6 @@ class CallGraphVisitor(ast.NodeVisitor):
             self.uses_edges[from_node] = set()
         if to_node in self.uses_edges[from_node]:
             return False
-        if to_node == from_node:
-            return False
         self.uses_edges[from_node].add(to_node)
 
         # for pass 2: remove uses edge to any matching wildcard target node

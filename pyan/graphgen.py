@@ -209,7 +209,7 @@ class GraphGenerator:
             for n in analyzer.uses_edges:
                 if n.defined:
                     for n2 in analyzer.uses_edges[n]:
-                        if n2.defined and n2 != n:
+                        if n2.defined:
                             s += """    %s -> %s;\n""" % (n.get_label(), n2.get_label())
 
         s += """}\n"""  # terminate "digraph G {"
@@ -248,7 +248,7 @@ class GraphGenerator:
             for n in analyzer.uses_edges:
                 if n.defined:
                     for n2 in analyzer.uses_edges[n]:
-                        if n2.defined and n2 != n:
+                        if n2.defined:
                             i1 = id_map[n]
                             i2 = id_map[n2]
                             s += """%d %d U\n""" % (i1, i2)
