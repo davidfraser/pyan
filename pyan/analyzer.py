@@ -421,8 +421,9 @@ class CallGraphVisitor(ast.NodeVisitor):
     def get_attribute(self, ast_node):
         """Get value of an ast.Attribute.
 
-        Return Node object for attr, or None on lookup failure.
-        (Object not known, or no Node value assigned to its attr.)
+        Return pair of Node objects (obj,attr), where each item can be None
+        on lookup failure. (Object not known, or no Node value assigned
+        to its attr.)
         """
 
         if not isinstance(ast_node.ctx, ast.Load):
@@ -441,7 +442,7 @@ class CallGraphVisitor(ast.NodeVisitor):
             # special handling, by design.)
             #
             if ns in ("Num", "Str"):  # TODO: other types?
-                return self.get_node(ns, attr_name, None)
+                return obj_node, self.get_node(ns, attr_name, None)
 
             if ns in self.scopes:
                 sc = self.scopes[ns]
@@ -449,7 +450,8 @@ class CallGraphVisitor(ast.NodeVisitor):
                     value_node = sc.defs[attr_name]
                 else:
                     value_node = None
-                return value_node
+                return obj_node, value_node
+        return obj_node, None  # here obj_node may be None
 
     def set_attribute(self, ast_node, new_value):
         """Assign the Node provided as new_value into the attribute described
@@ -487,11 +489,13 @@ class CallGraphVisitor(ast.NodeVisitor):
                 self.msgprinter.message('setattr %s on %s to %s' % (node.attr, objname, new_value), level=MsgLevel.INFO)
 
         elif isinstance(node.ctx, ast.Load):
-            attr_node = self.get_attribute(node)
+            obj_node,attr_node = self.get_attribute(node)
+
+            # Both object and attr known.
             if isinstance(attr_node, Node):
                 self.msgprinter.message('getattr %s on %s returns %s' % (node.attr, objname, attr_node), level=MsgLevel.INFO)
 
-                # add uses edge if we have a node for the target
+                # add uses edge
                 from_node = self.get_current_namespace()
                 if self.add_uses_edge(from_node, attr_node):
                     self.msgprinter.message("Use from %s to %s" % (from_node, attr_node), level=MsgLevel.INFO)
@@ -501,7 +505,32 @@ class CallGraphVisitor(ast.NodeVisitor):
                     self.remove_wild(from_node, attr_node, node.attr)
 
                 self.last_value = attr_node
-            else:  # unknown target obj, add uses edge to a wildcard
+
+            # Object known, but attr unknown. Create node and add a uses edge.
+            #
+            # TODO: this is mainly useful for imports. Should probably disallow
+            # creating new attribute nodes for other undefined attrs of known objs.
+            #
+            # E.g.
+            #
+            # import math  # create <Node math>
+            # math.sin     # create <Node math.sin> (instead of <Node *.sin> even though math.py is not analyzed)
+            #
+            elif isinstance(obj_node, Node) and obj_node.namespace is not None:
+                tgt_name = node.attr
+                from_node = self.get_current_namespace()
+                ns = obj_node.get_name()  # fully qualified namespace **of attr**
+                to_node = self.get_node(ns, tgt_name, node)
+                if self.add_uses_edge(from_node, to_node):
+                    self.msgprinter.message("Use from %s to %s (target obj %s known but target attr %s not resolved; maybe fwd ref or unanalyzed import)" % (from_node, to_node, obj_node, node.attr), level=MsgLevel.INFO)
+
+                # remove resolved wildcard from current site to <Node *.attr>
+                self.remove_wild(from_node, obj_node, node.attr)
+
+                self.last_value = to_node
+
+            # Object unknown, add uses edge to a wildcard by attr name.
+            else:
                 tgt_name = node.attr
                 from_node = self.get_current_namespace()
                 to_node = self.get_node(None, tgt_name, node)
