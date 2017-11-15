@@ -363,6 +363,8 @@ class CallGraphVisitor(ast.NodeVisitor):
                 if ns in self.scopes:  # imported modules not in the set of analyzed files are not seen by Pyan
                     sc = self.scopes[ns]
                     if attr_name in sc.defs:
+                        self.msgprinter.message("Resolved to attr %s of %s" % (ast_node.attr, sc.defs[attr_name]),
+                                                                level=MsgLevel.DEBUG)
                         return sc.defs[attr_name], ast_node.attr
 
             # It may happen that ast_node.value has no corresponding graph Node,
@@ -372,6 +374,8 @@ class CallGraphVisitor(ast.NodeVisitor):
             # In this case, return None for the object to let visit_Attribute()
             # add a wildcard reference to *.attr.
             #
+            self.msgprinter.message("Unresolved, returning attr %s of unknown" % (ast_node.attr),
+                                    level=MsgLevel.DEBUG)
             return None, ast_node.attr
         else:
             # Handle some constant types as a special case.
@@ -398,6 +402,8 @@ class CallGraphVisitor(ast.NodeVisitor):
                 #  and the leftmost name always resides in the current ns.)
                 obj_node = self.get_value(get_ast_node_name(ast_node.value))  # resolves "self" if needed
             attr_name = ast_node.attr
+
+        self.msgprinter.message("Resolved to attr %s of %s" % (attr_name, obj_node), level=MsgLevel.DEBUG)
         return obj_node, attr_name
 
     def get_attribute(self, ast_node):
