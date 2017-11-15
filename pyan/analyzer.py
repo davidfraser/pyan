@@ -68,10 +68,10 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.module_name = None
         self.filename = None
         self.name_stack  = []  # for building namespace name, node naming
-        self.scope_stack = []  # the Scope objects
-        self.class_stack = []  # object type "self" points to
-        self.self_stack  = []  # literal name of "self" (need a stack to account for inner classes inside methods)
-        self.context_stack = []  # track ClassDefs and FunctionDefs (to detect which FunctionDefs are methods)
+        self.scope_stack = []  # the Scope objects currently in scope
+        self.class_stack = []  # Nodes for class definitions currently in scope
+        self.self_stack  = []  # (literal name of "self", Node for class it points to); need a stack to account for inner classes inside methods
+        self.context_stack = []  # for detecting which FunctionDefs are methods
         self.last_value  = None
 
     def process(self, filename):
@@ -738,9 +738,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.name_stack.pop()
 
     def get_current_class(self):
-        """Return the node representing the current class, or None if not inside a class definition.
-
-        This is useful for resolving self."""
+        """Return the node representing the current class, or None if not inside a class definition."""
         return self.class_stack[-1] if len(self.class_stack) else None
 
     def get_current_namespace(self):
