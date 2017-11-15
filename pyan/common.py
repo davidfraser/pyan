@@ -44,6 +44,9 @@ def get_module_name(filename):
     if not os.path.exists(init_path):
         return mod_name
 
+    if not os.path.dirname(filename):
+        return mod_name
+
     return get_module_name(os.path.dirname(filename)) + '.' + mod_name
 
 def format_alias(x):
