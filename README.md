@@ -89,6 +89,8 @@ Currently Pyan always operates at the level of individual functions and methods;
 ## TODO
 
  - This version is currently missing the PRs from [David Fraser's repo](https://github.com/davidfraser/pyan).
+   - Incorporate the yEd writer by Patrick Massot, from [[1]](https://github.com/davidfraser/pyan/pull/1).
+   - Migrate to standard library logger, following the PR by Patrick Massot [[1]](https://github.com/davidfraser/pyan/pull/1).
  - Get rid of `self.last_value`?
    - Consider each specific kind of expression or statement being handled; get the relevant info directly (or by a more controlled kind of recursion) instead of `self.visit()`.
    - At some point, may need a second visitor class that is just a catch-all that extracts names, which is then applied to only relevant branches of the AST.
@@ -141,7 +143,11 @@ Original [pyan.py](https://github.com/ejrh/ejrh/blob/master/utils/pyan.py) by Ed
 
 [Coloring and grouping](https://ejrh.wordpress.com/2012/08/18/coloured-call-graphs/) for GraphViz output by Juha Jeronen.
 
-[Git repository cleanup](https://github.com/davidfraser/pyan/) by David Fraser.
+[Git repository cleanup](https://github.com/davidfraser/pyan/) and maintenance by David Fraser.
+
+A bugfix [[2]](https://github.com/davidfraser/pyan/pull/2) and the option `--dot-rankdir` [[3]](https://github.com/davidfraser/pyan/pull/3) contributed by GitHub user ch41rmn.
+
+A bug in `.tgf` output [[4]](https://github.com/davidfraser/pyan/pull/4) pointed out and fix suggested by Adam Eijdenberg.
 
 This Python 3 port and refactoring to separate modules by Juha Jeronen.
 
