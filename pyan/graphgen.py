@@ -75,7 +75,7 @@ class GraphGenerator:
     # http://www.graphviz.org/doc/info/lang.html
     # http://www.graphviz.org/doc/info/attrs.html
     #
-    def to_dot(self, draw_defines, draw_uses, colored, grouped, nested_groups, annotated):
+    def to_dot(self, draw_defines, draw_uses, colored, grouped, nested_groups, annotated, rankdir):
         """Return, as a string, a GraphViz .dot representation of the graph."""
         analyzer = self.analyzer
 
@@ -115,10 +115,16 @@ class GraphGenerator:
 
         s = """digraph G {\n"""
 
-        # enable clustering
+        graph_opts = {'rankdir': rankdir}
+
         # http://www.graphviz.org/doc/info/attrs.html#a:clusterrank
-        if grouped:
-            s += """    graph [clusterrank="local"];\n"""
+        if grouped:  # enable clustering
+            graph_opts['clusterrank'] = 'local'
+
+        graph_opts = ', '.join(
+            [key + '="' + value + '"' for key, value in graph_opts.items()]
+        )
+        s += """    graph [""" + graph_opts + """];\n"""
 
         # Write nodes and subgraphs
         #

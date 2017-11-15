@@ -53,10 +53,15 @@ def main():
     parser.add_option("-e", "--nested-groups",
                       action="store_true", default=False, dest="nested_groups",
                       help="create nested groups (subgraphs) for nested namespaces (implies -g) [dot only]")
+    parser.add_option("--dot-rankdir", default="TB", dest="rankdir",
+                      help=(
+                        "specifies the dot graph 'rankdir' property for "
+                        "controlling the direction of the graph. "
+                        "Allowed values: ['TB', 'LR', 'BT', 'RL']. "
+                        "[dot only]"))
     parser.add_option("-a", "--annotated",
                       action="store_true", default=False, dest="annotated",
                       help="annotate with module and source line number [dot only]")
-
     options, args = parser.parse_args()
     filenames = [fn2 for fn in args for fn2 in glob(fn)]
     if len(args) == 0:
@@ -88,7 +93,8 @@ def main():
                        colored=options.colored,
                        grouped=options.grouped,
                        nested_groups=options.nested_groups,
-                       annotated=options.annotated))
+                       annotated=options.annotated,
+                       rankdir=options.rankdir))
     if options.tgf:
         print(g.to_tgf(draw_defines=options.draw_defines,
                        draw_uses=options.draw_uses))
