@@ -90,6 +90,20 @@ class CallGraphVisitor(ast.NodeVisitor):
     def postprocess(self):
         """Finalize the analysis."""
 
+        # Compared to the original Pyan, the ordering of expand_unknowns() and
+        # contract_nonexistents() has been switched.
+        #
+        # It seems the original idea was to first convert any unresolved, but
+        # specific, references to the form *.name, and then expand those to see
+        # if they match anything else. However, this approach has the potential
+        # to produce a lot of spurious uses edges (for unrelated functions with
+        # a name that happens to match).
+        #
+        # Now that the analyzer is (very slightly) smarter about resolving
+        # attributes and imports, we do it the other way around: we only expand
+        # those references that could not be resolved to any known name, and
+        # then remove any references pointing outside the analyzed file set.
+
         self.expand_unknowns()
         self.contract_nonexistents()
         self.cull_inherited()
