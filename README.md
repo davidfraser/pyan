@@ -128,7 +128,7 @@ class MyClass:
 
 By tracking the name `self.f`, the analyzer will see that `MyClass.dostuff()` uses `some_func()`.
 
-The analyzer also needs to keep track of what type of object `self` currently points to. This is currently done by considering the literal `self` a special name in the lexical scope of the class.
+The analyzer also needs to keep track of what type of object `self` currently points to. In a method definition, the literal name representing `self` is captured from the argument list, as Python does; then in the lexical scope of that method, that name points to the current class (since Pyan cares only about object types, not instances).
 
 Of course, this simple approach cannot correctly track cases where the current binding of `self.f` depends on the order in which the methods of the class are executed. To keep things simple, Pyan decides to ignore this complication, just reads through the code in a linear fashion (twice so that any forward-references are picked up), and uses the most recent binding that is currently in scope.
 
