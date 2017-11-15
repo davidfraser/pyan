@@ -257,12 +257,6 @@ class CallGraphVisitor(ast.NodeVisitor):
     def visit_AsyncFunctionDef(self, node):
         self.visit_FunctionDef(node)  # TODO: alias for now; tag async functions in output in a future version?
 
-    # This gives lambdas their own namespaces in the graph;
-    # if that is not desired, this method can be simply omitted.
-    #
-    # (The default visit() already visits all the children of a generic AST node
-    #  by calling generic_visit(); and visit_Name() captures any uses inside the lambda.)
-    #
     def visit_Lambda(self, node):
         self.msgprinter.message("Lambda", level=MsgLevel.DEBUG)
         def process():
@@ -748,32 +742,36 @@ class CallGraphVisitor(ast.NodeVisitor):
     def with_scope(self, scopename, thunk):
         """Run thunk (0-argument function) with the scope stack augmented with an inner scope.
         Used to analyze lambda, listcomp et al. (The scope must still be present in self.scopes.)"""
-        self.name_stack.append(scopename)
-        inner_ns = self.get_current_namespace().get_name()
-        if inner_ns not in self.scopes:
-            raise ValueError("Unknown scope '%s'" % (inner_ns))
-        self.scope_stack.append(self.scopes[inner_ns])
-        self.context_stack.append(scopename)
+
+#        # The inner scopes pollute the graph too much. Just run the thunk,
+#        # to combine any uses inside the inner scope with the parent Node
+#        # in the graph.
+#
+#        self.name_stack.append(scopename)
+#        inner_ns = self.get_current_namespace().get_name()
+#        if inner_ns not in self.scopes:
+#            raise ValueError("Unknown scope '%s'" % (inner_ns))
+#        self.scope_stack.append(self.scopes[inner_ns])
+#        self.context_stack.append(scopename)
         thunk()
-        self.context_stack.pop()
-        self.scope_stack.pop()
-        self.name_stack.pop()
+#        self.context_stack.pop()
+#        self.scope_stack.pop()
+#        self.name_stack.pop()
 
-        # Add a defines edge, which will mark the inner scope as defined,
-        # allowing any uses to other objects from inside the lambda/listcomp/etc.
-        # body to be visualized.
-        #
-        # All inner scopes of the same scopename (lambda, listcomp, ...) in the
-        # current ns will be grouped into a single node, as they have no name.
-        # We create a namespace-like node that has no associated AST node,
-        # as it does not represent any unique AST node.
-        from_node = self.get_current_namespace()
-        ns = from_node.get_name()
-        to_node = self.get_node(ns, scopename, None)
-        if self.add_defines_edge(from_node, to_node):
-            self.msgprinter.message("Def from %s to %s %s" % (from_node, scopename, to_node), level=MsgLevel.INFO)
-
-        self.last_value = to_node  # Make this inner scope node assignable to track its uses.
+#        # Add a defines edge, which will mark the inner scope as defined,
+#        # allowing any uses to other objects from inside the lambda/listcomp/etc.
+#        # body to be visualized.
+#        #
+#        # All inner scopes of the same scopename (lambda, listcomp, ...) in the
+#        # current ns will be grouped into a single node, as they have no name.
+#        # We create a namespace-like node that has no associated AST node,
+#        # as it does not represent any unique AST node.
+#        from_node = self.get_current_namespace()
+#        ns = from_node.get_name()
+#        to_node = self.get_node(ns, scopename, None)
+#        if self.add_defines_edge(from_node, to_node):
+#            self.msgprinter.message("Def from %s to %s %s" % (from_node, scopename, to_node), level=MsgLevel.INFO)
+#        self.last_value = to_node  # Make this inner scope node assignable to track its uses.
 
 
     def get_current_class(self):
