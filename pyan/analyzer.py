@@ -268,6 +268,8 @@ class CallGraphVisitor(ast.NodeVisitor):
         if self.add_defines_edge(from_node, to_node):
             self.msgprinter.message("Def from %s to Lambda %s" % (from_node, to_node), level=MsgLevel.INFO)
 
+        self.last_value = to_node  # Make this lambda node assignable to track its uses.
+
     def visit_Import(self, node):
         self.msgprinter.message("Import %s" % [format_alias(x) for x in node.names], level=MsgLevel.DEBUG)
 

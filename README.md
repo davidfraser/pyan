@@ -90,11 +90,11 @@ Usually either old or new rank (but often not both) works; this is a long-standi
 The analyzer **does not currently support**:
 
  - Tuples/lists as first-class values (will ignore any assignment of a tuple/list to a single name).
- - Lambdas as first-class values (to report uses of a `lambda` that has been stored in `self.something`).
  - Starred assignment `a,*b,c = d,e,f,g,h`
  - Slicing and indexing in assignment (`ast.Subscript`)
  - Additional unpacking generalizations ([PEP 448](https://www.python.org/dev/peps/pep-0448/), Python 3.5+).  
    - Any **uses** on the RHS *at the binding site* in all of the above are already detected by the name and attribute analyzers, but the binding information from assignments of these forms will not be recorded (at least not correctly).
+ - Distinguishing between different Lambdas in the same namespace (to report uses of a particular `lambda` that has been stored in `self.something`).
  - Type hints ([PEP 484](https://www.python.org/dev/peps/pep-0484/), Python 3.5+).
  - Async definitions are detected, but passed through to the corresponding non-async analyzers; could be annotated.
  - Cython; could strip or comment out Cython-specific code as a preprocess step, then treat as Python (will need to be careful to get line numbers right).
