@@ -273,21 +273,6 @@ class CallGraphVisitor(ast.NodeVisitor):
             self.visit(node.body)  # single expr
         self.with_scope("lambda", process)
 
-        # Add a defines edge, which will mark the lambda as defined,
-        # allowing any uses to other objects from inside the lambda body
-        # to be visualized.
-        #
-        # All lambdas in the current ns will be grouped into a single node,
-        # as they have no name. We create a namespace-like node that has
-        # no associated AST node, as it does not represent any unique AST node.
-        from_node = self.get_current_namespace()
-        ns = from_node.get_name()
-        to_node = self.get_node(ns, "lambda", None)
-        if self.add_defines_edge(from_node, to_node):
-            self.msgprinter.message("Def from %s to Lambda %s" % (from_node, to_node), level=MsgLevel.INFO)
-
-        self.last_value = to_node  # Make this lambda node assignable to track its uses.
-
     def visit_Import(self, node):
         self.msgprinter.message("Import %s" % [format_alias(x) for x in node.names], level=MsgLevel.DEBUG)
 
@@ -768,9 +753,28 @@ class CallGraphVisitor(ast.NodeVisitor):
         if inner_ns not in self.scopes:
             raise ValueError("Unknown scope '%s'" % (inner_ns))
         self.scope_stack.append(self.scopes[inner_ns])
+        self.context_stack.append(scopename)
         thunk()
+        self.context_stack.pop()
         self.scope_stack.pop()
         self.name_stack.pop()
+
+        # Add a defines edge, which will mark the inner scope as defined,
+        # allowing any uses to other objects from inside the lambda/listcomp/etc.
+        # body to be visualized.
+        #
+        # All inner scopes of the same scopename (lambda, listcomp, ...) in the
+        # current ns will be grouped into a single node, as they have no name.
+        # We create a namespace-like node that has no associated AST node,
+        # as it does not represent any unique AST node.
+        from_node = self.get_current_namespace()
+        ns = from_node.get_name()
+        to_node = self.get_node(ns, scopename, None)
+        if self.add_defines_edge(from_node, to_node):
+            self.msgprinter.message("Def from %s to %s %s" % (from_node, scopename, to_node), level=MsgLevel.INFO)
+
+        self.last_value = to_node  # Make this inner scope node assignable to track its uses.
+
 
     def get_current_class(self):
         """Return the node representing the current class, or None if not inside a class definition."""
