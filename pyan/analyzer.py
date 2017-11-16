@@ -94,7 +94,8 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.filename = filename
         self.module_name = get_module_name(filename)
         self.analyze_scopes(content, filename)  # add to the currently known scopes
-        self.visit(ast.parse(content, filename))
+        # TODO: make this compatible with both Python2 and Python3
+        self.visit(ast.parse(content.encode('utf-8'), filename))
         self.module_name = None
         self.filename = None
 
