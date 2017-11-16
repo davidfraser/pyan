@@ -9,16 +9,19 @@
     for rendering by e.g. GraphViz or yEd.
 """
 
+import logging
 from glob import glob
 from optparse import OptionParser  # TODO: migrate to argparse
 
-from .common import MsgPrinter, MsgLevel
 from .analyzer import CallGraphVisitor
-from .graphgen import GraphGenerator
+from .graph import VisualGraph
+from .writers import TgfWriter, DotWriter, YedWriter
 
 def main():
-    usage = """usage: %prog FILENAME... [--dot|--tgf]"""
-    desc = """Analyse one or more Python source files and generate an approximate call graph of the modules, classes and functions within them."""
+    usage = """usage: %prog FILENAME... [--dot|--tgf|--yed]"""
+    desc = ('Analyse one or more Python source files and generate an'
+            'approximate call graph of the modules, classes and functions'
+            ' within them.')
     parser = OptionParser(usage=usage, description=desc)
     parser.add_option("--dot",
                       action="store_true", default=False,
@@ -26,6 +29,13 @@ def main():
     parser.add_option("--tgf",
                       action="store_true", default=False,
                       help="output in Trivial Graph Format")
+    parser.add_option("--yed",
+                      action="store_true", default=False,
+                      help="output in yEd GraphML Format")
+    parser.add_option("-f", "--file", dest="filename",
+                      help="write graph to FILE", metavar="FILE", default=None)
+    parser.add_option("-l", "--log", dest="logname",
+                      help="write log to LOG", metavar="LOG")
     parser.add_option("-v", "--verbose",
                       action="store_true", default=False, dest="verbose",
                       help="verbose output")
@@ -61,7 +71,8 @@ def main():
                         "[dot only]"))
     parser.add_option("-a", "--annotated",
                       action="store_true", default=False, dest="annotated",
-                      help="annotate with module and source line number [dot only]")
+                      help="annotate with module and source line number")
+
     options, args = parser.parse_args()
     filenames = [fn2 for fn in args for fn2 in glob(fn)]
     if len(args) == 0:
@@ -70,34 +81,54 @@ def main():
     if options.nested_groups:
         options.grouped = True
 
-    # TODO: use an int argument
-    verbosity = MsgLevel.WARNING
-    if options.very_verbose:
-        verbosity = MsgLevel.DEBUG
-    elif options.verbose:
-        verbosity = MsgLevel.INFO
-    m = MsgPrinter(verbosity)
+    graph_options = {
+            'draw_defines': options.draw_defines,
+            'draw_uses': options.draw_uses,
+            'colored': options.colored,
+            'grouped': options.grouped,
+            'nested_groups': options.nested_groups,
+            'annotated': options.annotated}
 
-    # Process the set of files, twiceso that any forward-references are picked up.
-    v = CallGraphVisitor(filenames, msgprinter=m)
+    # TODO: use an int argument for verbosity
+    logger = logging.getLogger(__name__)
+    if options.very_verbose:
+        logger.setLevel(logging.DEBUG)
+    elif options.verbose:
+        logger.setLevel(logging.INFO)
+    else:
+        logger.setLevel(logging.WARN)
+    logger.addHandler(logging.StreamHandler())
+    if options.logname:
+        handler = logging.FileHandler(options.logname)
+        logger.addHandler(handler)
+
+    # Process the set of files, twice so that any forward-references are picked up.
+    v = CallGraphVisitor(filenames, logger)
     for pas in range(2):
         for filename in filenames:
-            m.message("========== pass %d, file '%s' ==========" % (pas+1, filename), level=MsgLevel.INFO)
+            logger.info("========== pass %d, file '%s' ==========" % (pas+1, filename))
             v.process(filename)
     v.postprocess()
 
-    g = GraphGenerator(v, msgprinter=m)
+    graph = VisualGraph.from_visitor(v, options=graph_options, logger=logger)
+
     if options.dot:
-        print(g.to_dot(draw_defines=options.draw_defines,
-                       draw_uses=options.draw_uses,
-                       colored=options.colored,
-                       grouped=options.grouped,
-                       nested_groups=options.nested_groups,
-                       annotated=options.annotated,
-                       rankdir=options.rankdir))
+        writer = DotWriter(
+                graph,
+                options=['rankdir='+options.rankdir],
+                output=options.filename,
+                logger=logger)
+        writer.run()
+
     if options.tgf:
-        print(g.to_tgf(draw_defines=options.draw_defines,
-                       draw_uses=options.draw_uses))
+        writer = TgfWriter(
+                graph, output=options.filename, logger=logger)
+        writer.run()
+
+    if options.yed:
+        writer = YedWriter(
+                graph, output=options.filename, logger=logger)
+        writer.run()
 
 
 if __name__ == '__main__':

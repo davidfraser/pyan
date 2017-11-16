@@ -2,7 +2,7 @@
 
 Generate approximate call graphs for Python programs.
 
-Pyan takes one or more Python source files, performs a (rather superficial) static analysis, and constructs a directed graph of the objects in the combined source, and how they define or use each other. The graph can be output for rendering, mainly by GraphViz.
+Pyan takes one or more Python source files, performs a (rather superficial) static analysis, and constructs a directed graph of the objects in the combined source, and how they define or use each other. The graph can be output for rendering by GraphViz or yEd.
 
 *And now it is available for Python 3!*
 
@@ -88,12 +88,11 @@ Currently Pyan always operates at the level of individual functions and methods;
 
 ## TODO
 
- - Incorporate the yEd writer by Patrick Massot, from [[1]](https://github.com/davidfraser/pyan/pull/1).
- - Migrate to standard library logger, following the PR by Patrick Massot [[1]](https://github.com/davidfraser/pyan/pull/1).
  - Implement `super()` in `visit_Call()`, see discussion [here](https://github.com/johnyf/pyan/issues/2).
  - Prefix methods by class name in the graph; create a legend for annotations. See the discussion [here](https://github.com/johnyf/pyan/issues/4).
  - Improve the wildcard resolution mechanism, see discussion [here](https://github.com/johnyf/pyan/issues/5).
  - Add an option to visualize relations only between namespaces, useful for large projects.
+   - Scan the nodes and edges, basically generate a new graph and visualize that.
  - Publish test cases.
  - Get rid of `self.last_value`?
    - Consider each specific kind of expression or statement being handled; get the relevant info directly (or by a more controlled kind of recursion) instead of `self.visit()`.

@@ -8,28 +8,8 @@ Original code by Edmund Horner.
 Further development by Juha Jeronen.
 """
 
-from sys import stderr
 import os.path
 import ast
-
-
-class MsgLevel:
-    ERROR   = 0
-    WARNING = 1
-    INFO    = 2
-    DEBUG   = 3
-
-class MsgPrinter:
-    def __init__(self, verbosity=MsgLevel.WARNING):
-        self.verbosity = verbosity
-
-    def message(self, msg, level):
-        if level <= self.verbosity:
-            print(msg, file=stderr)
-
-    def set_verbosity(self, verbosity):
-        self.verbosity = verbosity
-
 
 def get_module_name(filename):
     """Try to determine the full module name of a source file, by figuring out
