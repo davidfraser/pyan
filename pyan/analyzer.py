@@ -252,7 +252,7 @@ class CallGraphVisitor(ast.NodeVisitor):
                 deco_names.append(deco_node.name)
             self.last_value = None
 
-        # Get literal for "self", if applicable.
+        # Get the name representing "self", if applicable.
         #
         # - ignore static methods
         # - ignore functions defined inside methods (this new FunctionDef
