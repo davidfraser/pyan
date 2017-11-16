@@ -64,7 +64,8 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.scopes = {}  # fully qualified name of namespace: Scope object
 
         self.class_base_ast_nodes = {}  # pass 1: class Node: list of AST nodes
-        self.class_base_nodes     = {}  # pass 2: class Node: list of Node objects
+        self.class_base_nodes     = {}  # pass 2: class Node: list of Node objects (local bases, no recursion)
+        self.mro                  = {}  # pass 2: class Node: list of Node objects in Python's MRO order
 
         # current context for analysis
         self.module_name = None
@@ -97,22 +98,133 @@ class CallGraphVisitor(ast.NodeVisitor):
         """
         self.logger.debug("Resolving base classes")
         assert len(self.scope_stack) == 0  # only allowed between passes
-        for node in self.class_base_ast_nodes:
+        for node in self.class_base_ast_nodes:  # Node: list of AST nodes
             self.class_base_nodes[node] = []
             for ast_node in self.class_base_ast_nodes[node]:
                 # perform the lookup in the scope enclosing the class definition
                 self.scope_stack.append(self.scopes[node.namespace])
+
                 if isinstance(ast_node, ast.Name):
                     baseclass_node = self.get_value(ast_node.id)
                 elif isinstance(ast_node, ast.Attribute):
                     _,baseclass_node = self.get_attribute(ast_node)  # don't care about obj, just grab attr
                 else:  # give up
                     baseclass_node = None
+
                 self.scope_stack.pop()
 
                 if isinstance(baseclass_node, Node) and baseclass_node.namespace is not None:
                     self.class_base_nodes[node].append(baseclass_node)
-        self.logger.debug("All base classes: %s" % self.class_base_nodes)
+
+        self.logger.debug("All base classes (non-recursive, local level only): %s" % self.class_base_nodes)
+        self.mro = self._resolve_method_resolution_order()
+
+    def _resolve_method_resolution_order(self):
+        """Compute the method resolution order (MRO) for each of the analyzed classes."""
+
+        self.logger.debug("Resolving method resolution order (MRO) for all analyzed classes")
+
+        # https://en.wikipedia.org/wiki/C3_linearization#Description
+
+        def head(lst):
+            if len(lst):
+                return lst[0]
+        def tail(lst):
+            if len(lst) > 1:
+                return lst[1:]
+            else:
+                return []
+
+        class LinearizationImpossible(Exception):
+            pass
+
+        from functools import reduce
+        from operator import add
+        def C3_find_good_head(heads, tails):  # find an element of heads which is not in any of the tails
+            flat_tails = reduce(add, tails, [])  # flatten the outer level
+            for hd in heads:
+                if hd not in flat_tails:
+                    break
+            else:  # no break only if there are cyclic dependencies.
+                raise LinearizationImpossible("MRO linearization impossible; cyclic dependency detected. heads: %s, tails: %s" % (heads, tails))
+            return hd
+
+        def remove_all(elt, lst):  # remove all occurrences of elt from lst, return a copy
+            return [x for x in lst if x != elt]
+        def remove_all_in(elt, lists):  # remove elt from all lists, return a copy
+            return [remove_all(elt, lst) for lst in lists]
+
+        def C3_merge(lists):
+            out = []
+            while True:
+                self.logger.debug("MRO: C3 merge: out: %s, lists: %s" % (out, lists))
+                heads = [head(lst) for lst in lists if head(lst) is not None]
+                if not len(heads):
+                    break
+                tails = [tail(lst) for lst in lists]
+                self.logger.debug("MRO: C3 merge: heads: %s, tails: %s" % (heads, tails))
+                hd = C3_find_good_head(heads, tails)
+                self.logger.debug("MRO: C3 merge: chose head %s" % (hd))
+                out.append(hd)
+                lists = remove_all_in(hd, lists)
+            return out
+
+        mro = {}  # result
+        try:
+            memo = {}  # caching/memoization
+            def C3_linearize(node):
+                self.logger.debug("MRO: C3 linearizing %s" % (node))
+                seen.add(node)
+                if node not in memo:
+                    #  unknown class                     or no ancestors
+                    if node not in self.class_base_nodes or not len(self.class_base_nodes[node]):
+                        memo[node] = [node]
+                    else:  # known and has ancestors
+                        lists = []
+                        # linearization of parents...
+                        for baseclass_node in self.class_base_nodes[node]:
+                            if baseclass_node not in seen:
+                                lists.append(C3_linearize(baseclass_node))
+                        # ...and the parents themselves (in the order they appear in the ClassDef)
+                        self.logger.debug("MRO: parents of %s: %s" % (node, self.class_base_nodes[node]))
+                        lists.append(self.class_base_nodes[node])
+                        self.logger.debug("MRO: C3 merging %s" % (lists))
+                        memo[node] = [node] + C3_merge(lists)
+                self.logger.debug("MRO: C3 linearized %s, result %s" % (node, memo[node]))
+                return memo[node]
+            for node in self.class_base_nodes:
+                self.logger.debug("MRO: analyzing class %s" % (node))
+                seen = set()  # break cycles (separately for each class we start from)
+                mro[node] = C3_linearize(node)
+        except LinearizationImpossible as e:
+            self.logger.error(e)
+
+            # generic fallback: depth-first search of lists of ancestors
+            #
+            # (so that we can try to draw *something* if the code to be
+            #  analyzed is so badly formed that the MRO algorithm fails)
+
+            memo = {}  # caching/memoization
+            def lookup_bases_recursive(node):
+                seen.add(node)
+                if node not in memo:
+                    out = [node]  # first look up in obj itself...
+                    if node in self.class_base_nodes:  # known class?
+                        for baseclass_node in self.class_base_nodes[node]:  # ...then in its bases
+                            if baseclass_node not in seen:
+                                out.append(baseclass_node)
+                                out.extend(lookup_bases_recursive(baseclass_node))
+                    memo[node] = out
+                return memo[node]
+
+            mro = {}
+            for node in self.class_base_nodes:
+                self.logger.debug("MRO: generic fallback: analyzing class %s" % (node))
+                seen = set()  # break cycles (separately for each class we start from)
+                mro[node] = lookup_bases_recursive(node)
+
+        self.logger.debug("Method resolution order (MRO) for all analyzed classes: %s" % mro)
+        return mro
 
     def postprocess(self):
         """Finalize the analysis."""
@@ -491,34 +603,25 @@ class CallGraphVisitor(ast.NodeVisitor):
                     if attr_name in sc.defs:
                         return sc.defs[attr_name]
 
-            # first try directly in object's ns
+            # first try directly in object's ns (this works already in pass 1)
             value_node = lookup(ns)
             if value_node is not None:
                 return obj_node, value_node
 
             # next try ns of each ancestor (this works only in pass 2,
-            # after self.class_base_nodes has been populated)
+            # after self.mro has been populated)
             #
-            # TODO: MRO, multiple inheritance; Python uses C3 linearization
-            #
-            def lookup_in_bases_of(obj):
-                if obj in self.class_base_nodes:  # has ancestors?
-                    for base_node in self.class_base_nodes[obj]:
-                        ns = base_node.get_name()
-                        value_node = lookup(ns)
-                        if value_node is not None:
-                            return base_node, value_node
-                        # recurse
-                        b, v = lookup_in_bases_of(base_node)
-                        if v is not None:
-                            return b, v
-                return None, None
-
-            base_node, value_node = lookup_in_bases_of(obj_node)
-            if value_node is not None:
+            if obj_node in self.mro:
+                for base_node in self.mro[obj_node][1:]:  # the first element is always obj itself
+                    ns = base_node.get_name()
+                    value_node = lookup(ns)
+                    if value_node is not None:
+                        break
+                else:
+                    return None, None  # not found
                 return base_node, value_node
 
-        return obj_node, None  # here obj_node may be None
+        return obj_node, None  # here obj_node is either None or unknown (namespace None)
 
     def set_attribute(self, ast_node, new_value):
         """Assign the Node provided as new_value into the attribute described
@@ -796,15 +899,23 @@ class CallGraphVisitor(ast.NodeVisitor):
             if funcname == "super":
                 class_node = self.get_current_class()
                 self.logger.debug("Resolving super() of %s" % (class_node))
-                if class_node in self.class_base_nodes:
-                    base_nodes = self.class_base_nodes[class_node]
-                    if len(base_nodes):
-                        # TODO: MRO, multiple inheritance; Python uses C3 linearization
-                        # (for now, we assume the super() call goes into the first base)
-                        result = base_nodes[0]
-                        self.logger.debug("super of %s is %s" % (class_node, result))
-                        return result
-            # add other funcnames here if needed
+                if class_node in self.mro:
+                    # Our super() class is the next one in the MRO.
+                    #
+                    # Note that we consider only the **static type** of the
+                    # class itself. The later elements of the MRO - important
+                    # for resolving chained super() calls in a dynamic context,
+                    # where the dynamic type of the calling object is different
+                    # from the static type of the class where the super() call
+                    # site is - are never used by Pyan for resolving super().
+                    #
+                    # This is a limitation of pure lexical scope based static
+                    # code analysis.
+                    #
+                    result = self.mro[class_node][1]
+                    self.logger.debug("super of %s is %s" % (class_node, result))
+                    return result
+            # add implementations for other built-in funcnames here if needed
 
     def visit_Call(self, node):
         self.logger.debug("Call %s" % (get_ast_node_name(node.func)))

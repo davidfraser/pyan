@@ -76,7 +76,8 @@ Currently Pyan always operates at the level of individual functions and methods;
  - Nested attribute accesses like `self.a.b` ☆
  - Inherited attributes ☆
    - Pyan3 looks up also in base classes when resolving attributes. In the old Pyan, calls to inherited methods used to be picked up by `contract_nonexistents()` followed by `expand_unknowns()`, but that often generated spurious uses edges (because the wildcard to `*.name` expands to `X.name` *for all* `X` that have an attribute called `name`.).
- - Very rudimentary support for `super()` (arguments ignored; assumed to point to the first base class) ☆
+ - Resolution of `super()` based on the static type at the call site ☆
+ - MRO is (statically) respected in looking up inherited attributes and `super()` ☆
  - Assignment tracking with lexical scoping
    - E.g. if `self.a = MyFancyClass()`, the analyzer knows that any references to `self.a` point to `MyFancyClass`
    - All binding forms are supported (assign, augassign, for, comprehensions, generator expressions) ☆
@@ -91,8 +92,6 @@ Currently Pyan always operates at the level of individual functions and methods;
 
 ## TODO
 
- - Make the analyzer smarter about object-oriented code.
-   - Implement MRO for `super()` handling and inherited attribute lookup; Python uses C3 linearization.
  - Make the analyzer understand `del name` (probably seen as `isinstance(node.ctx, ast.Del)` in `visit_Name()`, `visit_Attribute()`)
  - Prefix methods by class name in the graph; create a legend for annotations. See the discussion [here](https://github.com/johnyf/pyan/issues/4).
  - Improve the wildcard resolution mechanism, see discussion [here](https://github.com/johnyf/pyan/issues/5).
