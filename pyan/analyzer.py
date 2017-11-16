@@ -144,9 +144,21 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.context_stack = []  # for detecting which FunctionDefs are methods
         self.last_value  = None
 
-    def process(self, filename):
-        """Analyze the specified Python source file."""
+        # Analyze.
+        self.process()
 
+    def process(self):
+        """Analyze the set of files, twice so that any forward-references are picked up."""
+        for pas in range(2):
+            for filename in self.filenames:
+                self.logger.info("========== pass %d, file '%s' ==========" % (pas+1, filename))
+                self.process_one(filename)
+            if pas == 0:
+                self.resolve_base_classes()  # must be done only after all files seen
+        self.postprocess()
+
+    def process_one(self, filename):
+        """Analyze the specified Python source file."""
         if filename not in self.filenames:
             raise ValueError("Filename '%s' has not been preprocessed (was not given to __init__, which got %s)" % (filename, self.filenames))
         with open(filename, "rt", encoding="utf-8") as f:
