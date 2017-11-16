@@ -1,7 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Format-agnostic representation of the output graph."""
+from __future__ import division
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import absolute_import
 
+from builtins import dict
+from builtins import range
+from builtins import int
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 import re
 import logging
 import colorsys
@@ -14,7 +24,7 @@ import colorsys
 # level is 0, its lightness will be 1.0, i.e. pure white regardless
 # of the hue.
 #
-class Colorizer:
+class Colorizer(object):
     def __init__(self, num_colors, colored=True, logger=None):
         self.logger = logger or logging.getLogger(__name__)
         self.colored = colored

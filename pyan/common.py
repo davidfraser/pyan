@@ -7,7 +7,14 @@ Created on Mon Nov 13 03:33:00 2017
 Original code by Edmund Horner.
 Further development by Juha Jeronen.
 """
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 import os.path
 import ast
 
@@ -71,7 +78,7 @@ def make_safe_label(label):
     return out.replace('.', '__').replace('*', '')
 
 
-class Node:
+class Node(object):
     """A node is an object in the call graph.  Nodes have names, and are in
     namespaces.  The full name of a node is its namespace, a dot, and its name.
     If the namespace is None, it is rendered as *, and considered as an unknown
@@ -172,7 +179,7 @@ class Node:
         return '<Node %s>' % self.get_name()
 
 
-class Scope:
+class Scope(object):
     """Adaptor that makes scopes look somewhat like those from the Python 2
     compiler module, as far as Pyan's CallGraphVisitor is concerned."""
 

@@ -8,7 +8,14 @@
     source, and how they define or use each other.  The graph can be output
     for rendering by e.g. GraphViz or yEd.
 """
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
+from builtins import range
+from future import standard_library
+standard_library.install_aliases()
 import logging
 from glob import glob
 from optparse import OptionParser  # TODO: migrate to argparse
