@@ -8,12 +8,12 @@ Original code by Edmund Horner.
 Python 3 port by Juha Jeronen.
 """
 
+import os.path
 import logging
 import ast
 import symtable
-from .common import format_alias, get_ast_node_name, \
-                    sanitize_exprs, get_module_name, \
-                    Node, Scope
+
+from .node import Node
 
 # TODO: add Cython support (strip type annotations in a preprocess step, then treat as Python)
 # TODO: built-in functions (range(), enumerate(), zip(), iter(), ...):
@@ -29,6 +29,74 @@ from .common import format_alias, get_ast_node_name, \
 #    for the purposes of generating the call graph.
 #
 #    Namespaces also get a Node (with no associated AST node).
+
+def get_module_name(filename):
+    """Try to determine the full module name of a source file, by figuring out
+    if its directory looks like a package (i.e. has an __init__.py file)."""
+
+    if os.path.basename(filename) == '__init__.py':
+        return get_module_name(os.path.dirname(filename))
+
+    init_path = os.path.join(os.path.dirname(filename), '__init__.py')
+    mod_name = os.path.basename(filename).replace('.py', '')
+
+    if not os.path.exists(init_path):
+        return mod_name
+
+    if not os.path.dirname(filename):
+        return mod_name
+
+    return get_module_name(os.path.dirname(filename)) + '.' + mod_name
+
+def format_alias(x):
+    """Return human-readable description of an ast.alias (used in Import and ImportFrom nodes)."""
+    if not isinstance(x, ast.alias):
+        raise TypeError("Can only format an ast.alias; got %s" % type(x))
+
+    if x.asname is not None:
+        return "%s as %s" % (x.name, x.asname)
+    else:
+        return "%s" % (x.name)
+
+def get_ast_node_name(x):
+    """Return human-readable name of ast.Attribute or ast.Name. Pass through anything else."""
+    if isinstance(x, ast.Attribute):
+        # x.value might also be an ast.Attribute (think "x.y.z")
+        return "%s.%s" % (get_ast_node_name(x.value), x.attr)
+    elif isinstance(x, ast.Name):
+        return x.id
+    else:
+        return x
+
+# Helper for handling binding forms.
+def sanitize_exprs(exprs):
+    """Convert ast.Tuples in exprs to Python tuples; wrap result in a Python tuple."""
+    def process(expr):
+        if isinstance(expr, (ast.Tuple, ast.List)):
+            return expr.elts  # .elts is a Python tuple
+        else:
+            return [expr]
+    if isinstance(exprs, (tuple, list)):
+        return [process(expr) for expr in exprs]
+    else:
+        return process(exprs)
+
+class Scope:
+    """Adaptor that makes scopes look somewhat like those from the Python 2
+    compiler module, as far as Pyan's CallGraphVisitor is concerned."""
+
+    def __init__(self, table):
+        """table: SymTable instance from symtable.symtable()"""
+        name = table.get_name()
+        if name == 'top':
+            name = ''  # Pyan defines the top level as anonymous
+        self.name = name
+        self.type = table.get_type()  # useful for __repr__()
+        self.defs = {iden:None for iden in table.get_identifiers()}  # name:assigned_value
+
+    def __repr__(self):
+        return "<Scope: %s %s>" % (self.type, self.name)
+
 
 # These tables were useful for porting the visitor to Python 3:
 #

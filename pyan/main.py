@@ -14,7 +14,7 @@ from glob import glob
 from optparse import OptionParser  # TODO: migrate to argparse
 
 from .analyzer import CallGraphVisitor
-from .graph import VisualGraph
+from .visgraph import VisualGraph
 from .writers import TgfWriter, DotWriter, YedWriter
 
 def main():
