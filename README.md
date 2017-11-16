@@ -88,15 +88,17 @@ Currently Pyan always operates at the level of individual functions and methods;
 
 ## TODO
 
- - This version is currently missing the PRs from [David Fraser's repo](https://github.com/davidfraser/pyan).
-   - Incorporate the yEd writer by Patrick Massot, from [[1]](https://github.com/davidfraser/pyan/pull/1).
-   - Migrate to standard library logger, following the PR by Patrick Massot [[1]](https://github.com/davidfraser/pyan/pull/1).
+ - Incorporate the yEd writer by Patrick Massot, from [[1]](https://github.com/davidfraser/pyan/pull/1).
+ - Migrate to standard library logger, following the PR by Patrick Massot [[1]](https://github.com/davidfraser/pyan/pull/1).
+ - Implement `super()` in `visit_Call()`, see discussion [here](https://github.com/johnyf/pyan/issues/2).
+ - Prefix methods by class name in the graph; create a legend for annotations. See the discussion [here](https://github.com/johnyf/pyan/issues/4).
+ - Improve the wildcard resolution mechanism, see discussion [here](https://github.com/johnyf/pyan/issues/5).
+ - Add an option to visualize relations only between namespaces, useful for large projects.
+ - Publish test cases.
  - Get rid of `self.last_value`?
    - Consider each specific kind of expression or statement being handled; get the relevant info directly (or by a more controlled kind of recursion) instead of `self.visit()`.
    - At some point, may need a second visitor class that is just a catch-all that extracts names, which is then applied to only relevant branches of the AST.
    - On the other hand, maybe `self.last_value` is the simplest implementation that extracts a value from an expression, and it only needs to be used in a controlled manner (as `analyze_binding()` currently does); i.e. reset before visiting, and reset immediately when done.
- - Support to visualize relations only between namespaces, useful for large projects.
- - Publish test cases.
 
 The analyzer **does not currently support**:
 
