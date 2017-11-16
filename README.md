@@ -110,9 +110,12 @@ The analyzer **does not currently support**:
  - Slicing and indexing in assignment (`ast.Subscript`)
  - Additional unpacking generalizations ([PEP 448](https://www.python.org/dev/peps/pep-0448/), Python 3.5+).
    - Any **uses** on the RHS *at the binding site* in all of the above are already detected by the name and attribute analyzers, but the binding information from assignments of these forms will not be recorded (at least not correctly).
+ - Resolving results of function calls, except for a very limited special case for `super()`.
+   - Any binding of a name to a result of a function (or method) call - provided that the binding itself is understood by Pyan - will instead show in the output as binding the name to that function (or method). (This may generate some unintuitive uses edges in the graph.)
  - Distinguishing between different Lambdas in the same namespace (to report uses of a particular `lambda` that has been stored in `self.something`).
  - Type hints ([PEP 484](https://www.python.org/dev/peps/pep-0484/), Python 3.5+).
-   - Could be used to bind function argument names to the appropriate object types, avoiding the need for wildcard references (especially for attribute accesses on objects passed in as function arguments).
+ - Type inference for function arguments
+   - Either of these two could be used to bind function argument names to the appropriate object types, avoiding the need for wildcard references (especially for attribute accesses on objects passed in as function arguments).
  - Async definitions are detected, but passed through to the corresponding non-async analyzers; could be annotated.
  - Cython; could strip or comment out Cython-specific code as a preprocess step, then treat as Python (will need to be careful to get line numbers right).
 
