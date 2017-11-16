@@ -888,8 +888,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         """Resolve those calls to built-in functions whose return values
         can be determined in a simple manner.
 
-        Currently, this supports only super() in a very rudimentary manner.
-        This works only in pass 2."""
+        Currently, this supports only super(). This works only in pass 2."""
         if not isinstance(ast_node, ast.Call):
             raise TypeError("Expected ast.Call; got %s" % (type(ast_node)))
 
