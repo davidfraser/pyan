@@ -106,6 +106,7 @@ Currently Pyan always operates at the level of individual functions and methods;
 The analyzer **does not currently support**:
 
  - Tuples/lists as first-class values (will ignore any assignment of a tuple/list to a single name).
+ - Pythonic swap `a,b = b,a`, since tuple assignment is currently processed item by item.
  - Starred assignment `a,*b,c = d,e,f,g,h`
  - Slicing and indexing in assignment (`ast.Subscript`)
  - Additional unpacking generalizations ([PEP 448](https://www.python.org/dev/peps/pep-0448/), Python 3.5+).
