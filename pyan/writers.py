@@ -228,6 +228,7 @@ class YedWriter(Writer):
         self.dedent()
         self.write('</data>')
         self.write('<graph edgedefault="directed" id="%s::">' % graph.id)
+        self.indent()
 
     def finish_subgraph(self, graph):
         self.log('Finish subgraph %s' % graph.label)
