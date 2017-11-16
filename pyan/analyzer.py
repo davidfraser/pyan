@@ -832,7 +832,8 @@ class CallGraphVisitor(ast.NodeVisitor):
                 self.logger.info('Get %s in %s, found in %s, value %s' % (name, self.scope_stack[-1], sc, value))
                 return value
             else:
-                self.logger.error('Get %s in %s, found in %s: value %s is not a Node' % (name, self.scope_stack[-1], sc, value))
+                # TODO: should always be a Node or None
+                self.logger.debug('Get %s in %s, found in %s: value %s is not a Node' % (name, self.scope_stack[-1], sc, value))
         else:
             self.logger.debug('Get %s in %s: no Node value (or name not in scope)' % (name, self.scope_stack[-1]))
 
@@ -861,7 +862,8 @@ class CallGraphVisitor(ast.NodeVisitor):
                 sc.defs[name] = value
                 self.logger.info('Set %s in %s to %s' % (name, sc, value))
             else:
-                self.logger.error('Set %s in %s: value %s is not a Node' % (name, sc, value))
+                # TODO: should always be a Node or None
+                self.logger.debug('Set %s in %s: value %s is not a Node' % (name, sc, value))
         else:
             self.logger.debug('Set: name %s not in scope' % (name))
 
