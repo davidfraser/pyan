@@ -108,6 +108,8 @@ def main():
         for filename in filenames:
             logger.info("========== pass %d, file '%s' ==========" % (pas+1, filename))
             v.process(filename)
+        if pas == 0:
+            v.resolve_base_classes()  # must be done only after all files seen
     v.postprocess()
 
     graph = VisualGraph.from_visitor(v, options=graph_options, logger=logger)

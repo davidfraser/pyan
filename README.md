@@ -74,6 +74,8 @@ Currently Pyan always operates at the level of individual functions and methods;
  - Nested function definitions
  - Nested class definitions ☆
  - Nested attribute accesses like `self.a.b` ☆
+ - Inherited attributes ☆
+   - Pyan3 looks up also in base classes when resolving attributes. In the old Pyan, calls to inherited methods used to be picked up by `contract_nonexistents()` followed by `expand_unknowns()`, but that often generated spurious uses edges (because the wildcard to `*.name` expands to `X.name` *for all* `X` that have an attribute called `name`.).
  - Assignment tracking with lexical scoping
    - E.g. if `self.a = MyFancyClass()`, the analyzer knows that any references to `self.a` point to `MyFancyClass`
    - All binding forms are supported (assign, augassign, for, comprehensions, generator expressions) ☆
@@ -90,7 +92,6 @@ Currently Pyan always operates at the level of individual functions and methods;
 
  - Make the analyzer smarter about object-oriented code.
    - Implement `super()` in `visit_Call()`, see discussion [here](https://github.com/johnyf/pyan/issues/2).
-   - Try also base classes when resolving attributes. (For this, we need to record the list of bases.) E.g. Pyan itself has `Writer.run()`, but the derived classes do not override it, so the call to `run()` in `main()` is currently not picked up as a uses edge. In the old Pyan, this used to be picked up by `contract_nonexistents()` followed by `expand_unknowns()`, but that often generated spurious edges.
  - Prefix methods by class name in the graph; create a legend for annotations. See the discussion [here](https://github.com/johnyf/pyan/issues/4).
  - Improve the wildcard resolution mechanism, see discussion [here](https://github.com/johnyf/pyan/issues/5).
  - Add an option to visualize relations only between namespaces, useful for large projects.

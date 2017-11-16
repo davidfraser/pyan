@@ -63,6 +63,9 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.nodes = {}   # Node name: list of Node objects (in possibly different namespaces)
         self.scopes = {}  # fully qualified name of namespace: Scope object
 
+        self.class_base_ast_nodes = {}  # pass 1: class Node: list of AST nodes
+        self.class_base_nodes     = {}  # pass 2: class Node: list of Node objects
+
         # current context for analysis
         self.module_name = None
         self.filename = None
@@ -85,6 +88,31 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.visit(ast.parse(content, filename))
         self.module_name = None
         self.filename = None
+
+    def resolve_base_classes(self):
+        """Resolve base classes from AST nodes to Nodes.
+
+        Run this between pass 1 and pass 2 to pick up inherited methods.
+        Currently, this can parse ast.Names and ast.Attributes as bases.
+        """
+        self.logger.debug("Resolving base classes")
+        assert len(self.scope_stack) == 0  # only allowed between passes
+        for node in self.class_base_ast_nodes:
+            self.class_base_nodes[node] = []
+            for ast_node in self.class_base_ast_nodes[node]:
+                # perform the lookup in the scope enclosing the class definition
+                self.scope_stack.append(self.scopes[node.namespace])
+                if isinstance(ast_node, ast.Name):
+                    baseclass_node = self.get_value(ast_node.id)
+                elif isinstance(ast_node, ast.Attribute):
+                    _,baseclass_node = self.get_attribute(ast_node)  # don't care about obj, just grab attr
+                else:  # give up
+                    baseclass_node = None
+                self.scope_stack.pop()
+
+                if isinstance(baseclass_node, Node) and baseclass_node.namespace is not None:
+                    self.class_base_nodes[node].append(baseclass_node)
+        self.logger.debug("All base classes: %s" % self.class_base_nodes)
 
     def postprocess(self):
         """Finalize the analysis."""
@@ -159,8 +187,13 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.scope_stack.append(self.scopes[inner_ns])
         self.context_stack.append("ClassDef %s" % (node.name))
 
-        for b in node.bases:  # this will mark uses from a derived class to its bases (via names appearing in a load context).
+        self.class_base_ast_nodes[to_node] = []
+        for b in node.bases:
+            # gather info for resolution of inherited attributes in pass 2 (see get_attribute())
+            self.class_base_ast_nodes[to_node].append(b)
+            # mark uses from a derived class to its bases (via names appearing in a load context).
             self.visit(b)
+
         for stmt in node.body:
             self.visit(stmt)
 
@@ -419,6 +452,10 @@ class CallGraphVisitor(ast.NodeVisitor):
     def get_attribute(self, ast_node):
         """Get value of an ast.Attribute.
 
+        Supports inherited attributes. If the obj's own namespace has no match
+        for attr, the ancestors of obj are also tried recursively until one of
+        them matches or until all ancestors are exhausted.
+
         Return pair of Node objects (obj,attr), where each item can be None
         on lookup failure. (Object not known, or no Node value assigned
         to its attr.)
@@ -442,14 +479,40 @@ class CallGraphVisitor(ast.NodeVisitor):
             if ns in ("Num", "Str"):  # TODO: other types?
                 return obj_node, self.get_node(ns, attr_name, None)
 
-            if ns in self.scopes:
-                sc = self.scopes[ns]
-                self.logger.debug(sc.defs)
-                if attr_name in sc.defs:
-                    value_node = sc.defs[attr_name]
-                else:
-                    value_node = None
+            # look up attr_name in the given namespace, return Node or None
+            def lookup(ns):
+                if ns in self.scopes:
+                    sc = self.scopes[ns]
+                    if attr_name in sc.defs:
+                        return sc.defs[attr_name]
+
+            # first try directly in object's ns
+            value_node = lookup(ns)
+            if value_node is not None:
                 return obj_node, value_node
+
+            # next try ns of each ancestor (this works only in pass 2,
+            # after self.class_base_nodes has been populated)
+            #
+            # TODO: MRO in multiple inheritance; Python uses C3 linearization
+            #
+            def lookup_in_bases_of(obj):
+                if obj in self.class_base_nodes:  # has ancestors?
+                    for base_node in self.class_base_nodes[obj]:
+                        ns = base_node.get_name()
+                        value_node = lookup(ns)
+                        if value_node is not None:
+                            return base_node, value_node
+                        # recurse
+                        b, v = lookup_in_bases_of(base_node)
+                        if v is not None:
+                            return b, v
+                return None, None
+
+            base_node, value_node = lookup_in_bases_of(obj_node)
+            if value_node is not None:
+                return base_node, value_node
+
         return obj_node, None  # here obj_node may be None
 
     def set_attribute(self, ast_node, new_value):
