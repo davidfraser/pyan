@@ -16,7 +16,10 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import object
 import os.path
-import ast
+try:
+    import gast as ast
+except ImportError:
+    import ast
 
 def get_module_name(filename):
     """Try to determine the full module name of a source file, by figuring out

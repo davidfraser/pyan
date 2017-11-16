@@ -17,7 +17,10 @@ from builtins import zip
 from future import standard_library
 standard_library.install_aliases()
 import logging
-import ast
+try:
+    import gast as ast
+except ImportError:
+    import ast
 import symtable
 from .common import format_alias, get_ast_node_name, \
                     sanitize_exprs, get_module_name, \
