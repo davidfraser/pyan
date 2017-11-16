@@ -173,6 +173,13 @@ class Node:
 
         return self.get_name().replace('.', '__').replace('*', '')
 
+    def get_namespace_label(self):
+        """Return a label for the namespace of this node, suitable for use
+        in graph formats. Unique nodes should have unique labels; and labels
+        should not contain problematic characters like dots or asterisks."""
+
+        return self.namespace.replace('.', '__').replace('*', '')
+
     def __repr__(self):
         return '<Node %s>' % self.get_name()
 

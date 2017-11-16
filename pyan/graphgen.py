@@ -159,10 +159,10 @@ class GraphGenerator:
                     else:
                         indent = " " * 4  # first subgraph begins, start indenting
                 prev_namespace = n.namespace
-                # Begin new subgraph for this namespace (TODO: refactor the label generation).
+                # Begin new subgraph for this namespace
                 #
                 # Name must begin with "cluster" to be recognized as a cluster by GraphViz.
-                s += """%ssubgraph cluster_%s {\n""" % (indent, n.namespace.replace('.', '__').replace('*', ''))
+                s += """%ssubgraph cluster_%s {\n""" % (indent, n.get_namespace_label())
 
                 # translucent gray (no hue to avoid visual confusion with any group of colored nodes)
                 s += """%s    graph [style="filled,rounded", fillcolor="#80808018", label="%s"];\n""" % (indent, n.namespace)
