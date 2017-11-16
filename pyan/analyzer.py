@@ -850,10 +850,15 @@ class CallGraphVisitor(ast.NodeVisitor):
         #       https://www.python.org/dev/peps/pep-0448/
 
         if len(targets) == len(values):  # handle correctly the most common trivial case "a1,a2,... = b1,b2,..."
-            for tgt,value in zip(targets,values):
-                self.visit(value)  # RHS -> set self.last_value to input for this tgt
-                self.visit(tgt)    # LHS, name in a store context
+            captured_values = []
+            for value in values:
+                self.visit(value)  # RHS -> set self.last_value
+                captured_values.append(self.last_value)
                 self.last_value = None
+            for tgt,val in zip(targets,captured_values):
+                self.last_value = val
+                self.visit(tgt)    # LHS, name in a store context
+            self.last_value = None
         else:  # FIXME: for now, do the wrong thing in the non-trivial case
             # old code, no tuple unpacking support
             for value in values:
