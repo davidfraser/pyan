@@ -118,7 +118,7 @@ class GraphGenerator:
         graph_opts = {'rankdir': rankdir}
 
         # http://www.graphviz.org/doc/info/attrs.html#a:clusterrank
-        if grouped:  # enable clustering
+        if grouped:
             graph_opts['clusterrank'] = 'local'
 
         graph_opts = ', '.join(
@@ -134,8 +134,7 @@ class GraphGenerator:
         def update_indent():
             return " " * (4*len(namespace_stack))  # 4 spaces per level
         for n in vis_node_list:
-            # new namespace? (NOTE: nodes sorted by namespace!)
-            if grouped  and  n.namespace != prev_namespace:
+            if grouped and n.namespace != prev_namespace:
                 if nested_groups:
                     # Pop the stack until the newly found namespace is within one of the
                     # parent namespaces (i.e. this is a sibling at that level), or until
@@ -144,7 +143,7 @@ class GraphGenerator:
                     if len(namespace_stack):
                         m = re.match(namespace_stack[-1], n.namespace)
                         # The '.' check catches siblings in cases like MeshGenerator vs. Mesh.
-                        while m is None  or  n.namespace[m.end()] != '.':
+                        while m is None or n.namespace[m.end()] != '.':
                             s += """%s}\n""" % indent  # terminate previous subgraph
                             namespace_stack.pop()
                             indent = update_indent()
