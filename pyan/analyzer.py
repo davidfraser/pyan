@@ -296,8 +296,9 @@ class CallGraphVisitor(ast.NodeVisitor):
             #
             from_node = self.get_current_namespace()      # where it is being imported to, i.e. the **user**
             to_node  = self.get_node('', tgt_name, node)  # the thing **being used** (under the asname, if any)
+            self.logger.debug("Use from %s to Import %s" % (from_node, to_node))
             if self.add_uses_edge(from_node, to_node):
-                self.logger.info("Use from %s to Import %s" % (from_node, to_node))
+                self.logger.info("New edge added for Use from %s to Import %s" % (from_node, to_node))
 
             # bind asname in the current namespace to the imported module
             #
@@ -316,8 +317,9 @@ class CallGraphVisitor(ast.NodeVisitor):
         tgt_name = node.module
         from_node = self.get_current_namespace()
         to_node = self.get_node('', tgt_name, node)  # module, in top-level namespace
+        self.logger.debug("Use from %s to ImportFrom %s" % (from_node, to_node))
         if self.add_uses_edge(from_node, to_node):
-            self.logger.info("Use from %s to ImportFrom %s" % (from_node, to_node))
+            self.logger.info("New edge added for Use from %s to ImportFrom %s" % (from_node, to_node))
 
         if tgt_name in self.module_names:
             mod_name = self.module_names[tgt_name]
@@ -442,6 +444,7 @@ class CallGraphVisitor(ast.NodeVisitor):
 
             if ns in self.scopes:
                 sc = self.scopes[ns]
+                self.logger.debug(sc.defs)
                 if attr_name in sc.defs:
                     value_node = sc.defs[attr_name]
                 else:
@@ -493,8 +496,9 @@ class CallGraphVisitor(ast.NodeVisitor):
 
                 # add uses edge
                 from_node = self.get_current_namespace()
+                self.logger.debug("Use from %s to %s" % (from_node, attr_node))
                 if self.add_uses_edge(from_node, attr_node):
-                    self.logger.info("Use from %s to %s" % (from_node, attr_node))
+                    self.logger.info("New edge added for Use from %s to %s" % (from_node, attr_node))
 
                 # remove resolved wildcard from current site to <Node *.attr>
                 if attr_node.namespace is not None:
@@ -522,8 +526,9 @@ class CallGraphVisitor(ast.NodeVisitor):
                 from_node = self.get_current_namespace()
                 ns = obj_node.get_name()  # fully qualified namespace **of attr**
                 to_node = self.get_node(ns, tgt_name, node)
+                self.logger.debug("Use from %s to %s (target obj %s known but target attr %s not resolved; maybe fwd ref or unanalyzed import)" % (from_node, to_node, obj_node, node.attr))
                 if self.add_uses_edge(from_node, to_node):
-                    self.logger.info("Use from %s to %s (target obj %s known but target attr %s not resolved; maybe fwd ref or unanalyzed import)" % (from_node, to_node, obj_node, node.attr))
+                    self.logger.info("New edge added for Use from %s to %s (target obj %s known but target attr %s not resolved; maybe fwd ref or unanalyzed import)" % (from_node, to_node, obj_node, node.attr))
 
                 # remove resolved wildcard from current site to <Node *.attr>
                 self.remove_wild(from_node, obj_node, node.attr)
@@ -535,8 +540,9 @@ class CallGraphVisitor(ast.NodeVisitor):
                 tgt_name = node.attr
                 from_node = self.get_current_namespace()
                 to_node = self.get_node(None, tgt_name, node)
+                self.logger.debug("Use from %s to %s (target obj %s not resolved; maybe fwd ref, function argument, or unanalyzed import)" % (from_node, to_node, objname))
                 if self.add_uses_edge(from_node, to_node):
-                    self.logger.info("Use from %s to %s (target obj %s not resolved; maybe fwd ref, function argument, or unanalyzed import)" % (from_node, to_node, objname))
+                    self.logger.info("New edge added for Use from %s to %s (target obj %s not resolved; maybe fwd ref, function argument, or unanalyzed import)" % (from_node, to_node, objname))
 
                 self.last_value = to_node
 
@@ -564,8 +570,9 @@ class CallGraphVisitor(ast.NodeVisitor):
                     to_node = self.get_node(None, tgt_name, node)  # namespace=None means we don't know the namespace yet
 
                 from_node = self.get_current_namespace()
+                self.logger.debug("Use from %s to Name %s" % (from_node, to_node))
                 if self.add_uses_edge(from_node, to_node):
-                    self.logger.info("Use from %s to Name %s" % (from_node, to_node))
+                    self.logger.info("New edge added for Use from %s to Name %s" % (from_node, to_node))
 
             self.last_value = to_node
 
