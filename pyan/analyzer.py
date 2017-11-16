@@ -421,9 +421,7 @@ class CallGraphVisitor(ast.NodeVisitor):
             self.logger.debug("Unresolved, returning attr %s of unknown" % (ast_node.attr))
             return None, ast_node.attr
         else:
-            # Handle some constant types as a special case.
-            # Needed particularly to detect str.join().
-            #
+            # detect str.join() and similar (attributes of constant literals)
             if isinstance(ast_node.value, (ast.Num, ast.Str)):  # TODO: other types?
                 t = type(ast_node.value)
                 tn = t.__name__
@@ -437,6 +435,15 @@ class CallGraphVisitor(ast.NodeVisitor):
                 # the analyzer encountered in the analyzed source code,
                 # which is not useful.
                 obj_node = self.get_node('', tn, None)
+
+            # attribute of a function call. Detect cases like super().dostuff()
+            elif isinstance(ast_node.value, ast.Call):
+                obj_node = self.resolve_builtins(ast_node.value)
+
+                # can't resolve result of general function call
+                if not isinstance(obj_node, Node):
+                    self.logger.debug("Unresolved function call as obj, returning attr %s of unknown" % (ast_node.attr))
+                    return None, ast_node.attr
             else:
                 # Get the Node object corresponding to node.value in the current ns.
                 #
@@ -444,10 +451,9 @@ class CallGraphVisitor(ast.NodeVisitor):
                 #  triggered when there are no more levels of recursion,
                 #  and the leftmost name always resides in the current ns.)
                 obj_node = self.get_value(get_ast_node_name(ast_node.value))  # resolves "self" if needed
-            attr_name = ast_node.attr
 
-        self.logger.debug("Resolved to attr %s of %s" % (attr_name, obj_node))
-        return obj_node, attr_name
+        self.logger.debug("Resolved to attr %s of %s" % (ast_node.attr, obj_node))
+        return obj_node, ast_node.attr
 
     def get_attribute(self, ast_node):
         """Get value of an ast.Attribute.
@@ -469,8 +475,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         if isinstance(obj_node, Node) and obj_node.namespace is not None:
             ns = obj_node.get_name()  # fully qualified namespace **of attr**
 
-            # Handle some constant types as a special case.
-            # Needed particularly to detect str.join().
+            # detect str.join() and similar (attributes of constant literals)
             #
             # Any attribute is considered valid for these special types,
             # but only in a load context. (set_attribute() does not have this
@@ -494,7 +499,7 @@ class CallGraphVisitor(ast.NodeVisitor):
             # next try ns of each ancestor (this works only in pass 2,
             # after self.class_base_nodes has been populated)
             #
-            # TODO: MRO in multiple inheritance; Python uses C3 linearization
+            # TODO: MRO, multiple inheritance; Python uses C3 linearization
             #
             def lookup_in_bases_of(obj):
                 if obj in self.class_base_nodes:  # has ancestors?
@@ -776,17 +781,48 @@ class CallGraphVisitor(ast.NodeVisitor):
             for expr in gen.ifs:
                 self.visit(expr)
 
+    def resolve_builtins(self, ast_node):
+        """Resolve those calls to built-in functions whose return values
+        can be determined in a simple manner.
+
+        Currently, this supports only super() in a very rudimentary manner.
+        This works only in pass 2."""
+        if not isinstance(ast_node, ast.Call):
+            raise TypeError("Expected ast.Call; got %s" % (type(ast_node)))
+
+        func_ast_node = ast_node.func  # expr
+        if isinstance(func_ast_node, ast.Name):
+            funcname = func_ast_node.id
+            if funcname == "super":
+                class_node = self.get_current_class()
+                self.logger.debug("Resolving super() of %s" % (class_node))
+                if class_node in self.class_base_nodes:
+                    base_nodes = self.class_base_nodes[class_node]
+                    if len(base_nodes):
+                        # TODO: MRO, multiple inheritance; Python uses C3 linearization
+                        # (for now, we assume the super() call goes into the first base)
+                        result = base_nodes[0]
+                        self.logger.debug("super of %s is %s" % (class_node, result))
+                        return result
+            # add other funcnames here if needed
+
     def visit_Call(self, node):
         self.logger.debug("Call %s" % (get_ast_node_name(node.func)))
 
+        # visit args to detect uses
         for arg in node.args:
             self.visit(arg)
         for kw in node.keywords:
             self.visit(kw.value)
 
-        # Visit the function name part last, so that inside a binding form,
-        # it will be left standing as self.last_value.
-        self.visit(node.func)
+        # see if we can predict the result
+        result_node = self.resolve_builtins(node)
+        if isinstance(result_node, Node):
+            self.last_value = result_node
+        else:  # generic function call
+            # Visit the function name part last, so that inside a binding form,
+            # it will be left standing as self.last_value.
+            self.visit(node.func)
 
     ###########################################################################
     # Scope analysis
