@@ -838,7 +838,7 @@ class CallGraphVisitor(ast.NodeVisitor):
                 self.msgprinter.message('Get %s in %s, found in %s, value %s' % (name, self.scope_stack[-1], sc, value), level=MsgLevel.INFO)
                 return value
             else:
-                self.msgprinter.message('Get %s in %s, found in %s: value %s is not a Node' % (name, self.scope_stack[-1], sc, value), level=MsgLevel.DEBUG)
+                self.msgprinter.message('ERROR: Get %s in %s, found in %s: value %s is not a Node' % (name, self.scope_stack[-1], sc, value), level=MsgLevel.ERROR)
         else:
             self.msgprinter.message('Get %s in %s: no Node value (or name not in scope)' % (name, self.scope_stack[-1]), level=MsgLevel.DEBUG)
 
@@ -867,7 +867,7 @@ class CallGraphVisitor(ast.NodeVisitor):
                 sc.defs[name] = value
                 self.msgprinter.message('Set %s in %s to %s' % (name, sc, value), level=MsgLevel.INFO)
             else:
-                self.msgprinter.message('Set %s in %s: value %s is not a Node' % (name, sc, value), level=MsgLevel.DEBUG)
+                self.msgprinter.message('ERROR: Set %s in %s: value %s is not a Node' % (name, sc, value), level=MsgLevel.ERROR)
         else:
             self.msgprinter.message('Set: name %s not in scope' % (name), level=MsgLevel.DEBUG)
 
@@ -989,7 +989,7 @@ class CallGraphVisitor(ast.NodeVisitor):
     def remove_wild(self, from_node, to_node, name):
         """Remove uses edge from from_node to wildcard *.name.
 
-        This needs both to_node and name  because in case of a bound name
+        This needs both to_node and name because in case of a bound name
         (e.g. attribute lookup) the name field of the *target value* does not
         necessarily match the formal name in the wildcard.
 
@@ -1015,6 +1015,10 @@ class CallGraphVisitor(ast.NodeVisitor):
         #     analyzed files, this will generate a reference to *.simplify,
         #     which is formally satisfied by this function itself.
         #
+        #     (Actually, after commit e3c32b782a89b9eb225ef36d8557ebf172ff4ba5,
+        #      this example is bad; sy.simplify will be recognized as an
+        #      unknown attr of a known object, so no wildcard is generated.)
+        #
         #  b) A node seemingly referring to itself is actually referring
         #     to itself (it can be e.g. a recursive function). Remove the wildcard.
         #
@@ -1030,6 +1034,8 @@ class CallGraphVisitor(ast.NodeVisitor):
         #      should be generated in this particular case.)
         #
         # We choose a).
+        #
+        # TODO: do we need to change our opinion now that also recursive calls are visualized?
         #
         if to_node == from_node:
             return
@@ -1118,7 +1124,7 @@ class CallGraphVisitor(ast.NodeVisitor):
                         pn2 = self.get_node(nsp2, p2, None)
                         pn3 = self.get_node(nsp3, p3, None)
                         if pn2 in self.uses_edges and pn3 in self.uses_edges[pn2]:  # remove the first edge W to X.name
-#                        if pn3 in self.uses_edges and pn2 in self.uses_edges[pn3]:  # remove the second edge W to Y.name (TODO: mode to choose this)
+#                        if pn3 in self.uses_edges and pn2 in self.uses_edges[pn3]:  # remove the second edge W to Y.name (TODO: add an option to choose this)
                             inherited = True
 
                 if inherited and n in self.uses_edges:
