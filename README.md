@@ -90,7 +90,6 @@ Currently Pyan always operates at the level of individual functions and methods;
 
  - Incorporate the yEd writer by Patrick Massot, from [[1]](https://github.com/davidfraser/pyan/pull/1).
  - Migrate to standard library logger, following the PR by Patrick Massot [[1]](https://github.com/davidfraser/pyan/pull/1).
- - Handle unsafe node labels (e.g. "graph"), see [this commit](https://github.com/davidfraser/pyan/commit/ddb62d2eef872329c5efe9ed780120eb11e11419).
  - Implement `super()` in `visit_Call()`, see discussion [here](https://github.com/johnyf/pyan/issues/2).
  - Prefix methods by class name in the graph; create a legend for annotations. See the discussion [here](https://github.com/johnyf/pyan/issues/4).
  - Improve the wildcard resolution mechanism, see discussion [here](https://github.com/johnyf/pyan/issues/5).
