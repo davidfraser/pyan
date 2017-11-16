@@ -92,7 +92,7 @@ Currently Pyan always operates at the level of individual functions and methods;
 ## TODO
 
  - Make the analyzer smarter about object-oriented code.
-   - Implement MRO for `super()` handling and inherited attribute lookup; Python uses C3 linearization
+   - Implement MRO for `super()` handling and inherited attribute lookup; Python uses C3 linearization.
  - Make the analyzer understand `del name` (probably seen as `isinstance(node.ctx, ast.Del)` in `visit_Name()`, `visit_Attribute()`)
  - Prefix methods by class name in the graph; create a legend for annotations. See the discussion [here](https://github.com/johnyf/pyan/issues/4).
  - Improve the wildcard resolution mechanism, see discussion [here](https://github.com/johnyf/pyan/issues/5).
@@ -151,11 +151,13 @@ Original [pyan.py](https://github.com/ejrh/ejrh/blob/master/utils/pyan.py) by Ed
 
 [Git repository cleanup](https://github.com/davidfraser/pyan/) and maintenance by David Fraser.
 
+[yEd GraphML output, and framework for easily adding new output formats](https://github.com/davidfraser/pyan/pull/1) by Patrick Massot.
+
 A bugfix [[2]](https://github.com/davidfraser/pyan/pull/2) and the option `--dot-rankdir` [[3]](https://github.com/davidfraser/pyan/pull/3) contributed by GitHub user ch41rmn.
 
 A bug in `.tgf` output [[4]](https://github.com/davidfraser/pyan/pull/4) pointed out and fix suggested by Adam Eijdenberg.
 
-This Python 3 port and refactoring to separate modules by Juha Jeronen.
+This Python 3 port, analyzer expansion, and additional refactoring by Juha Jeronen.
 
 # License
 
