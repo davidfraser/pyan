@@ -418,7 +418,10 @@ class CallGraphVisitor(ast.NodeVisitor):
             all_args = ast_node.args  # args, vararg (*args), kwonlyargs, kwarg (**kwargs)
             posargs = all_args.args
             if len(posargs):
-                self_name = posargs[0].arg
+                if isinstance(posargs[0], ast.Name):
+                    self_name = posargs[0].id
+                else:
+                    self_name = posargs[0].arg
                 return self_name
 
     def visit_AsyncFunctionDef(self, node):
