@@ -82,6 +82,14 @@ def sanitize_exprs(exprs):
     else:
         return process(exprs)
 
+def make_safe_label(label):
+    """Avoid name clashes with GraphViz reserved words such as 'graph'."""
+    unsafe_words = ("digraph", "graph", "cluster", "subgraph")
+    out = label
+    for word in unsafe_words:
+        out = out.replace(word, "%sX" % word)
+    return out.replace('.', '__').replace('*', '')
+
 
 class Node:
     """A node is an object in the call graph.  Nodes have names, and are in
@@ -171,14 +179,14 @@ class Node:
         Unique nodes should have unique labels; and labels should not contain
         problematic characters like dots or asterisks."""
 
-        return self.get_name().replace('.', '__').replace('*', '')
+        return make_safe_label(self.get_name())
 
     def get_namespace_label(self):
         """Return a label for the namespace of this node, suitable for use
         in graph formats. Unique nodes should have unique labels; and labels
         should not contain problematic characters like dots or asterisks."""
 
-        return self.namespace.replace('.', '__').replace('*', '')
+        return make_safe_label(self.namespace)
 
     def __repr__(self):
         return '<Node %s>' % self.get_name()
