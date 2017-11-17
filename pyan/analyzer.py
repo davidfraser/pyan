@@ -1213,6 +1213,14 @@ class CallGraphVisitor(ast.NodeVisitor):
 
         return n
 
+    def get_parent_node(self, node):
+        """Get the parent node of the given Node. (Used in postprocessing.)"""
+        if '.' in node.namespace:
+            ns,name = node.namespace.rsplit('.', 1)
+        else:
+            ns,name = '',node.namespace
+        return self.get_node(ns, name, None)
+
     def associate_node(self, graph_node, ast_node, filename=None):
         """Change the AST node (and optionally filename) mapping of a graph node.
 
@@ -1414,16 +1422,8 @@ class CallGraphVisitor(ast.NodeVisitor):
                 inherited = False
                 for n3 in self.uses_edges[n]:
                     if n3.name == n2.name and n2.namespace is not None and n3.namespace is not None and n3.namespace != n2.namespace:
-                        if '.' in n2.namespace:
-                            nsp2,p2 = n2.namespace.rsplit('.', 1)
-                        else:
-                            nsp2,p2 = '',n2.namespace
-                        if '.' in n3.namespace:
-                            nsp3,p3 = n3.namespace.rsplit('.', 1)
-                        else:
-                            nsp3,p3 = '',n3.namespace
-                        pn2 = self.get_node(nsp2, p2, None)
-                        pn3 = self.get_node(nsp3, p3, None)
+                        pn2 = self.get_parent_node(n2)
+                        pn3 = self.get_parent_node(n3)
                         if pn2 in self.uses_edges and pn3 in self.uses_edges[pn2]:  # remove the first edge W to X.name
 #                        if pn3 in self.uses_edges and pn2 in self.uses_edges[pn3]:  # remove the second edge W to Y.name (TODO: add an option to choose this)
                             inherited = True
@@ -1451,9 +1451,9 @@ class CallGraphVisitor(ast.NodeVisitor):
         for name in self.nodes:
             if name in ('lambda', 'listcomp', 'setcomp', 'dictcomp', 'genexpr'):
                 for n in self.nodes[name]:
-                    nsp,p = n.namespace.rsplit('.', 1)  # parent
-                    pn = self.get_node(nsp, p, None)
-                    for n2 in self.uses_edges[n]:  # outgoing uses edges
-                        self.logger.info("Collapsing inner from %s to %s, uses %s" % (n, pn, n2))
-                        self.add_uses_edge(pn, n2)
+                    pn = self.get_parent_node(n)
+                    if n in self.uses_edges:
+                        for n2 in self.uses_edges[n]:  # outgoing uses edges
+                            self.logger.info("Collapsing inner from %s to %s, uses %s" % (n, pn, n2))
+                            self.add_uses_edge(pn, n2)
                     n.defined = False
