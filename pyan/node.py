@@ -12,11 +12,20 @@ def make_safe_label(label):
 
 
 class Node:
-    """A node is an object in the call graph.  Nodes have names, and are in
-    namespaces.  The full name of a node is its namespace, a dot, and its name.
-    If the namespace is None, it is rendered as *, and considered as an unknown
-    node.  The meaning of this is that a use-edge to an unknown node is created
-    when the analysis cannot determine which actual node is being used."""
+    """A node is an object in the call graph.
+
+    Nodes have names, and reside in namespaces.
+
+    The namespace is a dot-delimited string of names. It can be blank, '',
+    denoting the top level.
+
+    The fully qualified name of a node is its namespace, a dot, and its name;
+    except at the top level, where the leading dot is omitted.
+
+    If the namespace has the special value None, it is rendered as *, and the
+    node is considered as an unknown node. A uses edge to an unknown node is
+    created when the analysis cannot determine which actual node is being used.
+    """
 
     def __init__(self, namespace, name, ast_node, filename):
         self.namespace = namespace

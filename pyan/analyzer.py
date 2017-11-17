@@ -671,8 +671,9 @@ class CallGraphVisitor(ast.NodeVisitor):
         """Get value of an ast.Attribute.
 
         Supports inherited attributes. If the obj's own namespace has no match
-        for attr, the ancestors of obj are also tried recursively until one of
-        them matches or until all ancestors are exhausted.
+        for attr, the ancestors of obj are also tried, following the MRO based
+        on the static type of the object, until one of them matches or until
+        all ancestors are exhausted.
 
         Return pair of Node objects (obj,attr), where each item can be None
         on lookup failure. (Object not known, or no Node value assigned
@@ -1135,12 +1136,14 @@ class CallGraphVisitor(ast.NodeVisitor):
         return self.class_stack[-1] if len(self.class_stack) else None
 
     def get_node_of_current_namespace(self):
-        """Return a node representing the current namespace, based on self.name_stack."""
+        """Return a node representing the current namespace, based on self.name_stack.
 
-        # For a Node n representing a namespace:
-        #   - n.namespace = parent namespaces (empty string if top level)
-        #   - n.name      = name of this namespace
-        #   - no associated AST node.
+        For a Node n representing a namespace:
+          - n.namespace = fully qualified name of the parent namespace
+                          (empty string if at top level)
+          - n.name      = name of this namespace
+          - no associated AST node.
+        """
 
         assert len(self.name_stack)  # name_stack should never be empty (always at least module name)
 
@@ -1234,6 +1237,9 @@ class CallGraphVisitor(ast.NodeVisitor):
         # so the filenames should be trusted only after the analysis is
         # complete.
         #
+        # TODO: this is tentative. Add in filename only when sure?
+        # (E.g. in visit_ClassDef(), visit_FunctionDef())
+        #
         if namespace in self.module_to_filename:
             # If the namespace is one of the modules being analyzed,
             # the the Node belongs to the correponding file.
@@ -1271,8 +1277,8 @@ class CallGraphVisitor(ast.NodeVisitor):
         number is contained in the AST node). However, a graph Node must be
         created immediately when the function is first encountered, in order
         to have a Node that can act as a "uses" target (namespaced correctly,
-        to avoid the over-reaching unknowns expansion in cases where it is
-        not needed).
+        to avoid a wildcard and the over-reaching expand_unknowns() in cases
+        where they are not needed).
 
         This method re-associates the given graph Node with a different
         AST node, which allows updating the context when the definition
