@@ -428,10 +428,33 @@ class CallGraphVisitor(ast.NodeVisitor):
         # name representing "self" if this is a method definition.
         self_name = self.analyze_functiondef(node)
 
+        # Enter the function scope
+        #
         self.name_stack.append(node.name)
         inner_ns = self.get_current_namespace().get_name()
         self.scope_stack.append(self.scopes[inner_ns])
         self.context_stack.append("FunctionDef %s" % (node.name))
+
+        # Capture which names correspond to function args.
+        #
+        # In the function scope, set them to a nonsense Node,
+        # to prevent leakage of identifiers of matching name
+        # from the enclosing scope (due to the local value being None).
+        #
+        # As the name of the nonsense node, we can use any string that
+        # is not a valid Python identifier.
+        #
+        sc = self.scopes[inner_ns]
+        nonsense_node = self.get_node(inner_ns, '^^^argument^^^', None)
+        all_args = node.args  # args, vararg (*args), kwonlyargs, kwarg (**kwargs)
+        for a in all_args.args:  # positional
+            sc.defs[a.arg] = nonsense_node
+        if all_args.vararg is not None:  # *args if present
+            sc.defs[all_args.vararg] = nonsense_node
+        for a in all_args.kwonlyargs:
+            sc.defs[a.arg] = nonsense_node
+        if all_args.kwarg is not None:  # **kwargs if present
+            sc.defs[all_args.kwarg] = nonsense_node
 
         # self_name is just an ordinary name in the method namespace, except
         # that its value is implicitly set by Python when the method is called.
@@ -454,6 +477,8 @@ class CallGraphVisitor(ast.NodeVisitor):
         for stmt in node.body:
             self.visit(stmt)
 
+        # Exit the function scope
+        #
         self.context_stack.pop()
         self.scope_stack.pop()
         self.name_stack.pop()
