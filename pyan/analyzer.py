@@ -30,6 +30,16 @@ from .node import Node
 #
 #    Namespaces also get a Node (with no associated AST node).
 
+def head(lst):
+    if len(lst):
+        return lst[0]
+
+def tail(lst):
+    if len(lst) > 1:
+        return lst[1:]
+    else:
+        return []
+
 def get_module_name(filename):
     """Try to determine the full module name of a source file, by figuring out
     if its directory looks like a package (i.e. has an __init__.py file)."""
@@ -205,15 +215,6 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.logger.debug("Resolving method resolution order (MRO) for all analyzed classes")
 
         # https://en.wikipedia.org/wiki/C3_linearization#Description
-
-        def head(lst):
-            if len(lst):
-                return lst[0]
-        def tail(lst):
-            if len(lst) > 1:
-                return lst[1:]
-            else:
-                return []
 
         class LinearizationImpossible(Exception):
             pass
@@ -692,7 +693,7 @@ class CallGraphVisitor(ast.NodeVisitor):
             # after self.mro has been populated)
             #
             if obj_node in self.mro:
-                for base_node in self.mro[obj_node][1:]:  # the first element is always obj itself
+                for base_node in tail(self.mro[obj_node]):  # the first element is always obj itself
                     ns = base_node.get_name()
                     value_node = lookup(ns)
                     if value_node is not None:
@@ -996,9 +997,12 @@ class CallGraphVisitor(ast.NodeVisitor):
                     # This is a limitation of pure lexical scope based static
                     # code analysis.
                     #
-                    result = self.mro[class_node][1]
-                    self.logger.debug("super of %s is %s" % (class_node, result))
-                    return result
+                    if len(self.mro[class_node]) > 1:
+                        result = self.mro[class_node][1]
+                        self.logger.debug("super of %s is %s" % (class_node, result))
+                        return result
+                    else:
+                        self.logger.info("super called for %s, but no known bases" % (class_node))
             # add implementations for other built-in funcnames here if needed
 
     def visit_Call(self, node):
