@@ -354,7 +354,7 @@ class CallGraphVisitor(ast.NodeVisitor):
     def visit_ClassDef(self, node):
         self.logger.debug("ClassDef %s" % (node.name))
 
-        from_node = self.get_current_namespace()
+        from_node = self.get_node_of_current_namespace()
         ns = from_node.get_name()
         to_node = self.get_node(ns, node.name, node)
         if self.add_defines_edge(from_node, to_node):
@@ -376,7 +376,7 @@ class CallGraphVisitor(ast.NodeVisitor):
 
         self.class_stack.append(to_node)
         self.name_stack.append(node.name)
-        inner_ns = self.get_current_namespace().get_name()
+        inner_ns = self.get_node_of_current_namespace().get_name()
         self.scope_stack.append(self.scopes[inner_ns])
         self.context_stack.append("ClassDef %s" % (node.name))
 
@@ -414,7 +414,7 @@ class CallGraphVisitor(ast.NodeVisitor):
 #                self.visit(stmt)
 #            return
 
-        from_node = self.get_current_namespace()
+        from_node = self.get_node_of_current_namespace()
         ns = from_node.get_name()
         to_node = self.get_node(ns, node.name, node)
         if self.add_defines_edge(from_node, to_node):
@@ -431,7 +431,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         # Enter the function scope
         #
         self.name_stack.append(node.name)
-        inner_ns = self.get_current_namespace().get_name()
+        inner_ns = self.get_node_of_current_namespace().get_name()
         self.scope_stack.append(self.scopes[inner_ns])
         self.context_stack.append("FunctionDef %s" % (node.name))
 
@@ -545,7 +545,7 @@ class CallGraphVisitor(ast.NodeVisitor):
 
             # mark the use site
             #
-            from_node = self.get_current_namespace()      # where it is being imported to, i.e. the **user**
+            from_node = self.get_node_of_current_namespace()  # where it is being imported to, i.e. the **user**
             to_node  = self.get_node('', tgt_name, node)  # the thing **being used** (under the asname, if any)
             self.logger.debug("Use from %s to Import %s" % (from_node, to_node))
             if self.add_uses_edge(from_node, to_node):
@@ -566,7 +566,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.logger.debug("ImportFrom: from %s import %s" % (node.module, [format_alias(x) for x in node.names]))
 
         tgt_name = node.module
-        from_node = self.get_current_namespace()
+        from_node = self.get_node_of_current_namespace()
         to_node = self.get_node('', tgt_name, node)  # module, in top-level namespace
         self.logger.debug("Use from %s to ImportFrom %s" % (from_node, to_node))
         if self.add_uses_edge(from_node, to_node):
@@ -772,7 +772,7 @@ class CallGraphVisitor(ast.NodeVisitor):
                 self.logger.info('getattr %s on %s returns %s' % (node.attr, objname, attr_node))
 
                 # add uses edge
-                from_node = self.get_current_namespace()
+                from_node = self.get_node_of_current_namespace()
                 self.logger.debug("Use from %s to %s" % (from_node, attr_node))
                 if self.add_uses_edge(from_node, attr_node):
                     self.logger.info("New edge added for Use from %s to %s" % (from_node, attr_node))
@@ -800,7 +800,7 @@ class CallGraphVisitor(ast.NodeVisitor):
             #
             elif isinstance(obj_node, Node) and obj_node.namespace is not None:
                 tgt_name = node.attr
-                from_node = self.get_current_namespace()
+                from_node = self.get_node_of_current_namespace()
                 ns = obj_node.get_name()  # fully qualified namespace **of attr**
                 to_node = self.get_node(ns, tgt_name, node)
                 self.logger.debug("Use from %s to %s (target obj %s known but target attr %s not resolved; maybe fwd ref or unanalyzed import)" % (from_node, to_node, obj_node, node.attr))
@@ -815,7 +815,7 @@ class CallGraphVisitor(ast.NodeVisitor):
             # Object unknown, add uses edge to a wildcard by attr name.
             else:
                 tgt_name = node.attr
-                from_node = self.get_current_namespace()
+                from_node = self.get_node_of_current_namespace()
                 to_node = self.get_node(None, tgt_name, node)
                 self.logger.debug("Use from %s to %s (target obj %s not resolved; maybe fwd ref, function argument, or unanalyzed import)" % (from_node, to_node, objname))
                 if self.add_uses_edge(from_node, to_node):
@@ -846,7 +846,7 @@ class CallGraphVisitor(ast.NodeVisitor):
                 if not isinstance(to_node, Node):
                     to_node = self.get_node(None, tgt_name, node)  # namespace=None means we don't know the namespace yet
 
-                from_node = self.get_current_namespace()
+                from_node = self.get_node_of_current_namespace()
                 self.logger.debug("Use from %s to Name %s" % (from_node, to_node))
                 if self.add_uses_edge(from_node, to_node):
                     self.logger.info("New edge added for Use from %s to Name %s" % (from_node, to_node))
@@ -1059,7 +1059,7 @@ class CallGraphVisitor(ast.NodeVisitor):
             # of known classes.
             #
             if self.last_value in self.class_base_ast_nodes:
-                from_node = self.get_current_namespace()
+                from_node = self.get_node_of_current_namespace()
                 class_node = self.last_value
                 to_node = self.get_node(class_node.get_name(), '__init__', None)
                 self.logger.debug("Use from %s to %s (call creates an instance)" % (from_node, to_node))
@@ -1110,7 +1110,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         # the Python 3 scoping rules correctly.
 
         self.name_stack.append(scopename)
-        inner_ns = self.get_current_namespace().get_name()
+        inner_ns = self.get_node_of_current_namespace().get_name()
         if inner_ns not in self.scopes:
             raise ValueError("Unknown scope '%s'" % (inner_ns))
         self.scope_stack.append(self.scopes[inner_ns])
@@ -1128,7 +1128,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         # current ns will be grouped into a single node, as they have no name.
         # We create a namespace-like node that has no associated AST node,
         # as it does not represent any unique AST node.
-        from_node = self.get_current_namespace()
+        from_node = self.get_node_of_current_namespace()
         ns = from_node.get_name()
         to_node = self.get_node(ns, scopename, None)
         if self.add_defines_edge(from_node, to_node):
@@ -1140,7 +1140,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         """Return the node representing the current class, or None if not inside a class definition."""
         return self.class_stack[-1] if len(self.class_stack) else None
 
-    def get_current_namespace(self):
+    def get_node_of_current_namespace(self):
         """Return a node representing the current namespace, based on self.name_stack."""
 
         # For a Node n representing a namespace:
@@ -1165,7 +1165,7 @@ class CallGraphVisitor(ast.NodeVisitor):
 
 #        # If we wanted to get rid of a separate scope stack, we could do this:
 #        def find_scope(name):
-#            ns0 = self.get_current_namespace().get_name()
+#            ns0 = self.get_node_of_current_namespace().get_name()
 #            for j in range(ns0.count('.')+1):
 #                ns = ns0.rsplit(".",j)[0]
 #                if ns in self.scopes:
@@ -1196,7 +1196,7 @@ class CallGraphVisitor(ast.NodeVisitor):
 
 #        # If we wanted to get rid of a separate scope stack, we could do this:
 #        def find_scope(name):
-#            ns0 = self.get_current_namespace().get_name()
+#            ns0 = self.get_node_of_current_namespace().get_name()
 #            for j in range(ns0.count('.')+1):
 #                ns = ns0.rsplit(".",j)[0]
 #                if ns in self.scopes:
