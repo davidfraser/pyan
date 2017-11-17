@@ -1,12 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""The AST visitor.
-
-Created on Mon Nov 13 03:33:00 2017
-
-Original code by Edmund Horner.
-Python 3 port by Juha Jeronen.
-"""
+"""The AST visitor."""
 
 import os.path
 import logging
