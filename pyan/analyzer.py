@@ -1048,6 +1048,24 @@ class CallGraphVisitor(ast.NodeVisitor):
             # it will be left standing as self.last_value.
             self.visit(node.func)
 
+            # If self.last_value matches a known class i.e. the call was of the
+            # form MyClass(), add a uses edge to MyClass.__init__().
+            #
+            # We need to do this manually, because there is no text "__init__"
+            # at the call site.
+            #
+            # In this lookup to self.class_base_ast_nodes we don't care about
+            # the AST nodes; the keys just conveniently happen to be the Nodes
+            # of known classes.
+            #
+            if self.last_value in self.class_base_ast_nodes:
+                from_node = self.get_current_namespace()
+                class_node = self.last_value
+                to_node = self.get_node(class_node.get_name(), '__init__', None)
+                self.logger.debug("Use from %s to %s (call creates an instance)" % (from_node, to_node))
+                if self.add_uses_edge(from_node, to_node):
+                    self.logger.info("New edge added for Use from %s to %s (call creates an instance)" % (from_node, to_node))
+
     ###########################################################################
     # Scope analysis
 

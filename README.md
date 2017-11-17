@@ -92,7 +92,6 @@ Currently Pyan always operates at the level of individual functions and methods;
 
 ## TODO
 
- - Calling the name of a known class should add a uses edge to its `__init__()`
  - Make the analyzer understand `del name` (probably seen as `isinstance(node.ctx, ast.Del)` in `visit_Name()`, `visit_Attribute()`)
  - Prefix methods by class name in the graph; create a legend for annotations. See the discussion [here](https://github.com/johnyf/pyan/issues/4).
  - Improve the wildcard resolution mechanism, see discussion [here](https://github.com/johnyf/pyan/issues/5).
