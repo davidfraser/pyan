@@ -1419,6 +1419,14 @@ class CallGraphVisitor(ast.NodeVisitor):
 
         return True
 
+    def remove_uses_edge(self, from_node, to_node):
+        """Remove a uses edge from the graph. (Used in postprocessing.)"""
+
+        if from_node in self.uses_edges:
+            u = self.uses_edges[from_node]
+            if to_node in u:
+                u.remove(to_node)
+
     def remove_wild(self, from_node, to_node, name):
         """Remove uses edge from from_node to wildcard *.name.
 
@@ -1478,7 +1486,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         if len(matching_wilds):
             wild_node = matching_wilds[0]
             self.logger.info("Use from %s to %s resolves %s; removing wildcard" % (from_node, to_node, wild_node))
-            self.uses_edges[from_node].remove(wild_node)
+            self.remove_uses_edge(from_node, wild_node)
 
     ###########################################################################
     # Postprocessing
@@ -1501,12 +1509,12 @@ class CallGraphVisitor(ast.NodeVisitor):
             self.add_uses_edge(from_node, to_node)
 
         for from_node, to_node in removed_uses_edges:
-            self.uses_edges[from_node].remove(to_node)
+            self.remove_uses_edge(from_node, to_node)
 
     def expand_unknowns(self):
         """For each unknown node *.name, replace all its incoming edges with edges to X.name for all possible Xs.
 
-        Also mark all unknown nodes as not defined."""
+        Also mark all unknown nodes as not defined (so that they won't be visualized)."""
 
         new_defines_edges = []
         for n in self.defines_edges:
@@ -1557,7 +1565,7 @@ class CallGraphVisitor(ast.NodeVisitor):
                     self.logger.info("Removing inherited edge from %s to %s" % (n, n2))
 
         for from_node, to_node in removed_uses_edges:
-            self.uses_edges[from_node].remove(to_node)
+            self.remove_uses_edge(from_node, to_node)
 
     def collapse_inner(self):
         """Combine lambda and comprehension Nodes with their parent Nodes to reduce visual noise.
