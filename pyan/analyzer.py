@@ -578,11 +578,6 @@ class CallGraphVisitor(ast.NodeVisitor):
 
             is_new_edge = self.add_uses_edge(from_node, to_node)
 
-            # TODO: e.g. "os.path" is not a MODULE; add logic to keep
-            # dot-limited names as IMPORTEDITEM. Or maybe even,
-            # treat namespaces properly, and create the MODULE and
-            # IMPORTEDITEM nodes (one of the latter for each level of nesting).
-
             # bind asname in the current namespace to the imported module
             #
             # conversion: possible short name -> fully qualified name
