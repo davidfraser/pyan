@@ -71,16 +71,13 @@ class Colorizer:
 class VisualNode(object):
     """
     A node in the output graph: colors, internal ID, human-readable label, ...
-
-    flavor is meant to be used one day for things like 'source file', 'class',
-    'function'...
     """
     def __init__(
             self, id, label='', flavor='',
             fill_color='', text_color='', group=''):
         self.id = id        # graphing software friendly label (no special chars)
         self.label = label  # human-friendly label
-        self.flavor = ''
+        self.flavor = flavor
         self.fill_color = fill_color
         self.text_color = text_color
         self.group = group
@@ -183,6 +180,7 @@ class VisualGraph(object):
             visual_node = VisualNode(
                     id=node.get_label(),
                     label=labeler(node),
+                    flavor=repr(node.flavor),
                     fill_color=fill_RGBA,
                     text_color=text_RGB,
                     group=idx)
