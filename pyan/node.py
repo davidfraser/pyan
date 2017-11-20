@@ -119,9 +119,9 @@ class Node:
         else:
             if self.get_level() >= 1:
                 if self.ast_node is not None:
-                    return "%s\\n\\n(%s:%d,\\nin %s)" % (self.name, self.filename, self.ast_node.lineno, self.namespace)
+                    return "%s\\n\\n(%s:%d,\\n%s in %s)" % (self.name, self.filename, self.ast_node.lineno, repr(self.flavor), self.namespace)
                 else:
-                    return "%s\\n\\n(in %s)" % (self.name, self.namespace)
+                    return "%s\\n\\n(%s in %s)" % (self.name, repr(self.flavor), self.namespace)
             else:
                 return self.name
 
