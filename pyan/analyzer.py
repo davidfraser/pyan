@@ -101,6 +101,9 @@ class Scope:
     def __repr__(self):
         return "<Scope: %s %s>" % (self.type, self.name)
 
+class UnresolvedSuperCallError(Exception):
+    """For signaling an unresolved super() in attribute resolution."""
+    pass
 
 # These tables were useful for porting the visitor to Python 3:
 #
@@ -646,6 +649,9 @@ class CallGraphVisitor(ast.NodeVisitor):
 
         Return (obj,attrname), where obj is a Node (or None on lookup failure),
         and attrname is the attribute name.
+
+        May pass through UnresolvedSuperCallError, if the attribute resolution
+        failed specifically due to an unresolved super() call.
         """
 
         if not isinstance(ast_node, ast.Attribute):
@@ -701,6 +707,8 @@ class CallGraphVisitor(ast.NodeVisitor):
 
             # attribute of a function call. Detect cases like super().dostuff()
             elif isinstance(ast_node.value, ast.Call):
+                # Note that resolve_builtins() will signal an unresolved
+                # super() by an exception, which we just pass through here.
                 obj_node = self.resolve_builtins(ast_node.value)
 
                 # can't resolve result of general function call
@@ -729,6 +737,8 @@ class CallGraphVisitor(ast.NodeVisitor):
         Return pair of Node objects (obj,attr), where each item can be None
         on lookup failure. (Object not known, or no Node value assigned
         to its attr.)
+
+        May pass through UnresolvedSuperCallError.
         """
 
         if not isinstance(ast_node.ctx, ast.Load):
@@ -778,7 +788,10 @@ class CallGraphVisitor(ast.NodeVisitor):
     def set_attribute(self, ast_node, new_value):
         """Assign the Node provided as new_value into the attribute described
         by the AST node ast_node. Return True if assignment was done,
-        False otherwise."""
+        False otherwise.
+
+        May pass through UnresolvedSuperCallError.
+        """
 
         if not isinstance(ast_node.ctx, ast.Store):
             raise ValueError("Expected a store context, got %s" % (type(ast_node.ctx)))
@@ -807,11 +820,21 @@ class CallGraphVisitor(ast.NodeVisitor):
         #
         if isinstance(node.ctx, ast.Store):
             new_value = self.last_value
-            if self.set_attribute(node, new_value):
-                self.logger.info('setattr %s on %s to %s' % (node.attr, objname, new_value))
+            try:
+                if self.set_attribute(node, new_value):
+                    self.logger.info('setattr %s on %s to %s' % (node.attr, objname, new_value))
+            except UnresolvedSuperCallError:
+                # Trying to set something belonging to an unresolved super()
+                # of something; just ignore this attempt to setattr.
+                return
 
         elif isinstance(node.ctx, ast.Load):
-            obj_node,attr_node = self.get_attribute(node)
+            try:
+                obj_node,attr_node = self.get_attribute(node)
+            except UnresolvedSuperCallError:
+                # Avoid adding a wildcard if the lookup failed due to an
+                # unresolved super() in the attribute chain.
+                return
 
             # Both object and attr known.
             if isinstance(attr_node, Node):
@@ -1050,7 +1073,15 @@ class CallGraphVisitor(ast.NodeVisitor):
         """Resolve those calls to built-in functions whose return values
         can be determined in a simple manner.
 
-        Currently, this supports only super(). This works only in pass 2."""
+        Currently, this supports only super(), which works only in pass 2,
+        because the MRO is determined between passes.
+
+        May raise UnresolvedSuperCallError, if the call is to super(),
+        but the result cannot be (currently) determined (usually because either
+        pass 1, or some relevant source file is not in the analyzed set).
+
+        Returns the Node the call resolves to, or None if not determined.
+        """
         if not isinstance(ast_node, ast.Call):
             raise TypeError("Expected ast.Call; got %s" % (type(ast_node)))
 
@@ -1078,7 +1109,13 @@ class CallGraphVisitor(ast.NodeVisitor):
                         self.logger.debug("super of %s is %s" % (class_node, result))
                         return result
                     else:
-                        self.logger.info("super called for %s, but no known bases" % (class_node))
+                        msg = "super called for %s, but no known bases" % (class_node)
+                        self.logger.info(msg)
+                        raise UnresolvedSuperCallError(msg)
+                else:
+                    msg = "super called for %s, but MRO not determined for it (maybe still in pass 1?)" % (class_node)
+                    self.logger.info(msg)
+                    raise UnresolvedSuperCallError(msg)
             # add implementations for other built-in funcnames here if needed
 
     def visit_Call(self, node):
@@ -1091,7 +1128,11 @@ class CallGraphVisitor(ast.NodeVisitor):
             self.visit(kw.value)
 
         # see if we can predict the result
-        result_node = self.resolve_builtins(node)
+        try:
+            result_node = self.resolve_builtins(node)
+        except UnresolvedSuperCallError:
+            result_node = None
+
         if isinstance(result_node, Node):
             self.last_value = result_node
         else:  # generic function call
