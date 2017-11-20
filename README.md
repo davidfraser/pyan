@@ -92,7 +92,6 @@ Currently Pyan always operates at the level of individual functions and methods;
 
 ## TODO
 
- - Visualize Node flavors? (Framework already exists, both in `analyzer` and in `visgraph`.)
  - Determine confidence of detected edges (probability that the edge is correct). Start with a binary system, with only values 1.0 and 0.0.
    - A fully resolved reference to a name, based on lexical scoping, has confidence 1.0.
    - A reference to an unknown name has confidence 0.0.
