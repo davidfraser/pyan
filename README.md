@@ -105,6 +105,7 @@ Currently Pyan always operates at the level of individual functions and methods;
  - Make the analyzer understand `del name` (probably seen as `isinstance(node.ctx, ast.Del)` in `visit_Name()`, `visit_Attribute()`)
  - Prefix methods by class name in the graph; create a legend for annotations. See the discussion [here](https://github.com/johnyf/pyan/issues/4).
  - Improve the wildcard resolution mechanism, see discussion [here](https://github.com/johnyf/pyan/issues/5).
+   - Could record the namespace of the use site upon creating the wildcard, and check any possible resolutions against that (requiring that the resolved name is in scope at the use site)?
  - Add an option to visualize relations only between namespaces, useful for large projects.
    - Scan the nodes and edges, basically generate a new graph and visualize that.
  - Publish test cases.
