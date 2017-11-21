@@ -611,8 +611,15 @@ class CallGraphVisitor(ast.NodeVisitor):
         except UnresolvedSuperCallError:
             result_node = None
 
-        if isinstance(result_node, Node):
+        if isinstance(result_node, Node):  # resolved result
             self.last_value = result_node
+
+            from_node = self.get_node_of_current_namespace()
+            to_node = result_node
+            self.logger.debug("Use from %s to %s (via resolved call to built-ins)" % (from_node, to_node))
+            if self.add_uses_edge(from_node, to_node):
+                self.logger.info("New edge added for Use from %s to %s (via resolved call to built-ins)" % (from_node, to_node))
+
         else:  # generic function call
             # Visit the function name part last, so that inside a binding form,
             # it will be left standing as self.last_value.
