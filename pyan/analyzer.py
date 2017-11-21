@@ -807,8 +807,12 @@ class CallGraphVisitor(ast.NodeVisitor):
         """Resolve those calls to built-in functions whose return values
         can be determined in a simple manner.
 
-        Currently, this supports only super(), which works only in pass 2,
-        because the MRO is determined between passes.
+        Currently, this supports:
+
+          - str(obj), repr(obj) --> obj.__str__, obj.__repr__
+
+          - super() (any arguments ignored), which works only in pass 2,
+            because the MRO is determined between passes.
 
         May raise UnresolvedSuperCallError, if the call is to super(),
         but the result cannot be (currently) determined (usually because either
@@ -850,6 +854,19 @@ class CallGraphVisitor(ast.NodeVisitor):
                     msg = "super called for %s, but MRO not determined for it (maybe still in pass 1?)" % (class_node)
                     self.logger.info(msg)
                     raise UnresolvedSuperCallError(msg)
+
+            if funcname in ("str", "repr"):
+                if len(ast_node.args) == 1:  # these take only one argument
+                    obj_astnode = ast_node.args[0]
+                    if isinstance(obj_astnode, (ast.Name, ast.Attribute)):
+                        self.logger.debug("Resolving %s() of %s" % (funcname, get_ast_node_name(obj_astnode)))
+                        attrname = "__%s__" % (funcname)
+                        # build a temporary ast.Attribute AST node so that we can use get_attribute()
+                        tmp_astnode = ast.Attribute(value=obj_astnode, attr=attrname, ctx=obj_astnode.ctx)
+                        obj_node, attr_node = self.get_attribute(tmp_astnode)
+                        self.logger.debug("Resolve %s() of %s: returning attr node %s" % (funcname, get_ast_node_name(obj_astnode), attr_node))
+                        return attr_node
+
             # add implementations for other built-in funcnames here if needed
 
     def resolve_attribute(self, ast_node):
