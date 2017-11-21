@@ -636,6 +636,49 @@ class CallGraphVisitor(ast.NodeVisitor):
                 if self.add_uses_edge(from_node, to_node):
                     self.logger.info("New edge added for Use from %s to %s (call creates an instance)" % (from_node, to_node))
 
+    def visit_With(self, node):
+        self.logger.debug("With (context manager)")
+
+        def add_uses_enter_exit_of(graph_node):
+            # add uses edges to __enter__ and __exit__ methods of given Node
+            if isinstance(graph_node, Node):
+                from_node = self.get_node_of_current_namespace()
+                withed_obj_node = graph_node
+
+                self.logger.debug("Use from %s to With %s" % (from_node, withed_obj_node))
+                for methodname in ('__enter__', '__exit__'):
+                    to_node = self.get_node(withed_obj_node.get_name(), methodname, None, flavor=Flavor.METHOD)
+                    if self.add_uses_edge(from_node, to_node):
+                        self.logger.info("New edge added for Use from %s to %s" % (from_node, to_node))
+
+        for withitem in node.items:
+            expr = withitem.context_expr
+            vars = withitem.optional_vars
+
+            # XXX: we currently visit expr twice (again in analyze_binding()) if vars is not None
+            self.last_value = None
+            self.visit(expr)
+            add_uses_enter_exit_of(self.last_value)
+            self.last_value = None
+
+            if vars is not None:
+                # bind optional_vars
+                #
+                # TODO: For now, we support only the following (most common) case:
+                #  - only one binding target, vars is ast.Name
+                #    (not ast.Tuple or something else)
+                #  - the variable will point to the object that was with'd
+                #    (i.e. we assume the object's __enter__() method
+                #     to finish with "return self")
+                #
+                if isinstance(vars, ast.Name):
+                    self.analyze_binding(sanitize_exprs(vars), sanitize_exprs(expr))
+                else:
+                    self.visit(vars)  # just capture any uses on the With line itself
+
+        for stmt in node.body:
+            self.visit(stmt)
+
     ###########################################################################
     # Analysis helpers
 

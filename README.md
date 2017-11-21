@@ -80,7 +80,7 @@ Currently Pyan always operates at the level of individual functions and methods;
  - MRO is (statically) respected in looking up inherited attributes and `super()` ☆
  - Assignment tracking with lexical scoping
    - E.g. if `self.a = MyFancyClass()`, the analyzer knows that any references to `self.a` point to `MyFancyClass`
-   - All binding forms are supported (assign, augassign, for, comprehensions, generator expressions) ☆
+   - All binding forms are supported (assign, augassign, for, comprehensions, generator expressions, with) ☆
      - Name clashes between `for` loop counter variables and functions or classes defined elsewhere no longer confuse Pyan.
  - `self` is defined by capturing the name of the first argument of a method definition, like Python does. ☆
  - Simple item-by-item tuple assignments like `x,y,z = a,b,c` ☆
