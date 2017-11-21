@@ -127,6 +127,7 @@ class VisualGraph(object):
     def from_visitor(cls, visitor, options=None, logger=None):
         colored = options.get('colored', False)
         nested = options.get('nested_groups', False)
+        grouped_alt = options.get('grouped_alt', False)
         grouped = nested or options.get('grouped', False)  # nested -> grouped
         annotated = options.get('annotated', False)
         draw_defines = options.get('draw_defines', False)
@@ -221,7 +222,7 @@ class VisualGraph(object):
             subgraph.nodes.append(visual_node)
 
         # Now add edges
-        if draw_defines or not grouped:
+        if draw_defines or grouped_alt:
             # If grouped, use gray lines so they won't visually obstruct
             # the "uses" lines.
             #
