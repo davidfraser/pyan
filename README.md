@@ -6,6 +6,8 @@ Pyan takes one or more Python source files, performs a (rather superficial) stat
 
 *And now it is available for Python 3!*
 
+Note: The previous Python 2-compatible version is tagged as `pre-python3`
+
 [![Example output](graph0.png "Example: GraphViz rendering of Pyan output (click for .svg)")](graph0.svg)
 
 **Defines** relations are drawn with *dotted gray arrows*.
