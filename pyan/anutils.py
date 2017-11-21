@@ -221,6 +221,8 @@ class ExecuteInInnerScope:
         analyzer.scope_stack.append(analyzer.scopes[inner_ns])
         analyzer.context_stack.append(scopename)
 
+        return self
+
     def __exit__(self, errtype, errvalue, traceback):
         # TODO: do we need some error handling here?
         analyzer = self.analyzer
