@@ -1309,6 +1309,11 @@ class CallGraphVisitor(ast.NodeVisitor):
         if from_node not in self.uses_edges:  # no uses edges to remove
             return
 
+        # Keep wildcard if the target is actually an unresolved argument
+        # (see visit_FunctionDef())
+        if to_node.get_name().find("^^^argument^^^") != -1:
+            return
+
         # Here we may prefer to err in one of two ways:
         #
         #  a) A node seemingly referring to itself is actually referring
