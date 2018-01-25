@@ -71,16 +71,13 @@ class Colorizer:
 class VisualNode(object):
     """
     A node in the output graph: colors, internal ID, human-readable label, ...
-
-    flavor is meant to be used one day for things like 'source file', 'class',
-    'function'...
     """
     def __init__(
             self, id, label='', flavor='',
             fill_color='', text_color='', group=''):
         self.id = id        # graphing software friendly label (no special chars)
         self.label = label  # human-friendly label
-        self.flavor = ''
+        self.flavor = flavor
         self.fill_color = fill_color
         self.text_color = text_color
         self.group = group
@@ -130,6 +127,7 @@ class VisualGraph(object):
     def from_visitor(cls, visitor, options=None, logger=None):
         colored = options.get('colored', False)
         nested = options.get('nested_groups', False)
+        grouped_alt = options.get('grouped_alt', False)
         grouped = nested or options.get('grouped', False)  # nested -> grouped
         annotated = options.get('annotated', False)
         draw_defines = options.get('draw_defines', False)
@@ -183,6 +181,7 @@ class VisualGraph(object):
             visual_node = VisualNode(
                     id=node.get_label(),
                     label=labeler(node),
+                    flavor=repr(node.flavor),
                     fill_color=fill_RGBA,
                     text_color=text_RGB,
                     group=idx)
@@ -223,7 +222,7 @@ class VisualGraph(object):
             subgraph.nodes.append(visual_node)
 
         # Now add edges
-        if draw_defines or not grouped:
+        if draw_defines or grouped_alt:
             # If grouped, use gray lines so they won't visually obstruct
             # the "uses" lines.
             #
