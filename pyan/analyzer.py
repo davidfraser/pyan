@@ -1461,7 +1461,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         # in an instance variable, then used elsewhere. How do we want the
         # graph to look like in that case?
 
-        for name in self.nodes:
+        for name in list(self.nodes):
             if name in ('lambda', 'listcomp', 'setcomp', 'dictcomp', 'genexpr'):
                 for n in self.nodes[name]:
                     pn = self.get_parent_node(n)
