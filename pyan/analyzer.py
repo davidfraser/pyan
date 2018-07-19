@@ -535,8 +535,20 @@ class CallGraphVisitor(ast.NodeVisitor):
                                                 [get_ast_node_name(x) for x in values]))
             self.analyze_binding(targets, values)
 
-    def visit_AnnAssign(self, node):
-        self.visit_Assign(self, node)  # TODO: alias for now; add the annotations to output in a future version?
+    def visit_AnnAssign(self, node):  # PEP 526, Python 3.6+
+        target = sanitize_exprs(node.target)
+        self.last_value = None
+        if node.value is not None:
+            value = sanitize_exprs(node.value)
+            self.logger.debug("AnnAssign %s %s" % (get_ast_node_name(target[0]),
+                                                   get_ast_node_name(value[0])))
+            self.analyze_binding(target, value)
+        else:  # just a type declaration
+            self.logger.debug("AnnAssign %s <no value>" % (get_ast_node_name(target[0])))
+            self.last_value = None
+            self.visit(target[0])
+        # TODO: use the type annotation from node.annotation?
+        # http://greentreesnakes.readthedocs.io/en/latest/nodes.html#AnnAssign
 
     def visit_AugAssign(self, node):
         targets = sanitize_exprs(node.target)
