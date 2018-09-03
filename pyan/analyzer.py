@@ -278,7 +278,7 @@ class CallGraphVisitor(ast.NodeVisitor):
             sc.defs[a.arg] = nonsense_node
         if all_args.vararg is not None:  # *args if present
             sc.defs[all_args.vararg] = nonsense_node
-        for a in all_args.kwonlyargs:
+        for a in all_args.kwonlyargs:    # any after *args or *
             sc.defs[a.arg] = nonsense_node
         if all_args.kwarg is not None:  # **kwargs if present
             sc.defs[all_args.kwarg] = nonsense_node
@@ -629,7 +629,7 @@ class CallGraphVisitor(ast.NodeVisitor):
             for expr in outermost.ifs:
                 self.visit(expr)
 
-            # TODO: there's also an is_async field we might want to use in a future version.
+            # TODO: there's also an is_async field we might want to use in a future version of Pyan.
             for gen in moregens:
                 targets = sanitize_exprs(gen.target)
                 values  = sanitize_exprs(gen.iter)
