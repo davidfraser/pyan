@@ -162,7 +162,7 @@ class CallGraphVisitor(ast.NodeVisitor):
     # https://docs.python.org/3/library/ast.html#abstract-grammar
 
     def visit_Module(self, node):
-        self.logger.debug("Module")
+        self.logger.debug("Module %s, %s" % (self.module_name, self.filename))
 
         # Modules live in the top-level namespace, ''.
         module_node = self.get_node('', self.module_name, node, flavor=Flavor.MODULE)
@@ -179,7 +179,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.last_value = None
 
     def visit_ClassDef(self, node):
-        self.logger.debug("ClassDef %s" % (node.name))
+        self.logger.debug("ClassDef %s, %s:%s" % (node.name, self.filename, node.lineno))
 
         from_node = self.get_node_of_current_namespace()
         ns = from_node.get_name()
@@ -223,7 +223,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.class_stack.pop()
 
     def visit_FunctionDef(self, node):
-        self.logger.debug("FunctionDef %s" % (node.name))
+        self.logger.debug("FunctionDef %s, %s:%s" % (node.name, self.filename, node.lineno))
 
         # To begin with:
         #
@@ -314,7 +314,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.visit_FunctionDef(node)  # TODO: alias for now; tag async functions in output in a future version?
 
     def visit_Lambda(self, node):
-        self.logger.debug("Lambda")
+        self.logger.debug("Lambda, %s:%s" % (self.filename, node.lineno))
         with ExecuteInInnerScope(self, "lambda"):
             for d in node.args.defaults:
                 self.visit(d)
@@ -323,7 +323,7 @@ class CallGraphVisitor(ast.NodeVisitor):
             self.visit(node.body)  # single expr
 
     def visit_Import(self, node):
-        self.logger.debug("Import %s" % [format_alias(x) for x in node.names])
+        self.logger.debug("Import %s, %s:%s" % ([format_alias(x) for x in node.names], self.filename, node.lineno))
 
         # TODO: add support for relative imports (path may be like "....something.something")
         # https://www.python.org/dev/peps/pep-0328/#id10
@@ -366,7 +366,7 @@ class CallGraphVisitor(ast.NodeVisitor):
                 self.logger.info("New edge added for Use from %s to Import %s" % (from_node, to_node))
 
     def visit_ImportFrom(self, node):
-        self.logger.debug("ImportFrom: from %s import %s" % (node.module, [format_alias(x) for x in node.names]))
+        self.logger.debug("ImportFrom: from %s import %s, %s:%s" % (node.module, [format_alias(x) for x in node.names], self.filename, node.lineno))
 
         tgt_name = node.module
         from_node = self.get_node_of_current_namespace()
@@ -406,7 +406,7 @@ class CallGraphVisitor(ast.NodeVisitor):
     # attribute access (node.ctx determines whether set (ast.Store) or get (ast.Load))
     def visit_Attribute(self, node):
         objname = get_ast_node_name(node.value)
-        self.logger.debug("Attribute %s of %s in context %s" % (node.attr, objname, type(node.ctx)))
+        self.logger.debug("Attribute %s of %s in context %s, %s:%s" % (node.attr, objname, type(node.ctx), self.filename, node.lineno))
 
         # TODO: self.last_value is a hack. Handle names in store context (LHS)
         # in analyze_binding(), so that visit_Attribute() only needs to handle
@@ -488,7 +488,7 @@ class CallGraphVisitor(ast.NodeVisitor):
 
     # name access (node.ctx determines whether set (ast.Store) or get (ast.Load))
     def visit_Name(self, node):
-        self.logger.debug("Name %s in context %s" % (node.id, type(node.ctx)))
+        self.logger.debug("Name %s in context %s, %s:%s" % (node.id, type(node.ctx), self.filename, node.lineno))
 
         # TODO: self.last_value is a hack. Handle names in store context (LHS)
         # in analyze_binding(), so that visit_Name() only needs to handle
@@ -531,8 +531,9 @@ class CallGraphVisitor(ast.NodeVisitor):
         values = sanitize_exprs(node.value)  # values is the same for each set of targets
         for targets in node.targets:
             targets = sanitize_exprs(targets)
-            self.logger.debug("Assign %s %s" % ([get_ast_node_name(x) for x in targets],
-                                                [get_ast_node_name(x) for x in values]))
+            self.logger.debug("Assign %s %s, %s:%s" % ([get_ast_node_name(x) for x in targets],
+                                                       [get_ast_node_name(x) for x in values],
+                                                       self.filename, node.lineno))
             self.analyze_binding(targets, values)
 
     def visit_AnnAssign(self, node):  # PEP 526, Python 3.6+
@@ -540,11 +541,13 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.last_value = None
         if node.value is not None:
             value = sanitize_exprs(node.value)
-            self.logger.debug("AnnAssign %s %s" % (get_ast_node_name(target[0]),
-                                                   get_ast_node_name(value[0])))
+            self.logger.debug("AnnAssign %s %s, %s:%s" % (get_ast_node_name(target[0]),
+                                                          get_ast_node_name(value[0]),
+                                                          self.filenaame, node.lineno))
             self.analyze_binding(target, value)
         else:  # just a type declaration
-            self.logger.debug("AnnAssign %s <no value>" % (get_ast_node_name(target[0])))
+            self.logger.debug("AnnAssign %s <no value>, %s:%s" % (get_ast_node_name(target[0]),
+                                                                  self.filename, node.lineno))
             self.last_value = None
             self.visit(target[0])
         # TODO: use the type annotation from node.annotation?
@@ -554,9 +557,10 @@ class CallGraphVisitor(ast.NodeVisitor):
         targets = sanitize_exprs(node.target)
         values = sanitize_exprs(node.value)  # values is the same for each set of targets
 
-        self.logger.debug("AugAssign %s %s %s" % ([get_ast_node_name(x) for x in targets],
-                                                  type(node.op),
-                                                  [get_ast_node_name(x) for x in values]))
+        self.logger.debug("AugAssign %s %s %s, %s:%s" % ([get_ast_node_name(x) for x in targets],
+                                                         type(node.op),
+                                                         [get_ast_node_name(x) for x in values],
+                                                         self.filename, node.lineno))
 
         # TODO: maybe no need to handle tuple unpacking in AugAssign? (but simpler to use the same implementation)
         self.analyze_binding(targets, values)
@@ -569,7 +573,7 @@ class CallGraphVisitor(ast.NodeVisitor):
     #  in use elsewhere.)
     #
     def visit_For(self, node):
-        self.logger.debug("For-loop")
+        self.logger.debug("For-loop, %s:%s" % (self.filename, node.lineno))
 
         targets = sanitize_exprs(node.target)
         values = sanitize_exprs(node.iter)
@@ -584,19 +588,19 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.visit_For(node)  # TODO: alias for now; tag async for in output in a future version?
 
     def visit_ListComp(self, node):
-        self.logger.debug("ListComp")
+        self.logger.debug("ListComp, %s:%s" % (self.filename, node.lineno))
         self.analyze_comprehension(node, "listcomp")
 
     def visit_SetComp(self, node):
-        self.logger.debug("SetComp")
+        self.logger.debug("SetComp, %s:%s" % (self.filename, node.lineno))
         self.analyze_comprehension(node, "setcomp")
 
     def visit_DictComp(self, node):
-        self.logger.debug("DictComp")
+        self.logger.debug("DictComp, %s:%s" % (self.filename, node.lineno))
         self.analyze_comprehension(node, "dictcomp", field1="key", field2="value")
 
     def visit_GeneratorExp(self, node):
-        self.logger.debug("GeneratorExp")
+        self.logger.debug("GeneratorExp, %s:%s" % (self.filename, node.lineno))
         self.analyze_comprehension(node, "genexpr")
 
     def analyze_comprehension(self, node, label, field1="elt", field2=None):
@@ -638,7 +642,8 @@ class CallGraphVisitor(ast.NodeVisitor):
                 self.visit(getattr(node, field2))
 
     def visit_Call(self, node):
-        self.logger.debug("Call %s" % (get_ast_node_name(node.func)))
+        self.logger.debug("Call %s, %s:%s" % (get_ast_node_name(node.func),
+                                              self.filename, node.lineno))
 
         # visit args to detect uses
         for arg in node.args:
@@ -685,7 +690,7 @@ class CallGraphVisitor(ast.NodeVisitor):
                     self.logger.info("New edge added for Use from %s to %s (call creates an instance)" % (from_node, to_node))
 
     def visit_With(self, node):
-        self.logger.debug("With (context manager)")
+        self.logger.debug("With (context manager), %s:%s" % (self.filename, node.lineno))
 
         def add_uses_enter_exit_of(graph_node):
             # add uses edges to __enter__ and __exit__ methods of given Node
