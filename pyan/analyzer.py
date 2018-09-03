@@ -390,20 +390,20 @@ class CallGraphVisitor(ast.NodeVisitor):
             self.set_value(new_name, tgt_id)
             self.logger.info("From setting name %s to %s" % (new_name, tgt_id))
 
-#    # Edmund Horner's original post has info on what this fixed in Python 2.
-#    # https://ejrh.wordpress.com/2012/01/31/call-graphs-in-python-part-2/
-#    #
-#    # Essentially, this should make '.'.join(...) see str.join.
-#    # Pyan3 currently handles that in resolve_attribute() and get_attribute().
-#    #
-#    # Python 3.4 does not have ast.Constant, but 3.6 does. Disabling for now.
-#    # TODO: revisit this part after upgrading Python.
-#    #
-#    def visit_Constant(self, node):
-#        self.logger.debug("Constant %s" % (node.value))
-#        t = type(node.value)
-#        tn = t.__name__
-#        self.last_value = self.get_node('', tn, node)
+    # Edmund Horner's original post has info on what this fixed in Python 2.
+    # https://ejrh.wordpress.com/2012/01/31/call-graphs-in-python-part-2/
+    #
+    # Essentially, this should make '.'.join(...) see str.join.
+    # Pyan3 currently handles that in resolve_attribute() and get_attribute().
+    #
+    # Python 3.4 does not have ast.Constant, but 3.6 does.
+    # TODO: actually test this with Python 3.6 or later.
+    #
+    def visit_Constant(self, node):
+        self.logger.debug("Constant %s, %s:%s" % (node.value, self.filename, node.lineno))
+        t = type(node.value)
+        tn = t.__name__
+        self.last_value = self.get_node('', tn, node)
 
     # attribute access (node.ctx determines whether set (ast.Store) or get (ast.Load))
     def visit_Attribute(self, node):
