@@ -299,8 +299,10 @@ class CallGraphVisitor(ast.NodeVisitor):
 
         for d in node.args.defaults:
             self.visit(d)
+        # https://greentreesnakes.readthedocs.io/en/latest/nodes.html?highlight=functiondef#arguments
         for d in node.args.kw_defaults:
-            self.visit(d)
+            if d is not None:
+                self.visit(d)
         for stmt in node.body:
             self.visit(stmt)
 
