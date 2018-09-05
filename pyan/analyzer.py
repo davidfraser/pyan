@@ -356,46 +356,14 @@ class CallGraphVisitor(ast.NodeVisitor):
 
         # TODO: add support for relative imports (path may be like "....something.something")
         # https://www.python.org/dev/peps/pep-0328/#id10
-        # Do we need to? Seems that at least "from .foo import bar" works already?
 
-        for import_item in node.names:
-            src_name = import_item.name  # what is being imported
-            tgt_name = import_item.asname if import_item.asname is not None else src_name  # under which name
-
-            # mark the use site
-            #
-            # where it is being imported to, i.e. the **user**
-            from_node = self.get_node_of_current_namespace()
-            # the thing **being used** (under the asname, if any)
-            to_node  = self.get_node('', tgt_name, node, flavor=Flavor.IMPORTEDITEM)
-
-            is_new_edge = self.add_uses_edge(from_node, to_node)
-
-            # bind asname in the current namespace to the imported module
-            #
-            # conversion: possible short name -> fully qualified name
-            # (when analyzing a set of files in the same directory)
-            if src_name in self.module_names:
-                mod_name = self.module_names[src_name]
-            else:
-                mod_name = src_name
-            tgt_module = self.get_node('', mod_name, node, flavor=Flavor.MODULE)
-            # XXX: if there is no asname, it may happen that mod_name == tgt_name,
-            # in which case these will be the same Node. They are semantically
-            # distinct (Python name at receiving end, vs. module), but currently
-            # Pyan has no way of retaining that information.
-            if to_node is tgt_module:
-                to_node.flavor = Flavor.MODULE
-            self.set_value(tgt_name, tgt_module)
-
-            # must do this after possibly munging flavor to avoid confusing
-            # the user reading the log
-            self.logger.debug("Use from %s to Import %s" % (from_node, to_node))
-            if is_new_edge:
-                self.logger.info("New edge added for Use from %s to Import %s" % (from_node, to_node))
+        for import_item in node.names:  # the names are modules
+            self.analyze_module_import(import_item, node)
 
     def visit_ImportFrom(self, node):
         self.logger.debug("ImportFrom: from %s import %s, %s:%s" % (node.module, [format_alias(x) for x in node.names], self.filename, node.lineno))
+
+        # TODO: add support for relative imports (path may be like "....something.something")
 
         # HACK: support "from . import foo"...ish. This is very difficult
         # to get right, so right now we don't even try to do it properly.
@@ -431,7 +399,7 @@ class CallGraphVisitor(ast.NodeVisitor):
             else:
                 mod_name = tgt_name
 
-            for import_item in node.names:
+            for import_item in node.names:  # the names are items inside the module
                 name = import_item.name
                 new_name = import_item.asname if import_item.asname is not None else name
                 # we imported the identifier name from the module mod_name
@@ -440,22 +408,51 @@ class CallGraphVisitor(ast.NodeVisitor):
                 self.logger.info("From setting name %s to %s" % (new_name, tgt_id))
 
         else:  # module name missing = "from . import ..."
-            for import_item in node.names:  # in this case the names are modules
-                # asname doesn't matter, we want to capture the use of the module
-                # with its original name.
-                tgt_name = import_item.name
+            for import_item in node.names:  # the names are modules
+                self.analyze_module_import(import_item, node)
 
-                if tgt_name in self.module_names:
-                    mod_name = self.module_names[tgt_name]
-                else:
-                    mod_name = tgt_name
+    def analyze_module_import(self, import_item, ast_node):
+        """Analyze a names AST node inside an Import or ImportFrom AST node.
 
-                to_node = self.get_node('', mod_name, node, flavor=Flavor.MODULE)  # module, in top-level namespace
+        This handles the case where the objects being imported are modules.
 
-                self.logger.debug("Use from %s to ImportFrom %s" % (from_node, to_node))
-                if self.add_uses_edge(from_node, to_node):
-                    self.logger.info("New edge added for Use from %s to ImportFrom %s" % (from_node, to_node))
+        import_item: an item of ast_node.names
+        ast_node: for recording source location information
+        """
+        src_name = import_item.name  # what is being imported
+        tgt_name = import_item.asname if import_item.asname is not None else src_name  # under which name
 
+        # mark the use site
+        #
+        # where it is being imported to, i.e. the **user**
+        from_node = self.get_node_of_current_namespace()
+        # the thing **being used** (under the asname, if any)
+        to_node  = self.get_node('', tgt_name, ast_node, flavor=Flavor.IMPORTEDITEM)
+
+        is_new_edge = self.add_uses_edge(from_node, to_node)
+
+        # bind asname in the current namespace to the imported module
+        #
+        # conversion: possible short name -> fully qualified name
+        # (when analyzing a set of files in the same directory)
+        if src_name in self.module_names:
+            mod_name = self.module_names[src_name]
+        else:
+            mod_name = src_name
+        tgt_module = self.get_node('', mod_name, ast_node, flavor=Flavor.MODULE)
+        # XXX: if there is no asname, it may happen that mod_name == tgt_name,
+        # in which case these will be the same Node. They are semantically
+        # distinct (Python name at receiving end, vs. module), but currently
+        # Pyan has no way of retaining that information.
+        if to_node is tgt_module:
+            to_node.flavor = Flavor.MODULE
+        self.set_value(tgt_name, tgt_module)
+
+        # must do this after possibly munging flavor to avoid confusing
+        # the user reading the log
+        self.logger.debug("Use from %s to Import %s" % (from_node, to_node))
+        if is_new_edge:
+            self.logger.info("New edge added for Use from %s to Import %s" % (from_node, to_node))
 
     # Edmund Horner's original post has info on what this fixed in Python 2.
     # https://ejrh.wordpress.com/2012/01/31/call-graphs-in-python-part-2/
