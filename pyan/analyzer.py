@@ -261,27 +261,7 @@ class CallGraphVisitor(ast.NodeVisitor):
 
         # Capture which names correspond to function args.
         #
-        # In the function scope, set them to a nonsense Node,
-        # to prevent leakage of identifiers of matching name
-        # from the enclosing scope (due to the local value being None
-        # until we set it to this nonsense Node).
-        #
-        # As the name of the nonsense node, we can use any string that
-        # is not a valid Python identifier.
-        #
-        # It has no sensible flavor, so we leave its flavor unspecified.
-        #
-        sc = self.scopes[inner_ns]
-        nonsense_node = self.get_node(inner_ns, '^^^argument^^^', None)
-        all_args = node.args  # args, vararg (*args), kwonlyargs, kwarg (**kwargs)
-        for a in all_args.args:  # positional
-            sc.defs[a.arg] = nonsense_node
-        if all_args.vararg is not None:  # *args if present
-            sc.defs[all_args.vararg] = nonsense_node
-        for a in all_args.kwonlyargs:    # any after *args or *
-            sc.defs[a.arg] = nonsense_node
-        if all_args.kwarg is not None:  # **kwargs if present
-            sc.defs[all_args.kwarg] = nonsense_node
+        self.generate_args_nodes(node.args, inner_ns)
 
         # self_name is just an ordinary name in the method namespace, except
         # that its value is implicitly set by Python when the method is called.
@@ -297,12 +277,11 @@ class CallGraphVisitor(ast.NodeVisitor):
             self.scopes[inner_ns].defs[self_name] = class_node
             self.logger.info('Method def: setting self name "%s" to %s' % (self_name, class_node))
 
-        for d in node.args.defaults:
-            self.visit(d)
-        # https://greentreesnakes.readthedocs.io/en/latest/nodes.html?highlight=functiondef#arguments
-        for d in node.args.kw_defaults:
-            if d is not None:
-                self.visit(d)
+        # record bindings of args to the given default values, if present
+        self.analyze_arguments(node.args)
+
+        # Analyze the function body
+        #
         for stmt in node.body:
             self.visit(stmt)
 
@@ -316,13 +295,61 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.visit_FunctionDef(node)  # TODO: alias for now; tag async functions in output in a future version?
 
     def visit_Lambda(self, node):
+        # TODO: avoid lumping together all lambdas in the same namespace.
         self.logger.debug("Lambda, %s:%s" % (self.filename, node.lineno))
         with ExecuteInInnerScope(self, "lambda"):
-            for d in node.args.defaults:
-                self.visit(d)
-            for d in node.args.kw_defaults:
-                self.visit(d)
+            inner_ns = self.get_node_of_current_namespace().get_name()
+            self.generate_args_nodes(node.args, inner_ns)
+            self.analyze_arguments(node.args)
             self.visit(node.body)  # single expr
+
+    def generate_args_nodes(self, ast_args, inner_ns):
+        """Capture which names correspond to function args.
+
+        In the function scope, set them to a nonsense Node,
+        to prevent leakage of identifiers of matching name
+        from the enclosing scope (due to the local value being None
+        until we set it to this nonsense Node).
+
+        ast_args: node.args from a FunctionDef or Lambda
+        inner_ns: namespace of the function or lambda, for scope lookup
+        """
+        sc = self.scopes[inner_ns]
+        # As the name of the nonsense node, we can use any string that
+        # is not a valid Python identifier.
+        #
+        # It has no sensible flavor, so we leave its flavor unspecified.
+        nonsense_node = self.get_node(inner_ns, '^^^argument^^^', None)
+        # args, vararg (*args), kwonlyargs, kwarg (**kwargs)
+        for a in ast_args.args:  # positional
+            sc.defs[a.arg] = nonsense_node
+        if ast_args.vararg is not None:  # *args if present
+            sc.defs[ast_args.vararg] = nonsense_node
+        for a in ast_args.kwonlyargs:    # any after *args or *
+            sc.defs[a.arg] = nonsense_node
+        if ast_args.kwarg is not None:  # **kwargs if present
+            sc.defs[ast_args.kwarg] = nonsense_node
+
+    def analyze_arguments(self, ast_args):
+        """Analyze an arguments node of the AST.
+
+        Record bindings of args to the given default values, if present.
+
+        Used for analyzing FunctionDefs and Lambdas."""
+        # https://greentreesnakes.readthedocs.io/en/latest/nodes.html?highlight=functiondef#arguments
+        if ast_args.defaults:
+            n = len(ast_args.defaults)
+            for tgt, val in zip(ast_args.args[-n:], ast_args.defaults):
+                targets = sanitize_exprs(tgt)
+                values  = sanitize_exprs(val)
+                self.analyze_binding(targets, values)
+        if ast_args.kw_defaults:
+            n = len(ast_args.kw_defaults)
+            for tgt, val in zip(ast_args.kwonlyargs, ast_args.kw_defaults):
+                if val is not None:
+                    targets = sanitize_exprs(tgt)
+                    values  = sanitize_exprs(val)
+                    self.analyze_binding(targets, values)
 
     def visit_Import(self, node):
         self.logger.debug("Import %s, %s:%s" % ([format_alias(x) for x in node.names], self.filename, node.lineno))
