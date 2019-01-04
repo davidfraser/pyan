@@ -700,7 +700,8 @@ class CallGraphVisitor(ast.NodeVisitor):
         FUNCTION, METHOD, STATICMETHOD or CLASSMETHOD."""
 
         if not isinstance(ast_node, ast.FunctionDef):
-            raise TypeError("Expected ast.FunctionDef; got %s" % (type(ast_node)))
+            if not isinstance(ast_node, ast.AsyncFunctionDef):
+                raise TypeError("Expected ast.FunctionDef or ast.AsyncFunctionDef; got %s" % (type(ast_node)))
 
         # Visit decorators
         self.last_value = None
