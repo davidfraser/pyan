@@ -13,9 +13,9 @@ import logging
 from glob import glob
 from optparse import OptionParser  # TODO: migrate to argparse
 
-from .analyzer import CallGraphVisitor
-from .visgraph import VisualGraph
-from .writers import TgfWriter, DotWriter, YedWriter
+from pyan.analyzer import CallGraphVisitor
+from pyan.visgraph import VisualGraph
+from pyan.writers import TgfWriter, DotWriter, YedWriter
 
 
 def main():
