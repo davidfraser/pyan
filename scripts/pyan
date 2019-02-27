@@ -11,6 +11,8 @@
 
 import logging
 from glob import glob
+import subprocess
+import os
 from optparse import OptionParser  # TODO: migrate to argparse
 
 from pyan.analyzer import CallGraphVisitor
@@ -76,6 +78,9 @@ def main():
     parser.add_option("-a", "--annotated",
                       action="store_true", default=False, dest="annotated",
                       help="annotate with module and source line number")
+    parser.add_option("--make-svg",
+                      action="store_true", default=False, dest="make_svg",
+                      help="try to run dot to make svg automatically")
 
     options, args = parser.parse_args()
     filenames = [fn2 for fn in args for fn2 in glob(fn)]
@@ -117,6 +122,11 @@ def main():
                 output=options.filename,
                 logger=logger)
         writer.run()
+        if options.make_svg:
+            base, _ = os.path.splitext(options.filename)
+            svg = base + ".svg"
+            subprocess.run("dot -Tsvg {dot} > {svg}"
+                           .format(dot=options.filename, svg=svg), shell=True)
 
     if options.tgf:
         writer = TgfWriter(
