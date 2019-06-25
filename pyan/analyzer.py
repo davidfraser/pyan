@@ -1408,6 +1408,9 @@ class CallGraphVisitor(ast.NodeVisitor):
         Used for cleaning up forward-references once resolved.
         This prevents spurious edges due to expand_unknowns()."""
 
+        if name is None:  # relative imports may create nodes with name=None.
+            return
+
         if from_node not in self.uses_edges:  # no uses edges to remove
             return
 
