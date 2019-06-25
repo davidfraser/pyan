@@ -35,7 +35,7 @@ See `pyan --help`.
 
 Example:
 
-`pyan *.py --uses --no-defines --colored --grouped --annotated --dot >myuses.dot`
+`pyan3 *.py --uses --no-defines --colored --grouped --annotated --dot >myuses.dot`
 
 Then render using your favorite GraphViz filter, mainly `dot` or `fdp`:
 
