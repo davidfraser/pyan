@@ -152,7 +152,7 @@ setup(
     #
     packages=["pyan"],
 
-    scripts=[],
+    scripts=["pyan3"],
 
     zip_safe=True,
 
