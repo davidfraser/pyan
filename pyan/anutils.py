@@ -29,6 +29,10 @@ def get_module_name(filename):
     if not os.path.exists(init_path):
         return mod_name
 
+    # blank path means we're looking at __init__.py, in cwd, so its module name is "__init__"
+    if not filename:
+        return "__init__"
+
     if not os.path.dirname(filename):
         return mod_name
 
