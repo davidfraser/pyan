@@ -6,7 +6,7 @@ from enum import Enum
 
 def make_safe_label(label):
     """Avoid name clashes with GraphViz reserved words such as 'graph'."""
-    unsafe_words = ("digraph", "graph", "cluster", "subgraph")
+    unsafe_words = ("digraph", "graph", "cluster", "subgraph", "node")
     out = label
     for word in unsafe_words:
         out = out.replace(word, "%sX" % word)
