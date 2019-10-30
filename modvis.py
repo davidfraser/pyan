@@ -4,6 +4,7 @@
 import ast
 import os
 
+import pyan.node
 # from pyan.anutils import get_module_name
 
 def get_module_name(fullpath):  # we need to see __init__, hence we don't use anutils.
@@ -69,6 +70,42 @@ class ImportVisitor(ast.NodeVisitor):
         # print(self.current_module, "ImportFrom", node.module, node.level)
         self.add_dependency(resolve(self.current_module, node.module, node.level))
 
+    # --------------------------------------------------------------------------------
+
+    def prepare_graph(self):  # same format as in pyan.analyzer
+        self.nodes = {}   # Node name: list of Node objects (in possibly different namespaces)
+        self.uses_edges = {}
+        # we have no defines_edges, which doesn't matter as long as we don't enable that option in visgraph.
+
+        # TODO: Right now we care only about modules whose files we read.
+        # TODO: If we want to include in the graph also targets that are not in the analyzed set,
+        # TODO: then we could create nodes also for the modules listed in the *values* of self.modules.
+        for m in self.modules:
+            n = pyan.node.Node(namespace="",  # not used
+                               name=m,
+                               ast_node=None,
+                               filename="",  # not used
+                               flavor=pyan.node.Flavor.MODULE)
+            n.defined = True
+            self.nodes[m] = n
+
+        def add_uses_edge(from_node, to_node):
+            if to_node not in self.modules:
+                return
+            if from_node not in self.uses_edges:
+                self.uses_edges[from_node] = set()
+            self.uses_edges[from_node].add(to_node)
+
+        for m, deps in self.modules.items():
+            for d in deps:
+                add_uses_edge(m, d)
+
+        # sanity check output
+        for m, deps in self.uses_edges.items():
+            assert m in self.nodes
+            for d in deps:
+                assert d in self.nodes
+
 def main():
     v = ImportVisitor(".")
     ms = v.modules
@@ -76,6 +113,8 @@ def main():
         print(m)
         for d in sorted(ms[m]):
             print("    {}".format(d))
+    # v.prepare_graph()
+    # print(v.nodes, v.uses_edges)
 
 if __name__ == '__main__':
     main()
