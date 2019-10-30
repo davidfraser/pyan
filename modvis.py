@@ -15,9 +15,13 @@ def get_module_name(fullpath):  # we need to see __init__, hence we don't use an
     fullpath = fullpath[:-3]  # remove .py
     return fullpath.replace(os.path.sep, '.')
 
+blacklist = (".git", "build", "dist")
 def get_pyfiles(basedir):
     pyfiles = []
-    for root, dirs_, files in os.walk(basedir):
+    for root, dirs, files in os.walk(basedir):
+        for x in blacklist:  # don't visit blacklisted dirs
+            if x in dirs:
+                dirs.remove(x)
         for filename in files:
             if filename.endswith(".py"):
                 fullpath = os.path.join(root, filename)
