@@ -65,9 +65,10 @@ def resolve(current_module, target_module, level):
     return '.'.join((base, target_module))
 
 class ImportVisitor(ast.NodeVisitor):
-    def __init__(self, filenames):
+    def __init__(self, filenames, logger):
         self.modules = {}    # modname: {dep0, dep1, ...}
         self.fullpaths = {}  # modname: fullpath
+        self.logger = logger
         self.analyze(filenames)
 
     def analyze(self, filenames):
@@ -84,15 +85,40 @@ class ImportVisitor(ast.NodeVisitor):
         if m not in self.modules:
             self.modules[m] = set()
         self.modules[m].add(target_module)
+        # Just in case the target is a package (we don't know that), add a
+        # dependency on its __init__ module. If there's no matching __init__
+        # (either no __init__.py provided, or the target is a module),
+        # this is harmless - we just generate a spurious dependency on a
+        # module that doesn't even exist.
+        #
+        # Since nonexistent modules are not in the analyzed set (i.e. do not
+        # appear as keys of self.modules), prepare_graph will ignore them.
+        #
+        # TODO: This would be a problem for a simple plain-text output that doesn't use the graph.
+        self.modules[m].add(target_module + ".__init__")
 
     def visit_Import(self, node):
-        # print(self.current_module, "Import", [alias.name for alias in node.names])
+        self.logger.debug("{}:{}: Import {}".format(self.current_module, node.lineno, [alias.name for alias in node.names]))
         for alias in node.names:
             self.add_dependency(alias.name)  # alias.asname not relevant for our purposes
 
     def visit_ImportFrom(self, node):
-        # print(self.current_module, "ImportFrom", node.module, node.level)
-        self.add_dependency(resolve(self.current_module, node.module, node.level))
+        # from foo import some_symbol
+        if node.module:
+            self.logger.debug("{}:{}: ImportFrom '{}', relative import level {}".format(self.current_module, node.lineno, node.module, node.level))
+            absname = resolve(self.current_module, node.module, node.level)
+            if node.level > 0:
+                self.logger.debug("    resolved relative import to '{}'".format(absname))
+            self.add_dependency(absname)
+
+        # from . import foo  -->  module = None; now the **names** refer to modules
+        else:
+            for alias in node.names:
+                self.logger.debug("{}:{}: ImportFrom '{}', target module '{}', relative import level {}".format(self.current_module, node.lineno, '.' * node.level, alias.name, node.level))
+                absname = resolve(self.current_module, alias.name, node.level)
+                if node.level > 0:
+                    self.logger.debug("    resolved relative import to '{}'".format(absname))
+                self.add_dependency(absname)
 
     # --------------------------------------------------------------------------------
 
@@ -218,7 +244,7 @@ def main():
         logger.addHandler(handler)
 
     # run the analysis
-    v = ImportVisitor(filenames)
+    v = ImportVisitor(filenames, logger)
 
     # # we could generate a plaintext report like this
     # ms = v.modules
@@ -238,13 +264,15 @@ def main():
                                         options=['rankdir=' + options.rankdir],
                                         output=options.filename,
                                         logger=logger)
+        writer.run()
     if options.tgf:
         writer = pyan.writers.TgfWriter(
                 graph, output=options.filename, logger=logger)
+        writer.run()
     if options.yed:
         writer = pyan.writers.YedWriter(
                 graph, output=options.filename, logger=logger)
-    writer.run()
+        writer.run()
 
 if __name__ == '__main__':
     main()
