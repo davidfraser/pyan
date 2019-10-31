@@ -85,17 +85,24 @@ class ImportVisitor(ast.NodeVisitor):
         if m not in self.modules:
             self.modules[m] = set()
         self.modules[m].add(target_module)
-        # Just in case the target is a package (we don't know that), add a
-        # dependency on its __init__ module. If there's no matching __init__
-        # (either no __init__.py provided, or the target is a module),
-        # this is harmless - we just generate a spurious dependency on a
-        # module that doesn't even exist.
+        # Just in case the target (or one or more of its parents) is a package
+        # (we don't know that), add a dependency on the relevant __init__ module.
+        #
+        # If there's no matching __init__ (either no __init__.py provided, or
+        # the target is just a module), this is harmless - we just generate a
+        # spurious dependency on a module that doesn't even exist.
         #
         # Since nonexistent modules are not in the analyzed set (i.e. do not
         # appear as keys of self.modules), prepare_graph will ignore them.
         #
         # TODO: This would be a problem for a simple plain-text output that doesn't use the graph.
-        self.modules[m].add(target_module + ".__init__")
+        modpath = target_module.split(".")
+        for k in range(1, len(modpath) + 1):
+            base = ".".join(modpath[:k])
+            possible_init = base + ".__init__"
+            if possible_init != m:  # will happen when current_module is somepackage.__init__ itself
+                self.modules[m].add(possible_init)
+                self.logger.debug("    added possible implicit use of '{}'".format(possible_init))
 
     def visit_Import(self, node):
         self.logger.debug("{}:{}: Import {}".format(self.current_module, node.lineno, [alias.name for alias in node.names]))
@@ -129,32 +136,28 @@ class ImportVisitor(ast.NodeVisitor):
         non-cyclic prefix of the import chain, and `cycle` contains only
         the cyclic part (where the first and last elements are the same).
         """
-        class CycleDetected(Exception):
-            def __init__(self, module_names):
-                self.module_names = module_names
         cycles = []
+        def walk(m, seen=None, trace=None):
+            trace = (trace or []) + [m]
+            seen = seen or set()
+            if m in seen:
+                cycles.append(trace)
+                return
+            seen = seen | {m}
+            deps = self.modules[m]
+            for d in deps:
+                if d in self.modules:
+                    walk(d, seen, trace)
         for root in self.modules:
-            seen = set()
-            def walk(m, trace=None):
-                if m not in self.modules:
-                    return
-                trace = trace or []
-                trace.append(m)
-                if m in seen:
-                    raise CycleDetected(module_names=trace)
-                seen.add(m)
-                deps = self.modules[m]
-                for d in deps:
-                    walk(d, trace=trace)
-            try:
-                walk(root)
-            except CycleDetected as exc:
-                # Report the non-cyclic prefix and the cycle separately
-                names = exc.module_names
-                offender = names[-1]
-                k = names.index(offender)
-                cycles.append((names[:k], names[k:]))
-        return cycles
+            walk(root)
+
+        # For each detected cycle, report the non-cyclic prefix and the cycle separately
+        out = []
+        for cycle in cycles:
+            offender = cycle[-1]
+            k = cycle.index(offender)
+            out.append((cycle[:k], cycle[k:]))
+        return out
 
     def prepare_graph(self):  # same format as in pyan.analyzer
         """Postprocessing. Prepare data for pyan.visgraph for graph file generation."""
@@ -304,24 +307,24 @@ def main():
     #         print("    {}".format(d))
 
     # format graph report
-    v.prepare_graph()
-#    print(v.nodes, v.uses_edges)
-    logger = logging.getLogger(__name__)
+    make_graph = options.dot or options.tgf or options.yed
+    if make_graph:
+        v.prepare_graph()
+        # print(v.nodes, v.uses_edges)
+        graph = pyan.visgraph.VisualGraph.from_visitor(v, options=graph_options, logger=logger)
 
-    graph = pyan.visgraph.VisualGraph.from_visitor(v, options=graph_options, logger=logger)
     if options.dot:
         writer = pyan.writers.DotWriter(graph,
                                         options=['rankdir=' + options.rankdir],
                                         output=options.filename,
                                         logger=logger)
-        writer.run()
     if options.tgf:
         writer = pyan.writers.TgfWriter(
                 graph, output=options.filename, logger=logger)
-        writer.run()
     if options.yed:
         writer = pyan.writers.YedWriter(
                 graph, output=options.filename, logger=logger)
+    if make_graph:
         writer.run()
 
 if __name__ == '__main__':
