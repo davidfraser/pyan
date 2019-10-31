@@ -55,6 +55,8 @@ def resolve(current_module, target_module, level):
 
     For the exact implications, see the section "Import sibling packages" in:
         https://alex.dzyoba.com/blog/python-import/
+    and this SO discussion:
+        https://stackoverflow.com/questions/14132789/relative-imports-for-the-billionth-time
     """
     if level < 0:
         raise ValueError("Relative import level must be >= 0, got {}".format(level))
