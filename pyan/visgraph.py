@@ -19,7 +19,7 @@ class Colorizer:
         self.logger = logger or logging.getLogger(__name__)
         self.colored = colored
 
-        self._hues = [j/num_colors for j in range(num_colors)]
+        self._hues = [j / num_colors for j in range(num_colors)]
         self._idx_of = {}  # top-level namespace: hue index
         self._idx = 0
 
@@ -40,32 +40,32 @@ class Colorizer:
 
     def get(self, node):  # return (group number, hue index)
         idx = self._node_to_idx(node)
-        return (idx,self._hues[idx])
+        return (idx, self._hues[idx])
 
     def make_colors(self, node):  # return (group number, fill color, text color)
         if self.colored:
-            idx,H = self.get(node)
-            L = max( [1.0 - 0.1*node.get_level(), 0.1] )
+            idx, H = self.get(node)
+            L = max([1.0 - 0.1 * node.get_level(), 0.1])
             S = 1.0
             A = 0.7  # make nodes translucent (to handle possible overlaps)
-            fill_RGBA = self.htmlize_rgb(*colorsys.hls_to_rgb(H,L,S), A=A)
+            fill_RGBA = self.htmlize_rgb(*colorsys.hls_to_rgb(H, L, S), A=A)
 
             # black text on light nodes, white text on (very) dark nodes.
             text_RGB = "#000000" if L >= 0.5 else "#ffffff"
         else:
-            idx,_ = self.get(node)
+            idx, _ = self.get(node)
             fill_RGBA = self.htmlize_rgb(1.0, 1.0, 1.0, 0.7)
             text_RGB = "#000000"
         return idx, fill_RGBA, text_RGB
 
     @staticmethod
-    def htmlize_rgb(R,G,B,A=None):
+    def htmlize_rgb(R, G, B, A=None):
         if A is not None:
-            R,G,B,A = [int(255.0*x) for x in (R,G,B,A)]
-            return "#%02x%02x%02x%02x" % (R,G,B,A)
+            R, G, B, A = [int(255.0 * x) for x in (R, G, B, A)]
+            return "#%02x%02x%02x%02x" % (R, G, B, A)
         else:
-            R,G,B = [int(255.0*x) for x in (R,G,B)]
-            return "#%02x%02x%02x" % (R,G,B)
+            R, G, B = [int(255.0 * x) for x in (R, G, B)]
+            return "#%02x%02x%02x" % (R, G, B)
 
 
 class VisualNode(object):
@@ -89,7 +89,7 @@ class VisualNode(object):
                     self.fill_color, self.text_color, self.group] if s]
         if optionals:
             return ('VisualNode(' + repr(self.id) +
-                    ', ' + ', '.join(optionals)+')')
+                    ', ' + ', '.join(optionals) + ')')
         else:
             return 'VisualNode(' + repr(self.id) + ')'
 
@@ -104,12 +104,12 @@ class VisualEdge(object):
         self.source = source
         self.target = target
         self.flavor = flavor
-        self.color  = color
+        self.color = color
 
     def __repr__(self):
         return (
-                'Edge('+self.source.label+' '+self.flavor+' ' +
-                self.target.label+')')
+                'Edge(' + self.source.label + ' ' + self.flavor + ' ' +
+                self.target.label + ')')
 
 
 class VisualGraph(object):
@@ -143,12 +143,12 @@ class VisualGraph(object):
         if annotated:
             if grouped:
                 # group label includes namespace already
-                labeler = lambda n: n.get_annotated_name()
+                def labeler(n): return n.get_annotated_name()
             else:
                 # the node label is the only place to put the namespace info
-                labeler = lambda n: n.get_long_annotated_name()
+                def labeler(n): return n.get_long_annotated_name()
         else:
-            labeler = lambda n: n.get_short_name()
+            def labeler(n): return n.get_short_name()
 
         logger = logger or logging.getLogger(__name__)
 
@@ -165,7 +165,7 @@ class VisualGraph(object):
             for node in visited_nodes:
                 filenames.add(node.filename)
             return filenames
-        colorizer = Colorizer(num_colors=len(find_filenames())+1,
+        colorizer = Colorizer(num_colors=len(find_filenames()) + 1,
                               colored=colored, logger=logger)
 
         nodes_dict = dict()
