@@ -100,12 +100,12 @@ class ImportVisitor(ast.NodeVisitor):
         # TODO: then we could create nodes also for the modules listed in the *values* of self.modules.
         for m in self.modules:
             ns, mod = split_module_name(m)
-            fn = self.filenames[m]
+            package = os.path.dirname(self.filenames[m])
             # print("{}: ns={}, mod={}, fn={}".format(m, ns, mod, fn))
             n = pyan.node.Node(namespace=ns,
                                name=mod,
                                ast_node=None,
-                               filename=fn,
+                               filename=package,  # HACK: visualizing at module level, so color by package.
                                flavor=pyan.node.Flavor.MODULE)
             n.defined = True
             # Pyan's analyzer.py allows several nodes to share the same short name,
