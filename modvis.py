@@ -145,10 +145,10 @@ class ImportVisitor(ast.NodeVisitor):
                 return
             seen = seen | {m}
             deps = self.modules[m]
-            for d in deps:
+            for d in sorted(deps):
                 if d in self.modules:
                     walk(d, seen, trace)
-        for root in self.modules:
+        for root in sorted(self.modules):
             walk(root)
 
         # For each detected cycle, report the non-cyclic prefix and the cycle separately
@@ -290,12 +290,12 @@ def main():
     if options.cycles:
         cycles = v.detect_cycles()
         if not cycles:
-            print("All good! No import cycles detected.")
+            print("No import cycles detected.")
         else:
             unique_cycles = set()
             for prefix, cycle in cycles:
                 unique_cycles.add(tuple(cycle))
-            print("Detected the following import cycles:")
+            print("Detected the following import cycles (n_results={}):".format(len(unique_cycles)))
             for c in sorted(unique_cycles):
                 print("    {}".format(c))
 
