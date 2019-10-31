@@ -122,7 +122,42 @@ class ImportVisitor(ast.NodeVisitor):
 
     # --------------------------------------------------------------------------------
 
+    def detect_cycles(self):
+        """Postprocessing. Detect import cycles.
+
+        Return format is `[(prefix, cycle), ...]` where `prefix` is the
+        non-cyclic prefix of the import chain, and `cycle` contains only
+        the cyclic part (where the first and last elements are the same).
+        """
+        class CycleDetected(Exception):
+            def __init__(self, module_names):
+                self.module_names = module_names
+        cycles = []
+        for root in self.modules:
+            seen = set()
+            def walk(m, trace=None):
+                if m not in self.modules:
+                    return
+                trace = trace or []
+                trace.append(m)
+                if m in seen:
+                    raise CycleDetected(module_names=trace)
+                seen.add(m)
+                deps = self.modules[m]
+                for d in deps:
+                    walk(d, trace=trace)
+            try:
+                walk(root)
+            except CycleDetected as exc:
+                # Report the non-cyclic prefix and the cycle separately
+                names = exc.module_names
+                offender = names[-1]
+                k = names.index(offender)
+                cycles.append((names[:k], names[k:]))
+        return cycles
+
     def prepare_graph(self):  # same format as in pyan.analyzer
+        """Postprocessing. Prepare data for pyan.visgraph for graph file generation."""
         self.nodes = {}   # Node name: list of Node objects (in possibly different namespaces)
         self.uses_edges = {}
         # we have no defines_edges, which doesn't matter as long as we don't enable that option in visgraph.
@@ -203,6 +238,9 @@ def main():
     parser.add_option("-e", "--nested-groups",
                       action="store_true", default=False, dest="nested_groups",
                       help="create nested groups (subgraphs) for nested namespaces (implies -g) [dot only]")
+    parser.add_option("-C", "--cycles",
+                      action="store_true", default=False, dest="cycles",
+                      help="detect import cycles and print report to stdout")
     parser.add_option("--dot-rankdir", default="TB", dest="rankdir",
                       help=(
                           "specifies the dot graph 'rankdir' property for "
@@ -245,6 +283,18 @@ def main():
 
     # run the analysis
     v = ImportVisitor(filenames, logger)
+
+    if options.cycles:
+        cycles = v.detect_cycles()
+        if not cycles:
+            print("All good! No import cycles detected.")
+        else:
+            unique_cycles = set()
+            for prefix, cycle in cycles:
+                unique_cycles.add(tuple(cycle))
+            print("Detected the following import cycles:")
+            for c in sorted(unique_cycles):
+                print("    {}".format(c))
 
     # # we could generate a plaintext report like this
     # ms = v.modules
