@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8; -*-
 """A simple import analyzer. Visualize dependencies between modules."""
 
