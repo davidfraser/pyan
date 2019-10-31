@@ -53,11 +53,14 @@ def resolve(current_module, target_module, level):
     if level == 0:  # absolute import
         return target_module
     # level > 0 (let's have some simplistic support for relative imports)
+    if level > current_module.count(".") + 1:  # foo.bar.baz -> max level 3, pointing to top level
+        raise ValueError("Relative import level {} too large for module name {}".format(level, current_module))
     base = current_module
     for _ in range(level):
-        k = base.rfind('.')
+        k = base.rfind(".")
         if k == -1:
-            raise ValueError("Relative import level {} too large for module name {}".format(level, current_module))
+            base = ""
+            break
         base = base[:k]
     return '.'.join((base, target_module))
 
