@@ -189,9 +189,11 @@ class VisualGraph(object):
 
             # next namespace?
             if grouped and node.namespace != prev_namespace:
-                logger.info(
-                        'New namespace %s, old was %s'
-                        % (node.namespace, prev_namespace))
+                if not prev_namespace:
+                    logger.info('New namespace %s' % (node.namespace))
+                else:
+                    logger.info('New namespace %s, old was %s' % (node.namespace, prev_namespace))
+                prev_namespace = node.namespace
 
                 label = node.get_namespace_label()
                 subgraph = cls(label, node.namespace)
