@@ -46,7 +46,15 @@ def split_module_name(m):
 def resolve(current_module, target_module, level):
     """Return fully qualified name of the target_module in an import.
 
-    Resolves relative imports (level > 0) using current_module as the starting point.
+    If level == 0, the import is absolute, hence target_module is already the
+    fully qualified name (and will be returned as-is).
+
+    Relative imports (level > 0) are resolved using current_module as the
+    starting point. Usually this is good enough (especially if you analyze your
+    project by invoking modvis in its top-level directory).
+
+    For the exact implications, see the section "Import sibling packages" in:
+        https://alex.dzyoba.com/blog/python-import/
     """
     if level < 0:
         raise ValueError("Relative import level must be >= 0, got {}".format(level))
@@ -287,6 +295,33 @@ def main():
     # run the analysis
     v = ImportVisitor(filenames, logger)
 
+    # Postprocessing: detect import cycles
+    #
+    # NOTE: Because this is a static analysis, it doesn't care about the order
+    # the code runs in any particular invocation of the software. Every
+    # analyzed module is considered as a possible entry point to the program,
+    # and all cycles (considering *all* possible branches *at any step* of
+    # *each* import chain) will be mapped recursively.
+    #
+    # Obviously, this easily leads to a combinatoric explosion. In a mid-size
+    # project (~20k SLOC), the analysis may find thousands of unique import
+    # cycles, most of which are harmless.
+    #
+    # Many cycles appear due to package A importing something from package B
+    # (possibly from one of its submodules) and vice versa, when both packages
+    # have an __init__ module. If they don't actually try to import any names
+    # that only become defined after the init has finished running, it's
+    # usually fine.
+    #
+    # (Init modules often import names from their submodules to the package's
+    # top-level namespace; those names can be reliably accessed only after the
+    # init module has finished running. But importing names directly from the
+    # submodule where they are defined is fine also during the init.)
+    #
+    # But if your program is crashing due to a cyclic import, you already know
+    # in any case *which* import cycle is causing it, just by looking at the
+    # stack trace. So this analysis is just extra information that says what
+    # other cycles exist, if any.
     if options.cycles:
         cycles = v.detect_cycles()
         if not cycles:
@@ -299,14 +334,14 @@ def main():
             for c in sorted(unique_cycles):
                 print("    {}".format(c))
 
-    # # we could generate a plaintext report like this
+    # # we could generate a plaintext report like this (with caveats; see TODO above)
     # ms = v.modules
     # for m in sorted(ms):
     #     print(m)
     #     for d in sorted(ms[m]):
     #         print("    {}".format(d))
 
-    # format graph report
+    # Postprocessing: format graph report
     make_graph = options.dot or options.tgf or options.yed
     if make_graph:
         v.prepare_graph()
