@@ -332,7 +332,20 @@ def main():
             unique_cycles = set()
             for prefix, cycle in cycles:
                 unique_cycles.add(tuple(cycle))
-            print("Detected the following import cycles (n_results={}):".format(len(unique_cycles)))
+            print("Detected the following import cycles (n_results={}).".format(len(unique_cycles)))
+            def stats():
+                lengths = [len(x) - 1 for x in unique_cycles]  # number of modules in the cycle
+                def mean(lst):
+                    return sum(lst) / len(lst)
+                def median(lst):
+                    tmp = list(sorted(lst))
+                    n = len(lst)
+                    if n % 2 == 1:
+                        return tmp[n // 2]  # e.g. tmp[5] if n = 11
+                    else:
+                        return (tmp[n // 2 - 1] + tmp[n // 2]) / 2  # e.g. avg of tmp[4] and tmp[5] if n = 10
+                return min(lengths), mean(lengths), median(lengths), max(lengths)
+            print("Number of modules in a cycle: min = {}, average = {:0.2g}, median = {:0.2g}, max = {}".format(*stats()))
             for c in sorted(unique_cycles):
                 print("    {}".format(c))
 
