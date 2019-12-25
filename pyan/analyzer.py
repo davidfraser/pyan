@@ -378,6 +378,16 @@ class CallGraphVisitor(ast.NodeVisitor):
         #
         # https://stackoverflow.com/questions/14132789/relative-imports-for-the-billionth-time
         from_node = self.get_node_of_current_namespace()
+        # resolve relative imports 'None' such as "from . import foo"
+        if node.module is None:
+            self.logger.debug("Old ImportFrom: from %s import %s, %s:%s" % (node.module, [format_alias(x) for x in node.names], self.filename, node.lineno))
+            tgt_level = node.level 
+            current_module_namespace = self.module_name.rsplit('.', tgt_level)[0]
+            tgt_name = current_module_namespace
+            node.module = tgt_name
+            node.level = 0
+            self.logger.debug("New ImportFrom: from %s import %s, %s:%s" % (node.module, [format_alias(x) for x in node.names], self.filename, node.lineno))
+
         if node.module:  # import some names from a module
             # TODO: This works only for absolute imports.
             #
@@ -387,6 +397,14 @@ class CallGraphVisitor(ast.NodeVisitor):
             # with node.level).
             #
             # https://greentreesnakes.readthedocs.io/en/latest/nodes.html?highlight=functiondef#ImportFrom
+            # pyan can handel Relative imports such as "from .mod import foo" and "from ..mod import foo"
+            if node.level != 0:
+                self.logger.debug("Old ImportFrom: from %s import %s, %s:%s" % (node.module, [format_alias(x) for x in node.names], self.filename, node.lineno))
+                tgt_level = node.level 
+                current_module_namespace = self.module_name.rsplit('.', tgt_level)[0]
+                node.module = current_module_namespace+'.'+node.module
+                self.logger.debug("New ImportFrom: from %s import %s, %s:%s" % (node.module, [format_alias(x) for x in node.names], self.filename, node.lineno))
+
             tgt_name = node.module
 
             to_node = self.get_node('', tgt_name, node, flavor=Flavor.MODULE)  # module, in top-level namespace
@@ -407,9 +425,9 @@ class CallGraphVisitor(ast.NodeVisitor):
                 self.set_value(new_name, tgt_id)
                 self.logger.info("From setting name %s to %s" % (new_name, tgt_id))
 
-        else:  # module name missing = "from . import ..."
-            for import_item in node.names:  # the names are modules
-                self.analyze_module_import(import_item, node)
+        #else:  # module name missing = "from . import ..."
+        #    for import_item in node.names:  # the names are modules
+        #        self.analyze_module_import(import_item, node)
 
     def analyze_module_import(self, import_item, ast_node):
         """Analyze a names AST node inside an Import or ImportFrom AST node.
@@ -1558,8 +1576,10 @@ class CallGraphVisitor(ast.NodeVisitor):
         # What about incoming uses edges? E.g. consider a lambda that is saved
         # in an instance variable, then used elsewhere. How do we want the
         # graph to look like in that case?
-
-        for name in self.nodes:
+        
+        # BUG: resolve relative imports causes (RuntimeError: dictionary changed size during iteration)
+        # temporary solution is adding list to force a copy of 'self.nodes'
+        for name in list(self.nodes):
             if name in ('lambda', 'listcomp', 'setcomp', 'dictcomp', 'genexpr'):
                 for n in self.nodes[name]:
                     pn = self.get_parent_node(n)
