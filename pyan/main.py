@@ -11,120 +11,121 @@
 
 import logging
 from glob import glob
-from optparse import OptionParser  # TODO: migrate to argparse
+from argparse import ArgumentParser
 
 from .analyzer import CallGraphVisitor
 from .visgraph import VisualGraph
 from .writers import TgfWriter, DotWriter, YedWriter
 
 def main():
-    usage = """usage: %prog FILENAME... [--dot|--tgf|--yed]"""
+    usage = """%(prog)s FILENAME... [--dot|--tgf|--yed]"""
     desc = ('Analyse one or more Python source files and generate an'
             'approximate call graph of the modules, classes and functions'
             ' within them.')
-    parser = OptionParser(usage=usage, description=desc)
-    parser.add_option("--dot",
+    parser = ArgumentParser(usage=usage, description=desc)
+    parser.add_argument("--dot",
                       action="store_true", default=False,
                       help="output in GraphViz dot format")
-    parser.add_option("--tgf",
+    parser.add_argument("--tgf",
                       action="store_true", default=False,
                       help="output in Trivial Graph Format")
-    parser.add_option("--yed",
+    parser.add_argument("--yed",
                       action="store_true", default=False,
                       help="output in yEd GraphML Format")
-    parser.add_option("-f", "--file", dest="filename",
+    parser.add_argument("-f", "--file", dest="filename",
                       help="write graph to FILE", metavar="FILE", default=None)
-    parser.add_option("-l", "--log", dest="logname",
+    parser.add_argument("-l", "--log", dest="logname",
                       help="write log to LOG", metavar="LOG")
-    parser.add_option("-v", "--verbose",
+    parser.add_argument("-v", "--verbose",
                       action="store_true", default=False, dest="verbose",
                       help="verbose output")
-    parser.add_option("-V", "--very-verbose",
+    parser.add_argument("-V", "--very-verbose",
                       action="store_true", default=False, dest="very_verbose",
                       help="even more verbose output (mainly for debug)")
-    parser.add_option("-d", "--defines",
+    parser.add_argument("-d", "--defines",
                       action="store_true", default=True, dest="draw_defines",
                       help="add edges for 'defines' relationships [default]")
-    parser.add_option("-n", "--no-defines",
+    parser.add_argument("-n", "--no-defines",
                       action="store_false", default=True, dest="draw_defines",
                       help="do not add edges for 'defines' relationships")
-    parser.add_option("-u", "--uses",
+    parser.add_argument("-u", "--uses",
                       action="store_true", default=True, dest="draw_uses",
                       help="add edges for 'uses' relationships [default]")
-    parser.add_option("-N", "--no-uses",
+    parser.add_argument("-N", "--no-uses",
                       action="store_false", default=True, dest="draw_uses",
                       help="do not add edges for 'uses' relationships")
-    parser.add_option("-c", "--colored",
+    parser.add_argument("-c", "--colored",
                       action="store_true", default=False, dest="colored",
                       help="color nodes according to namespace [dot only]")
-    parser.add_option("-G", "--grouped-alt",
+    parser.add_argument("-G", "--grouped-alt",
                       action="store_true", default=False, dest="grouped_alt",
                       help="suggest grouping by adding invisible defines edges [only useful with --no-defines]")
-    parser.add_option("-g", "--grouped",
+    parser.add_argument("-g", "--grouped",
                       action="store_true", default=False, dest="grouped",
                       help="group nodes (create subgraphs) according to namespace [dot only]")
-    parser.add_option("-e", "--nested-groups",
+    parser.add_argument("-e", "--nested-groups",
                       action="store_true", default=False, dest="nested_groups",
                       help="create nested groups (subgraphs) for nested namespaces (implies -g) [dot only]")
-    parser.add_option("--dot-rankdir", default="TB", dest="rankdir",
+    parser.add_argument("--dot-rankdir", default="TB", dest="rankdir",
                       help=(
                         "specifies the dot graph 'rankdir' property for "
                         "controlling the direction of the graph. "
                         "Allowed values: ['TB', 'LR', 'BT', 'RL']. "
                         "[dot only]"))
-    parser.add_option("-a", "--annotated",
+    parser.add_argument("-a", "--annotated",
                       action="store_true", default=False, dest="annotated",
                       help="annotate with module and source line number")
+    parser.add_argument("path", nargs='*')
 
-    options, args = parser.parse_args()
-    filenames = [fn2 for fn in args for fn2 in glob(fn)]
-    if len(args) == 0:
+    args = parser.parse_args()
+    filenames = [fn2 for fn in args.path for fn2 in glob(fn)]
+    if len(args.path) == 0:
         parser.error('Need one or more filenames to process')
 
-    if options.nested_groups:
-        options.grouped = True
+    if args.nested_groups:
+        args.grouped = True
 
     graph_options = {
-            'draw_defines': options.draw_defines,
-            'draw_uses': options.draw_uses,
-            'colored': options.colored,
-            'grouped_alt' : options.grouped_alt,
-            'grouped': options.grouped,
-            'nested_groups': options.nested_groups,
-            'annotated': options.annotated}
+            'draw_defines': args.draw_defines,
+            'draw_uses': args.draw_uses,
+            'colored': args.colored,
+            'grouped_alt' : args.grouped_alt,
+            'grouped': args.grouped,
+            'nested_groups': args.nested_groups,
+            'annotated': args.annotated}
 
     # TODO: use an int argument for verbosity
     logger = logging.getLogger(__name__)
-    if options.very_verbose:
+    if args.very_verbose:
         logger.setLevel(logging.DEBUG)
-    elif options.verbose:
+    elif args.verbose:
         logger.setLevel(logging.INFO)
     else:
         logger.setLevel(logging.WARN)
     logger.addHandler(logging.StreamHandler())
-    if options.logname:
-        handler = logging.FileHandler(options.logname)
+    if args.logname:
+        handler = logging.FileHandler(args.logname)
         logger.addHandler(handler)
 
     v = CallGraphVisitor(filenames, logger)
     graph = VisualGraph.from_visitor(v, options=graph_options, logger=logger)
 
-    if options.dot:
+    if args.dot:
         writer = DotWriter(
                 graph,
-                options=['rankdir='+options.rankdir],
-                output=options.filename,
+                options=['rankdir='+args.rankdir],
+                output=args.filename,
                 logger=logger)
         writer.run()
 
-    if options.tgf:
+    if args.tgf:
         writer = TgfWriter(
-                graph, output=options.filename, logger=logger)
+                graph, output=args.filename, logger=logger)
         writer.run()
 
-    if options.yed:
+    if args.yed:
         writer = YedWriter(
-                graph, output=options.filename, logger=logger)
+                graph, output=args.filename, logger=logger)
         writer.run()
 
 
