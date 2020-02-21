@@ -541,16 +541,9 @@ class CallGraphVisitor(ast.NodeVisitor):
 
                 self.last_value = to_node
 
-            # Object unknown, add uses edge to a wildcard by attr name.
+            # pass on
             else:
-                tgt_name = node.attr
-                from_node = self.get_node_of_current_namespace()
-                to_node = self.get_node(None, tgt_name, node, flavor=Flavor.UNKNOWN)
-                self.logger.debug("Use from %s to %s (target obj %s not resolved; maybe fwd ref, function argument, or unanalyzed import)" % (from_node, to_node, objname))
-                if self.add_uses_edge(from_node, to_node):
-                    self.logger.info("New edge added for Use from %s to %s (target obj %s not resolved; maybe fwd ref, function argument, or unanalyzed import)" % (from_node, to_node, objname))
-
-                self.last_value = to_node
+                self.visit(node.value)
 
     # name access (node.ctx determines whether set (ast.Store) or get (ast.Load))
     def visit_Name(self, node):
