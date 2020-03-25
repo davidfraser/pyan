@@ -64,7 +64,7 @@ standard_doc_exts = [".md", ".rst", ".txt", ""]  # commonly .md for GitHub proje
 #
 # http://stackoverflow.com/questions/13628979/setuptools-how-to-make-package-contain-extra-data-folder-and-all-folders-inside
 #
-datafiles = ["pyan/callgraph.html"]
+datafiles = []
 #getext = lambda filename: os.path.splitext(filename)[1]
 #for datadir in datadirs:
 #    datafiles.extend( [(root, [os.path.join(root, f) for f in files if getext(f) in dataexts])
@@ -155,6 +155,8 @@ setup(
     scripts=["main"],
 
     zip_safe=True,
+    package_data={'pyan': ["callgraph.html"]},
+    include_package_data=True,
 
     # Custom data files not inside a Python package
     data_files=datafiles
