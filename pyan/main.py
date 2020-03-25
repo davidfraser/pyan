@@ -15,7 +15,8 @@ from optparse import OptionParser  # TODO: migrate to argparse
 
 from .analyzer import CallGraphVisitor
 from .visgraph import VisualGraph
-from .writers import TgfWriter, DotWriter, YedWriter
+from .writers import TgfWriter, DotWriter, YedWriter, HTMLWriter, SVGWriter
+
 
 def main():
     usage = """usage: %prog FILENAME... [--dot|--tgf|--yed]"""
@@ -29,6 +30,12 @@ def main():
     parser.add_option("--tgf",
                       action="store_true", default=False,
                       help="output in Trivial Graph Format")
+    parser.add_option("--svg",
+                      action="store_true", default=False,
+                      help="output in HTML Format")
+    parser.add_option("--html",
+                      action="store_true", default=False,
+                      help="output in SVG Format")
     parser.add_option("--yed",
                       action="store_true", default=False,
                       help="output in yEd GraphML Format")
@@ -111,6 +118,22 @@ def main():
 
     if options.dot:
         writer = DotWriter(
+                graph,
+                options=['rankdir='+options.rankdir],
+                output=options.filename,
+                logger=logger)
+        writer.run()
+
+    if options.html:
+        writer = HTMLWriter(
+                graph,
+                options=['rankdir='+options.rankdir],
+                output=options.filename,
+                logger=logger)
+        writer.run()
+
+    if options.svg:
+        writer = SVGWriter(
                 graph,
                 options=['rankdir='+options.rankdir],
                 output=options.filename,

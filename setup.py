@@ -64,7 +64,7 @@ standard_doc_exts = [".md", ".rst", ".txt", ""]  # commonly .md for GitHub proje
 #
 # http://stackoverflow.com/questions/13628979/setuptools-how-to-make-package-contain-extra-data-folder-and-all-folders-inside
 #
-datafiles = []
+datafiles = ["pyan/callgraph.html"]
 #getext = lambda filename: os.path.splitext(filename)[1]
 #for datadir in datadirs:
 #    datafiles.extend( [(root, [os.path.join(root, f) for f in files if getext(f) in dataexts])
@@ -137,7 +137,7 @@ setup(
     #    http://setuptools.readthedocs.io/en/latest/setuptools.html
     #
     setup_requires=[],
-    install_requires=[],
+    install_requires=["jinja2"],
     provides=["pyan"],
 
     # keywords for PyPI (in case you upload your project)

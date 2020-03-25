@@ -161,6 +161,95 @@ class CallGraphVisitor(ast.NodeVisitor):
     # Python docs:
     # https://docs.python.org/3/library/ast.html#abstract-grammar
 
+
+    def filter(self, node=None, namespace=None, max_iter=1000):
+        """
+        filter callgraph nodes that related to `node` or are in `namespace`
+
+        Args:
+            node (Union[None, Node]): pyan node for which related nodes should be found, if none, filter only for namespace
+            namespace (Union[str, None]): namespace to search in (name of top level module),
+                if None, determines namespace from `node`
+            max_iter (int): maximum number of iterations and nodes to iterate
+
+        Returns:
+            self
+        """
+        # filter the nodes to avoid cluttering the callgraph with irrelevant information
+        filtered_nodes = self.get_related_nodes(node, namespace=namespace, max_iter=max_iter)
+
+        self.nodes = {
+            name: [node for node in nodes if node in filtered_nodes] for name, nodes in self.nodes.items()
+        }
+        self.uses_edges = {
+            node: [n for n in nodes if n in filtered_nodes]
+            for node, nodes in self.uses_edges.items()
+            if node in filtered_nodes
+        }
+        self.defines_edges = {
+            node: [n for n in nodes if n in filtered_nodes]
+            for node, nodes in self.defines_edges.items()
+            if node in filtered_nodes
+        }
+        return self
+
+    def get_related_nodes(self, node=None, namespace=None, max_iter=1000):
+        """
+        get nodes that related to `node` or are in `namespace`
+
+        Args:
+            node (Union[None, Node]): pyan node for which related nodes should be found, if none, filter only for namespace
+            namespace (Union[str, None]): namespace to search in (name of top level module),
+                if None, determines namespace from `node`
+            max_iter (int): maximum number of iterations and nodes to iterate
+
+        Returns:
+            set: set of nodes related to `node` including `node` itself
+        """
+        # check if searching through all nodes is necessary
+        if node is None:
+            queue = []
+            if namespace is None:
+                new_nodes = set(self.nodes.values())
+            else:
+                new_nodes = {n for n in self.nodes.values() if namespace in n.namespace}
+
+        else:
+            new_nodes = set()
+            if namespace is None:
+                namespace = node.namespace.strip(".").split(".", 1)[0]
+            queue = [node]
+
+        # use queue system to search through nodes
+        # essentially add a node to the queue and then search all connected nodes which are in turn added to the queue
+        # until the queue itself is empty or the maximum limit of max_iter searches have been hit
+        i = max_iter
+        while len(queue) > 0:
+            item = queue.pop()
+            if item not in new_nodes:
+                new_nodes.add(item)
+                i -= 1
+                if i < 0:
+                    break
+                queue.extend(
+                    [
+                        n
+                        for n in self.uses_edges.get(item, [])
+                        if n in self.uses_edges and n not in new_nodes and namespace in n.namespace
+                    ]
+                )
+                queue.extend(
+                    [
+                        n
+                        for n in self.defines_edges.get(item, [])
+                        if n in self.defines_edges
+                           and n not in new_nodes
+                           and namespace in n.namespace
+                    ]
+                )
+
+        return new_nodes
+
     def visit_Module(self, node):
         self.logger.debug("Module %s, %s" % (self.module_name, self.filename))
 

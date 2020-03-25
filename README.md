@@ -41,6 +41,14 @@ Then render using your favorite GraphViz filter, mainly `dot` or `fdp`:
 
 `dot -Tsvg myuses.dot >myuses.svg`
 
+Or use directly
+
+`pyan3 *.py --uses --no-defines --colored --grouped --annotated --svg >myuses.svg`
+
+You can also export as an interactive HTML
+
+`pyan3 *.py --uses --no-defines --colored --grouped --annotated --html >myuses.html`
+
 #### Troubleshooting
 
 If GraphViz says *trouble in init_rank*, try adding `-Gnewrank=true`, as in:
