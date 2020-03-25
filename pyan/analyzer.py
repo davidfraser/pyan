@@ -210,9 +210,12 @@ class CallGraphVisitor(ast.NodeVisitor):
         if node is None:
             queue = []
             if namespace is None:
-                new_nodes = set(self.nodes.values())
+                new_nodes = {n for items in self.nodes.values() for n in items}
             else:
-                new_nodes = {n for n in self.nodes.values() if namespace in n.namespace}
+                new_nodes = {
+                    n for items in self.nodes.values() for n in items
+                    if n.namespace is not None and namespace in n.namespace
+                }
 
         else:
             new_nodes = set()

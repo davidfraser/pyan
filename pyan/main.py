@@ -39,8 +39,12 @@ def main():
     parser.add_option("--yed",
                       action="store_true", default=False,
                       help="output in yEd GraphML Format")
-    parser.add_option("-f", "--file", dest="filename",
+    parser.add_option("--file", dest="filename",
                       help="write graph to FILE", metavar="FILE", default=None)
+    parser.add_option("--namespace", dest="namespace",
+                      help="filter for NAMESPACE", metavar="NAMESPACE", default=None)
+    parser.add_option("--function", dest="function",
+                      help="filter for FUNCTION", metavar="FUNCTION", default=None)
     parser.add_option("-l", "--log", dest="logname",
                       help="write log to LOG", metavar="LOG")
     parser.add_option("-v", "--verbose",
@@ -114,6 +118,14 @@ def main():
         logger.addHandler(handler)
 
     v = CallGraphVisitor(filenames, logger)
+    if options.function or options.namespace:
+        if options.function:
+            function_name = options.function.split(".")[-1]
+            namespace = ".".join(options.function.split(".")[:-1])
+            node = v.get_node(namespace, function_name)
+        else:
+            node = None
+        v.filter(node=node, namespace=options.namespace)
     graph = VisualGraph.from_visitor(v, options=graph_options, logger=logger)
 
     if options.dot:
