@@ -70,8 +70,8 @@ def create_callgraph(
     if function or namespace:
         if function:
             function_name = function.split(".")[-1]
-            namespace = ".".join(function.split(".")[:-1])
-            node = v.get_node(namespace, function_name)
+            function_namespace = ".".join(function.split(".")[:-1])
+            node = v.get_node(function_namespace, function_name)
         else:
             node = None
         v.filter(node=node, namespace=namespace)

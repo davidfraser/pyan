@@ -182,12 +182,12 @@ class CallGraphVisitor(ast.NodeVisitor):
             name: [node for node in nodes if node in filtered_nodes] for name, nodes in self.nodes.items()
         }
         self.uses_edges = {
-            node: [n for n in nodes if n in filtered_nodes]
+            node: {n for n in nodes if n in filtered_nodes}
             for node, nodes in self.uses_edges.items()
             if node in filtered_nodes
         }
         self.defines_edges = {
-            node: [n for n in nodes if n in filtered_nodes]
+            node: {n for n in nodes if n in filtered_nodes}
             for node, nodes in self.defines_edges.items()
             if node in filtered_nodes
         }
