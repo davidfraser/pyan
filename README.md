@@ -1,4 +1,4 @@
-# Pyan3 
+# Pyan3
 
 Offline call graph generator for Python 3
 
