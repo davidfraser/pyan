@@ -1,12 +1,21 @@
-# Pyan3: Offline call graph generator for Python 3
+# Pyan3
 
-Generate approximate call graphs for Python programs.
+Offline call graph generator for Python 3
+
+[![Build Status](https://travis-ci.com/edumco/pyan.svg?branch=master)](https://travis-ci.com/edumco/pyan)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fedumco%2Fpyan.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fedumco%2Fpyan?ref=badge_shield)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/7cba5ba5d3694a42a1252243e3634b5e)](https://www.codacy.com/manual/edumco/pyan?utm_source=github.com&utm_medium=referral&utm_content=edumco/pyan&utm_campaign=Badge_Grade)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pyan3)
 
 Pyan takes one or more Python source files, performs a (rather superficial) static analysis, and constructs a directed graph of the objects in the combined source, and how they define or use each other. The graph can be output for rendering by GraphViz or yEd.
 
-*And now it is available for Python 3!*
+This project has 2 official repositories:
+- The original stable [davidfraser/pyan](https://github.com/davidfraser/pyan).
+- The development repository [Technologicat/pyan](https://github.com/Technologicat/pyan)
 
-**Note**: This is the repository for the Python 3 version of Pyan. The previous Python 2-compatible version is tagged as `pre-python3` in [davidfraser's maintenance repository](https://github.com/davidfraser/pyan). 
+> The PyPI package [pyan3](https://pypi.org/project/pyan3/) is built from development
+
+## About
 
 [![Example output](graph0.png "Example: GraphViz rendering of Pyan output (click for .svg)")](graph0.svg)
 
