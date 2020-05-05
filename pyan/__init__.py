@@ -12,40 +12,40 @@ __version__ = "1.0.5"
 
 
 def create_callgraph(
-    filenames="**/*.py",
-    function=None,
-    namespace=None,
-    format="dot",
-    rankdir="LR",
-    nested_groups=True,
-    draw_defines=True,
-    draw_uses=True,
-    colored=True,
-    grouped_alt=False,
-    annotated=False,
-    grouped=True,
-):
+    filenames: Union[List[str], str] = "**/*.py",
+    function: Union[str, None] = None,
+    namespace: Union[str, None] = None,
+    format: str = "dot",
+    rankdir: str = "LR",
+    nested_groups: bool = True,
+    draw_defines: bool = True,
+    draw_uses: bool = True,
+    colored: bool = True,
+    grouped_alt: bool = False,
+    annotated: bool = False,
+    grouped: bool = True,
+) -> str:
     """
     create callgraph based on static code analysis
 
     Args:
-        filenames (Union[List[str], str]): glob pattern or list of glob patterns
+        filenames: glob pattern or list of glob patterns
             to identify filenames to parse (`**` for multiple directories)
             example: **/*.py for all python files
-        function (Union[str, None]): if defined, function name to filter for, e.g. "my_module.my_function"
+        function: if defined, function name to filter for, e.g. "my_module.my_function"
             to only include calls that are related to `my_function`
-        namespace (Union[str, None]): if defined, namespace to filter for, e.g. "my_module", it is highly
+        namespace: if defined, namespace to filter for, e.g. "my_module", it is highly
             recommended to define this filter
-        format (str): format to write callgraph to, of of "dot", "svg", "html". you need to have graphviz
+        format: format to write callgraph to, of of "dot", "svg", "html". you need to have graphviz
             installed for svg or html output
-        rankdir (str): direction of graph, e.g. "LR" for horizontal or "TB" for vertical
-        nested_groups (bool): if to group by modules and submodules
-        draw_defines (bool): if to draw defines edges (functions that are defines)
-        draw_uses (bool): if to draw uses edges (functions that are used)
-        colored (bool): if to color graph
-        grouped_alt (bool): if to use alternative grouping
-        annotated (bool): if to annotate graph with filenames
-        grouped (bool): if to group by modules
+        rankdir: direction of graph, e.g. "LR" for horizontal or "TB" for vertical
+        nested_groups: if to group by modules and submodules
+        draw_defines: if to draw defines edges (functions that are defines)
+        draw_uses: if to draw uses edges (functions that are used)
+        colored: if to color graph
+        grouped_alt: if to use alternative grouping
+        annotated: if to annotate graph with filenames
+        grouped: if to group by modules
 
     Returns:
         str: callgraph

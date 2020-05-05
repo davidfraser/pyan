@@ -5,6 +5,7 @@
 import logging
 import ast
 import symtable
+from typing import Union
 
 from .node import Node, Flavor
 from .anutils import tail, get_module_name, format_alias, \
@@ -162,15 +163,15 @@ class CallGraphVisitor(ast.NodeVisitor):
     # https://docs.python.org/3/library/ast.html#abstract-grammar
 
 
-    def filter(self, node=None, namespace=None, max_iter=1000):
+    def filter(self, node: Union[None, Node] = None, namespace: Union[str, None] = None, max_iter: int = 1000):
         """
         filter callgraph nodes that related to `node` or are in `namespace`
 
         Args:
-            node (Union[None, Node]): pyan node for which related nodes should be found, if none, filter only for namespace
-            namespace (Union[str, None]): namespace to search in (name of top level module),
+            node: pyan node for which related nodes should be found, if none, filter only for namespace
+            namespace: namespace to search in (name of top level module),
                 if None, determines namespace from `node`
-            max_iter (int): maximum number of iterations and nodes to iterate
+            max_iter: maximum number of iterations and nodes to iterate
 
         Returns:
             self
@@ -193,15 +194,15 @@ class CallGraphVisitor(ast.NodeVisitor):
         }
         return self
 
-    def get_related_nodes(self, node=None, namespace=None, max_iter=1000):
+    def get_related_nodes(self, node: Union[None, Node] = None, namespace: Union[str, None] = None, max_iter: int =1000) -> set:
         """
         get nodes that related to `node` or are in `namespace`
 
         Args:
-            node (Union[None, Node]): pyan node for which related nodes should be found, if none, filter only for namespace
-            namespace (Union[str, None]): namespace to search in (name of top level module),
+            node: pyan node for which related nodes should be found, if none, filter only for namespace
+            namespace: namespace to search in (name of top level module),
                 if None, determines namespace from `node`
-            max_iter (int): maximum number of iterations and nodes to iterate
+            max_iter: maximum number of iterations and nodes to iterate
 
         Returns:
             set: set of nodes related to `node` including `node` itself
