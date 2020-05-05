@@ -152,7 +152,7 @@ setup(
     #
     packages=["pyan"],
 
-    scripts=["main"],
+    entry_points={'console_scripts': ["pyan=pyan.main:main"]},
 
     zip_safe=True,
     package_data={'pyan': ["callgraph.html"]},
