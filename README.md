@@ -38,9 +38,14 @@ The static analysis approach Pyan takes is different from running the code and s
 In Pyan3, the analyzer was ported from `compiler` ([good riddance](https://stackoverflow.com/a/909172)) to a combination of `ast` and `symtable`, and slightly extended.
 
 
+# Install
+
+    pip install pyan3
+
+
 # Usage
 
-See `pyan --help`.
+See `pyan3 --help`.
 
 Example:
 
