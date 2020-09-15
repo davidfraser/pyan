@@ -136,7 +136,7 @@ setup(
     # See
     #    http://setuptools.readthedocs.io/en/latest/setuptools.html
     #
-    setup_requires=[],
+    setup_requires=["wheel"],
     install_requires=["jinja2"],
     provides=["pyan"],
 
@@ -152,12 +152,16 @@ setup(
     #
     packages=["pyan"],
 
-    entry_points={'console_scripts': ["pyan=pyan.main:main"]},
-
     zip_safe=True,
     package_data={'pyan': ["callgraph.html"]},
     include_package_data=True,
 
     # Custom data files not inside a Python package
-    data_files=datafiles
+    data_files=datafiles,
+
+    entry_points={
+        'console_scripts': [
+            'pyan3 = pyan.main:main',
+        ]
+    },
 )
