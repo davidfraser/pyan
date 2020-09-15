@@ -152,10 +152,14 @@ setup(
     #
     packages=["pyan"],
 
-    scripts=["pyan3"],
-
     zip_safe=True,
 
     # Custom data files not inside a Python package
-    data_files=datafiles
+    data_files=datafiles,
+
+    entry_points={
+        'console_scripts': [
+            'pyan3 = pyan.main:main',
+        ]
+    },
 )
