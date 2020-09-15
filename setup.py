@@ -136,7 +136,7 @@ setup(
     # See
     #    http://setuptools.readthedocs.io/en/latest/setuptools.html
     #
-    setup_requires=[],
+    setup_requires=["wheel"],
     install_requires=[],
     provides=["pyan"],
 

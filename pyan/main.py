@@ -80,6 +80,8 @@ def main():
     filenames = [fn2 for fn in args for fn2 in glob(fn)]
     if len(args) == 0:
         parser.error('Need one or more filenames to process')
+    if len(args) > 0 and len(filenames) == 0:
+        parser.error('No files found matching given glob: %s' % ' '.join(args))
 
     if options.nested_groups:
         options.grouped = True
