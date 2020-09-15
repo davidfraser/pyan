@@ -471,7 +471,15 @@ class CallGraphVisitor(ast.NodeVisitor):
         #
         # https://stackoverflow.com/questions/14132789/relative-imports-for-the-billionth-time
         from_node = self.get_node_of_current_namespace()
-        if node.module:  # import some names from a module
+        # resolve relative imports 'None' such as "from . import foo"
+        if node.module is None:
+            self.logger.debug("ImportFrom (original) from %s import %s, %s:%s" % ('.' * node.level, [format_alias(x) for x in node.names], self.filename, node.lineno))
+            tgt_level = node.level 
+            current_module_namespace = self.module_name.rsplit('.', tgt_level)[0]
+            tgt_name = current_module_namespace
+            self.logger.debug("ImportFrom (resolved): from %s import %s, %s:%s" % (tgt_name, [format_alias(x) for x in node.names], self.filename, node.lineno))
+
+        else:  # import some names from a module
             # TODO: This works only for absolute imports.
             #
             # Relative imports such as "from .mod import foo" and
@@ -480,29 +488,33 @@ class CallGraphVisitor(ast.NodeVisitor):
             # with node.level).
             #
             # https://greentreesnakes.readthedocs.io/en/latest/nodes.html?highlight=functiondef#ImportFrom
-            tgt_name = node.module
-
-            to_node = self.get_node('', tgt_name, node, flavor=Flavor.MODULE)  # module, in top-level namespace
-            self.logger.debug("Use from %s to ImportFrom %s" % (from_node, to_node))
-            if self.add_uses_edge(from_node, to_node):
-                self.logger.info("New edge added for Use from %s to ImportFrom %s" % (from_node, to_node))
-
-            if tgt_name in self.module_names:
-                mod_name = self.module_names[tgt_name]
+            # pyan can handle Relative imports such as "from .mod import foo" and "from ..mod import foo"
+            if node.level != 0:
+                self.logger.debug("ImportFrom (original): from %s import %s, %s:%s" % (node.module, [format_alias(x) for x in node.names], self.filename, node.lineno))
+                tgt_level = node.level 
+                current_module_namespace = self.module_name.rsplit('.', tgt_level)[0]
+                tgt_name = current_module_namespace + '.' + node.module
+                self.logger.debug("ImportFrom (resolved): from %s import %s, %s:%s" % (tgt_name, [format_alias(x) for x in node.names], self.filename, node.lineno))
             else:
-                mod_name = tgt_name
+                tgt_name = node.module
 
-            for import_item in node.names:  # the names are items inside the module
-                name = import_item.name
-                new_name = import_item.asname if import_item.asname is not None else name
+        to_node = self.get_node('', tgt_name, node, flavor=Flavor.MODULE)  # module, in top-level namespace
+        self.logger.debug("Use from %s to ImportFrom %s" % (from_node, to_node))
+        if self.add_uses_edge(from_node, to_node):
+            self.logger.info("New edge added for Use from %s to ImportFrom %s" % (from_node, to_node))
+
+        if tgt_name in self.module_names:
+            mod_name = self.module_names[tgt_name]
+        else:
+            mod_name = tgt_name
+
+        for import_item in node.names:  # the names are items inside the module
+            name = import_item.name
+            new_name = import_item.asname if import_item.asname is not None else name
                 # we imported the identifier name from the module mod_name
-                tgt_id = self.get_node(mod_name, name, node, flavor=Flavor.IMPORTEDITEM)
-                self.set_value(new_name, tgt_id)
-                self.logger.info("From setting name %s to %s" % (new_name, tgt_id))
-
-        else:  # module name missing = "from . import ..."
-            for import_item in node.names:  # the names are modules
-                self.analyze_module_import(import_item, node)
+            tgt_id = self.get_node(mod_name, name, node, flavor=Flavor.IMPORTEDITEM)
+            self.set_value(new_name, tgt_id)
+            self.logger.info("From setting name %s to %s" % (new_name, tgt_id))
 
     def analyze_module_import(self, import_item, ast_node):
         """Analyze a names AST node inside an Import or ImportFrom AST node.
@@ -1644,8 +1656,10 @@ class CallGraphVisitor(ast.NodeVisitor):
         # What about incoming uses edges? E.g. consider a lambda that is saved
         # in an instance variable, then used elsewhere. How do we want the
         # graph to look like in that case?
-
-        for name in self.nodes:
+        
+        # BUG: resolve relative imports causes (RuntimeError: dictionary changed size during iteration)
+        # temporary solution is adding list to force a copy of 'self.nodes'
+        for name in list(self.nodes):
             if name in ('lambda', 'listcomp', 'setcomp', 'dictcomp', 'genexpr'):
                 for n in self.nodes[name]:
                     pn = self.get_parent_node(n)
