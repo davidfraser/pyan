@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Graph markup writers."""
-
+import os
+import subprocess
 import sys
 import logging
+import io
+from jinja2 import Template
 
 
 class Writer(object):
@@ -29,14 +32,17 @@ class Writer(object):
     def run(self):
         self.log('%s running' % type(self))
         try:
-            self.outstream = open(self.output, 'w')
+            if isinstance(self.output, io.StringIO):  # write to stream
+                self.outstream = self.output
+            else:
+                self.outstream = open(self.output, 'w')  # write to file
         except TypeError:
             self.outstream = sys.stdout
         self.start_graph()
         self.write_subgraph(self.graph)
         self.write_edges()
         self.finish_graph()
-        if self.output:
+        if self.output and not isinstance(self.output, io.StringIO):
             self.outstream.close()
 
     def write_subgraph(self, graph):
@@ -167,6 +173,61 @@ class DotWriter(Writer):
 
     def finish_graph(self):
         self.write('}')  # terminate "digraph G {"
+
+
+class SVGWriter(DotWriter):
+
+    def run(self):
+        # write dot file
+        self.log('%s running' % type(self))
+        self.outstream = io.StringIO()
+        self.start_graph()
+        self.write_subgraph(self.graph)
+        self.write_edges()
+        self.finish_graph()
+
+        # convert to svg
+        svg = subprocess.run(
+            f"dot -Tsvg",
+            shell=True,
+            stdout=subprocess.PIPE,
+            input=self.outstream.getvalue().encode()
+        ).stdout.decode()
+
+        if self.output:
+            if isinstance(self.output, io.StringIO):
+                self.output.write(svg)
+            else:
+                with open(self.output, "w") as f:
+                    f.write(svg)
+        else:
+            print(svg)
+
+
+class HTMLWriter(SVGWriter):
+
+    def run(self):
+        with io.StringIO() as svg_stream:
+            # run SVGWriter with stream as output
+            output = self.output
+            self.output = svg_stream
+            super().run()
+            svg = svg_stream.getvalue()
+            self.output = output
+
+        # insert svg into html
+        with open(os.path.join(os.path.dirname(__file__), "callgraph.html"), "r") as f:
+            template = Template(f.read())
+
+        html = template.render(svg=svg)
+        if self.output:
+            if isinstance(self.output, io.StringIO):
+                self.output.write(html)
+            else:
+                with open(self.output, "w") as f:
+                    f.write(html)
+        else:
+            print(html)
 
 
 class YedWriter(Writer):

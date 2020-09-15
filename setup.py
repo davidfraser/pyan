@@ -30,7 +30,7 @@ from setuptools import setup
 #
 # This is also the top level of its source tree, relative to the top-level project directory setup.py resides in.
 #
-libname = "pyan3"
+libname = "pyan"
 
 # Short description for package list on PyPI
 #
@@ -103,7 +103,7 @@ except FileNotFoundError:
 #########################################################
 
 setup(
-    name="pyan3",
+    name="pyan",
     version=version,
     author="Juha Jeronen",
     author_email="juha.m.jeronen@gmail.com",
@@ -137,7 +137,7 @@ setup(
     #    http://setuptools.readthedocs.io/en/latest/setuptools.html
     #
     setup_requires=["wheel"],
-    install_requires=[],
+    install_requires=["jinja2"],
     provides=["pyan"],
 
     # keywords for PyPI (in case you upload your project)
@@ -153,6 +153,8 @@ setup(
     packages=["pyan"],
 
     zip_safe=True,
+    package_data={'pyan': ["callgraph.html"]},
+    include_package_data=True,
 
     # Custom data files not inside a Python package
     data_files=datafiles,
