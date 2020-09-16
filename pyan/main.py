@@ -32,10 +32,10 @@ def main():
                       help="output in Trivial Graph Format")
     parser.add_option("--svg",
                       action="store_true", default=False,
-                      help="output in HTML Format")
+                      help="output in SVG Format")
     parser.add_option("--html",
                       action="store_true", default=False,
-                      help="output in SVG Format")
+                      help="output in HTML Format")
     parser.add_option("--yed",
                       action="store_true", default=False,
                       help="output in yEd GraphML Format")
