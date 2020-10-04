@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
     pyan.py - Generate approximate call graphs for Python programs.
-    
+
     This program takes one or more Python source files, does a superficial
     analysis, and constructs a directed graph of the objects in the combined
     source, and how they define or use each other.  The graph can be output
@@ -29,6 +29,7 @@ def main(cli_args=None):
 
     parser.add_argument(
         "--dot",
+        action="store_true",
         default=False,
         help="output in GraphViz dot format"
     )
@@ -42,6 +43,7 @@ def main(cli_args=None):
 
     parser.add_argument(
         "--svg",
+        action="store_true",
         default=False,
         help="output in SVG Format"
     )
