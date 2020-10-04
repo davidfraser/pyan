@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """
     pyan.py - Generate approximate call graphs for Python programs.
+    
     This program takes one or more Python source files, does a superficial
     analysis, and constructs a directed graph of the objects in the combined
     source, and how they define or use each other.  The graph can be output
