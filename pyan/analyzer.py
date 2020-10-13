@@ -46,12 +46,9 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.logger = logger or logging.getLogger(__name__)
 
         # full module names for all given files
-        self.module_names = {}
         self.module_to_filename = {}  # inverse mapping for recording which file each AST node came from
         for filename in filenames:
             mod_name = get_module_name(filename)
-            short_name = mod_name.rsplit('.', 1)[-1]
-            self.module_names[short_name] = mod_name
             self.module_to_filename[mod_name] = filename
         self.filenames = filenames
 
@@ -471,8 +468,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         #
         # https://stackoverflow.com/questions/14132789/relative-imports-for-the-billionth-time
         from_node = self.get_node_of_current_namespace()
-        # resolve relative imports 'None' such as "from . import foo"
-        if node.module is None:
+        if node.module is None: # resolve relative imports 'None' such as "from . import foo"
             self.logger.debug("ImportFrom (original) from %s import %s, %s:%s" % ('.' * node.level, [format_alias(x) for x in node.names], self.filename, node.lineno))
             tgt_level = node.level 
             current_module_namespace = self.module_name.rsplit('.', tgt_level)[0]
@@ -503,19 +499,6 @@ class CallGraphVisitor(ast.NodeVisitor):
         if self.add_uses_edge(from_node, to_node):
             self.logger.info("New edge added for Use from %s to ImportFrom %s" % (from_node, to_node))
 
-        if tgt_name in self.module_names:
-            mod_name = self.module_names[tgt_name]
-        else:
-            mod_name = tgt_name
-
-        for import_item in node.names:  # the names are items inside the module
-            name = import_item.name
-            new_name = import_item.asname if import_item.asname is not None else name
-                # we imported the identifier name from the module mod_name
-            tgt_id = self.get_node(mod_name, name, node, flavor=Flavor.IMPORTEDITEM)
-            self.set_value(new_name, tgt_id)
-            self.logger.info("From setting name %s to %s" % (new_name, tgt_id))
-
     def analyze_module_import(self, import_item, ast_node):
         """Analyze a names AST node inside an Import or ImportFrom AST node.
 
@@ -525,39 +508,26 @@ class CallGraphVisitor(ast.NodeVisitor):
         ast_node: for recording source location information
         """
         src_name = import_item.name  # what is being imported
-        tgt_name = import_item.asname if import_item.asname is not None else src_name  # under which name
 
         # mark the use site
         #
         # where it is being imported to, i.e. the **user**
         from_node = self.get_node_of_current_namespace()
         # the thing **being used** (under the asname, if any)
-        to_node  = self.get_node('', tgt_name, ast_node, flavor=Flavor.IMPORTEDITEM)
-
-        is_new_edge = self.add_uses_edge(from_node, to_node)
-
-        # bind asname in the current namespace to the imported module
-        #
-        # conversion: possible short name -> fully qualified name
-        # (when analyzing a set of files in the same directory)
-        if src_name in self.module_names:
-            mod_name = self.module_names[src_name]
+        mod_node = self.get_node('', src_name, ast_node, flavor=Flavor.MODULE)
+        # if there is alias, add extra edge between alias and node
+        if import_item.asname is not None:
+            alias_name = import_item.asname
         else:
-            mod_name = src_name
-        tgt_module = self.get_node('', mod_name, ast_node, flavor=Flavor.MODULE)
-        # XXX: if there is no asname, it may happen that mod_name == tgt_name,
-        # in which case these will be the same Node. They are semantically
-        # distinct (Python name at receiving end, vs. module), but currently
-        # Pyan has no way of retaining that information.
-        if to_node is tgt_module:
-            to_node.flavor = Flavor.MODULE
-        self.set_value(tgt_name, tgt_module)
+            alias_name = mod_node.name
+        self.add_uses_edge(from_node, mod_node)
+        self.logger.info(
+            "New edge added for Use import %s in %s"
+            % (mod_node, from_node)
+        )
+        self.set_value(alias_name, mod_node)  # set node to be discoverable in module
+        self.logger.info("From setting name %s to %s" % (alias_name, mod_node))
 
-        # must do this after possibly munging flavor to avoid confusing
-        # the user reading the log
-        self.logger.debug("Use from %s to Import %s" % (from_node, to_node))
-        if is_new_edge:
-            self.logger.info("New edge added for Use from %s to Import %s" % (from_node, to_node))
 
     # Edmund Horner's original post has info on what this fixed in Python 2.
     # https://ejrh.wordpress.com/2012/01/31/call-graphs-in-python-part-2/
