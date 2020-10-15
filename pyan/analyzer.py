@@ -268,6 +268,9 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.name_stack.pop()
         self.last_value = None
 
+        if self.add_defines_edge(module_node, None):
+            self.logger.info("Def Module %s" % node)
+
     def visit_ClassDef(self, node):
         self.logger.debug("ClassDef %s, %s:%s" % (node.name, self.filename, node.lineno))
 
@@ -541,8 +544,9 @@ class CallGraphVisitor(ast.NodeVisitor):
     def visit_Constant(self, node):
         self.logger.debug("Constant %s, %s:%s" % (node.value, self.filename, node.lineno))
         t = type(node.value)
+        ns = self.get_node_of_current_namespace().get_name()
         tn = t.__name__
-        self.last_value = self.get_node('', tn, node)
+        self.last_value = self.get_node(ns, tn, node, flavor=Flavor.ATTRIBUTE)
 
     # attribute access (node.ctx determines whether set (ast.Store) or get (ast.Load))
     def visit_Attribute(self, node):
@@ -1410,13 +1414,15 @@ class CallGraphVisitor(ast.NodeVisitor):
     def add_defines_edge(self, from_node, to_node):
         """Add a defines edge in the graph between two nodes.
         N.B. This will mark both nodes as defined."""
-
+        status = False
         if from_node not in self.defines_edges:
             self.defines_edges[from_node] = set()
-        if to_node in self.defines_edges[from_node]:
-            return False
-        self.defines_edges[from_node].add(to_node)
+            status = True
         from_node.defined = True
+        if to_node is None or to_node in self.defines_edges[from_node]:
+            status = status or False
+            return status
+        self.defines_edges[from_node].add(to_node)
         to_node.defined = True
         return True
 
