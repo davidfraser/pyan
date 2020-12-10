@@ -21,12 +21,10 @@ def get_in_dict(node_dict, name):
     return node_dict[get_node(node_dict.keys(), name)]
 
 
-
 def test_resolve_import_as(callgraph):
     imports = get_in_dict(callgraph.uses_edges, "test_code.submodule2")
     get_node(imports, "test_code.submodule1")
     assert len(imports) == 1, "only one effective import"
-
 
     imports = get_in_dict(callgraph.uses_edges, "test_code.submodule1")
     get_node(imports, "test_code.subpackage1.submodule1.A")
@@ -47,9 +45,3 @@ def test_resolve_use_in_function(callgraph):
     uses = get_in_dict(callgraph.uses_edges, "test_code.submodule2.test_2")
     get_node(uses, "test_code.submodule1.test_func1")
     get_node(uses, "test_code.submodule1.test_func2")
-
-
-
-
-
-
