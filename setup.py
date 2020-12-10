@@ -25,13 +25,6 @@ from setuptools import setup
 # General config
 #########################################################
 
-# Name of the top-level package of the library.
-#
-# This is also the top level of its source tree,
-# relative to the top-level project directory setup.py resides in.
-#
-libname = "pyan"
-
 # Short description for package list on PyPI
 #
 SHORTDESC = "Offline call graph generator for Python 3"
