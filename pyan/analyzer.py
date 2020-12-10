@@ -46,12 +46,9 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.logger = logger or logging.getLogger(__name__)
 
         # full module names for all given files
-        self.module_names = {}
         self.module_to_filename = {}  # inverse mapping for recording which file each AST node came from
         for filename in filenames:
             mod_name = get_module_name(filename)
-            short_name = mod_name.rsplit('.', 1)[-1]
-            self.module_names[short_name] = mod_name
             self.module_to_filename[mod_name] = filename
         self.filenames = filenames
 
@@ -150,6 +147,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         # then remove any references pointing outside the analyzed file set.
 
         self.expand_unknowns()
+        self.resolve_imports()
         self.contract_nonexistents()
         self.cull_inherited()
         self.collapse_inner()
@@ -162,6 +160,80 @@ class CallGraphVisitor(ast.NodeVisitor):
     # Python docs:
     # https://docs.python.org/3/library/ast.html#abstract-grammar
 
+    def resolve_imports(self):
+        """
+        resolve relative imports and remap nodes
+        """
+        # first find all imports and map to themselves. we will then remap those that are currently pointing
+        # to duplicates or into the void
+        imports_to_resolve = {
+            n
+            for items in self.nodes.values()
+            for n in items
+            if n.flavor == Flavor.IMPORTEDITEM
+        }
+        # map real definitions
+        import_mapping = {}
+        while len(imports_to_resolve) > 0:
+            from_node = imports_to_resolve.pop()
+            if from_node in import_mapping:
+                continue
+            to_uses = self.uses_edges.get(from_node, set([from_node]))
+            assert len(to_uses) == 1
+            to_node = to_uses.pop()  # resolve alias
+            # resolve namespace and get module
+            if to_node.namespace == "":
+                module_node = to_node
+            else:
+                assert from_node.name == to_node.name
+                module_node = self.get_node("", to_node.namespace)
+            module_uses = self.uses_edges.get(module_node)
+            if module_uses is not None:
+                # check if in module item exists and if yes, map to it
+                for candidate_to_node in module_uses:
+                    if candidate_to_node.name == from_node.name:
+                        to_node = candidate_to_node
+                        import_mapping[from_node] = to_node
+                        if to_node.flavor == Flavor.IMPORTEDITEM and from_node is not to_node:  # avoid self-recursion
+                            imports_to_resolve.add(to_node)
+                        break
+
+        # set previously undefined nodes to defined
+        # go through undefined attributes
+        attribute_import_mapping = {}
+        for nodes in self.nodes.values():
+            for node in nodes:
+                if not node.defined and node.flavor == Flavor.ATTRIBUTE:
+                    # try to resolve namespace and find imported item mapping
+                    for from_node, to_node in import_mapping.items():
+                        if (
+                            f"{from_node.namespace}.{from_node.name}" == node.namespace
+                            and from_node.flavor == Flavor.IMPORTEDITEM
+                        ):
+                            # use define edges as potential candidates
+                            for candidate_to_node in self.defines_edges[to_node]:  #
+                                if candidate_to_node.name == node.name:
+                                    attribute_import_mapping[node] = candidate_to_node
+                                    break
+        import_mapping.update(attribute_import_mapping)
+
+        # remap nodes based on import mapping
+        self.nodes = {
+            name: [import_mapping.get(n, n) for n in items]
+            for name, items in self.nodes.items()
+        }
+        self.uses_edges = {
+            import_mapping.get(from_node, from_node): {
+                import_mapping.get(to_node, to_node) for to_node in to_nodes
+            }
+            for from_node, to_nodes in self.uses_edges.items() if len(to_nodes) > 0
+        }
+        self.defines_edges = {
+            import_mapping.get(from_node, from_node): {
+                import_mapping.get(to_node, to_node) for to_node in to_nodes
+            }
+            for from_node, to_nodes in self.defines_edges.items() if len(to_nodes) > 0
+        }
 
     def filter(self, node: Union[None, Node] = None, namespace: Union[str, None] = None, max_iter: int = 1000):
         """
@@ -270,6 +342,9 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.scope_stack.pop()
         self.name_stack.pop()
         self.last_value = None
+
+        if self.add_defines_edge(module_node, None):
+            self.logger.info("Def Module %s" % node)
 
     def visit_ClassDef(self, node):
         self.logger.debug("ClassDef %s, %s:%s" % (node.name, self.filename, node.lineno))
@@ -455,66 +530,47 @@ class CallGraphVisitor(ast.NodeVisitor):
 
     def visit_ImportFrom(self, node):
         self.logger.debug("ImportFrom: from %s import %s, %s:%s" % (node.module, [format_alias(x) for x in node.names], self.filename, node.lineno))
-
-        # TODO: add support for relative imports (path may be like "....something.something")
-
-        # HACK: support "from . import foo"...ish. This is very difficult
-        # to get right, so right now we don't even try to do it properly.
-        #
-        # We only special-case "from . import foo" so that it doesn't crash Pyan,
-        # and may even occasionally find the right module.
-        #
-        # Pyan would need to know the package structure, and how the program
+        # Pyan needs to know the package structure, and how the program
         # being analyzed is actually going to be invoked (!), to be able to
-        # resolve relative imports correctly. The current "here's a set of files,
-        # analyze them" approach doesn't cut it.
+        # resolve relative imports correctly.
         #
-        # https://stackoverflow.com/questions/14132789/relative-imports-for-the-billionth-time
+        # As a solution, we register imports here and later, when all files have been parsed, resolve them.
         from_node = self.get_node_of_current_namespace()
-        # resolve relative imports 'None' such as "from . import foo"
-        if node.module is None:
+        if node.module is None: # resolve relative imports 'None' such as "from . import foo"
             self.logger.debug("ImportFrom (original) from %s import %s, %s:%s" % ('.' * node.level, [format_alias(x) for x in node.names], self.filename, node.lineno))
             tgt_level = node.level
             current_module_namespace = self.module_name.rsplit('.', tgt_level)[0]
             tgt_name = current_module_namespace
             self.logger.debug("ImportFrom (resolved): from %s import %s, %s:%s" % (tgt_name, [format_alias(x) for x in node.names], self.filename, node.lineno))
-
-        else:  # import some names from a module
-            # TODO: This works only for absolute imports.
-            #
-            # Relative imports such as "from .mod import foo" and
-            # "from ..mod import foo" is treated incorrectly, since Pyan has
-            # no concept of Python packages (and doesn't know what to do
-            # with node.level).
-            #
-            # https://greentreesnakes.readthedocs.io/en/latest/nodes.html?highlight=functiondef#ImportFrom
-            # pyan can handle Relative imports such as "from .mod import foo" and "from ..mod import foo"
-            if node.level != 0:
-                self.logger.debug("ImportFrom (original): from %s import %s, %s:%s" % (node.module, [format_alias(x) for x in node.names], self.filename, node.lineno))
-                tgt_level = node.level
-                current_module_namespace = self.module_name.rsplit('.', tgt_level)[0]
-                tgt_name = current_module_namespace + '.' + node.module
-                self.logger.debug("ImportFrom (resolved): from %s import %s, %s:%s" % (tgt_name, [format_alias(x) for x in node.names], self.filename, node.lineno))
-            else:
-                tgt_name = node.module
-
-        to_node = self.get_node('', tgt_name, node, flavor=Flavor.MODULE)  # module, in top-level namespace
-        self.logger.debug("Use from %s to ImportFrom %s" % (from_node, to_node))
-        if self.add_uses_edge(from_node, to_node):
-            self.logger.info("New edge added for Use from %s to ImportFrom %s" % (from_node, to_node))
-
-        if tgt_name in self.module_names:
-            mod_name = self.module_names[tgt_name]
+        elif node.level != 0:  # resolve from ..module import foo
+            self.logger.debug("ImportFrom (original): from %s import %s, %s:%s" % (node.module, [format_alias(x) for x in node.names], self.filename, node.lineno))
+            tgt_level = node.level
+            current_module_namespace = self.module_name.rsplit('.', tgt_level)[0]
+            tgt_name = current_module_namespace + '.' + node.module
+            self.logger.debug("ImportFrom (resolved): from %s import %s, %s:%s" % (tgt_name, [format_alias(x) for x in node.names], self.filename, node.lineno))
         else:
-            mod_name = tgt_name
+            tgt_name = node.module  # normal from module.submodule import foo
 
-        for import_item in node.names:  # the names are items inside the module
-            name = import_item.name
-            new_name = import_item.asname if import_item.asname is not None else name
-                # we imported the identifier name from the module mod_name
-            tgt_id = self.get_node(mod_name, name, node, flavor=Flavor.IMPORTEDITEM)
-            self.set_value(new_name, tgt_id)
-            self.logger.info("From setting name %s to %s" % (new_name, tgt_id))
+        # link each import separately
+        for alias in node.names:
+            # check if import is module
+            if tgt_name + "." + alias.name in self.module_to_filename:
+                to_node = self.get_node('', tgt_name + "." + alias.name, node, flavor=Flavor.MODULE)
+            else:
+                to_node = self.get_node(
+                    tgt_name, alias.name, node, flavor=Flavor.IMPORTEDITEM
+                )
+            # if there is alias, add extra edge between alias and node
+            if alias.asname is not None:
+                alias_name = alias.asname
+            else:
+                alias_name = alias.name
+            self.set_value(alias_name, to_node)  # set node to be discoverable in module
+            self.logger.info("From setting name %s to %s" % (alias_name, to_node))
+
+            self.logger.debug("Use from %s to ImportFrom %s" % (from_node, to_node))
+            if self.add_uses_edge(from_node, to_node):
+                self.logger.info("New edge added for Use from %s to ImportFrom %s" % (from_node, to_node))
 
     def analyze_module_import(self, import_item, ast_node):
         """Analyze a names AST node inside an Import or ImportFrom AST node.
@@ -525,39 +581,26 @@ class CallGraphVisitor(ast.NodeVisitor):
         ast_node: for recording source location information
         """
         src_name = import_item.name  # what is being imported
-        tgt_name = import_item.asname if import_item.asname is not None else src_name  # under which name
 
         # mark the use site
         #
         # where it is being imported to, i.e. the **user**
         from_node = self.get_node_of_current_namespace()
         # the thing **being used** (under the asname, if any)
-        to_node  = self.get_node('', tgt_name, ast_node, flavor=Flavor.IMPORTEDITEM)
-
-        is_new_edge = self.add_uses_edge(from_node, to_node)
-
-        # bind asname in the current namespace to the imported module
-        #
-        # conversion: possible short name -> fully qualified name
-        # (when analyzing a set of files in the same directory)
-        if src_name in self.module_names:
-            mod_name = self.module_names[src_name]
+        mod_node = self.get_node('', src_name, ast_node, flavor=Flavor.MODULE)
+        # if there is alias, add extra edge between alias and node
+        if import_item.asname is not None:
+            alias_name = import_item.asname
         else:
-            mod_name = src_name
-        tgt_module = self.get_node('', mod_name, ast_node, flavor=Flavor.MODULE)
-        # XXX: if there is no asname, it may happen that mod_name == tgt_name,
-        # in which case these will be the same Node. They are semantically
-        # distinct (Python name at receiving end, vs. module), but currently
-        # Pyan has no way of retaining that information.
-        if to_node is tgt_module:
-            to_node.flavor = Flavor.MODULE
-        self.set_value(tgt_name, tgt_module)
+            alias_name = mod_node.name
+        self.add_uses_edge(from_node, mod_node)
+        self.logger.info(
+            "New edge added for Use import %s in %s"
+            % (mod_node, from_node)
+        )
+        self.set_value(alias_name, mod_node)  # set node to be discoverable in module
+        self.logger.info("From setting name %s to %s" % (alias_name, mod_node))
 
-        # must do this after possibly munging flavor to avoid confusing
-        # the user reading the log
-        self.logger.debug("Use from %s to Import %s" % (from_node, to_node))
-        if is_new_edge:
-            self.logger.info("New edge added for Use from %s to Import %s" % (from_node, to_node))
 
     # Edmund Horner's original post has info on what this fixed in Python 2.
     # https://ejrh.wordpress.com/2012/01/31/call-graphs-in-python-part-2/
@@ -571,8 +614,9 @@ class CallGraphVisitor(ast.NodeVisitor):
     def visit_Constant(self, node):
         self.logger.debug("Constant %s, %s:%s" % (node.value, self.filename, node.lineno))
         t = type(node.value)
+        ns = self.get_node_of_current_namespace().get_name()
         tn = t.__name__
-        self.last_value = self.get_node('', tn, node)
+        self.last_value = self.get_node(ns, tn, node, flavor=Flavor.ATTRIBUTE)
 
     # attribute access (node.ctx determines whether set (ast.Store) or get (ast.Load))
     def visit_Attribute(self, node):
@@ -1440,13 +1484,14 @@ class CallGraphVisitor(ast.NodeVisitor):
     def add_defines_edge(self, from_node, to_node):
         """Add a defines edge in the graph between two nodes.
         N.B. This will mark both nodes as defined."""
-
+        status = False
         if from_node not in self.defines_edges:
             self.defines_edges[from_node] = set()
-        if to_node in self.defines_edges[from_node]:
-            return False
-        self.defines_edges[from_node].add(to_node)
+            status = True
         from_node.defined = True
+        if to_node is None or to_node in self.defines_edges[from_node]:
+            return status
+        self.defines_edges[from_node].add(to_node)
         to_node.defined = True
         return True
 
@@ -1650,13 +1695,7 @@ class CallGraphVisitor(ast.NodeVisitor):
 
         # Lambdas and comprehensions do not define any names in the enclosing
         # scope, so we only need to treat the uses edges.
-
-        # TODO: currently we handle outgoing uses edges only.
-        #
-        # What about incoming uses edges? E.g. consider a lambda that is saved
-        # in an instance variable, then used elsewhere. How do we want the
-        # graph to look like in that case?
-
+        
         # BUG: resolve relative imports causes (RuntimeError: dictionary changed size during iteration)
         # temporary solution is adding list to force a copy of 'self.nodes'
         for name in list(self.nodes):
