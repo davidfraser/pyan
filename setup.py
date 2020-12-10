@@ -19,7 +19,6 @@ or
 
 import os
 import ast
-import sys
 from setuptools import setup
 
 #########################################################
@@ -47,47 +46,9 @@ DESC = (
     'the objects in the combined source, and how they define or '
     'use each other. The graph can be output for rendering by GraphViz or yEd.')
 
-# Set up data files for packaging.
-#
-# Directories (relative to the top-level directory where setup.py resides) in
-# which to look for data files.
-datadirs = ()
-
-# File extensions to be considered as data files. (Literal, no wildcards.)
-dataexts = (".py", ".ipynb", ".sh", ".lyx", ".tex", ".txt", ".pdf")
-
-# Standard documentation to detect (and package if it exists).
-#
-# just the basename without file extension
-standard_docs = ["README", "LICENSE", "TODO", "CHANGELOG", "AUTHORS"]
-# commonly .md for GitHub projects, but other projects may use .rst or .txt (or even blank).
-standard_doc_exts = [".md", ".rst", ".txt", ""]
-
 #########################################################
 # Init
 #########################################################
-
-# Gather user-defined data files
-#
-# https://stackoverflow.com/q/13628979/1959808
-#
-datafiles = []
-#getext = lambda filename: os.path.splitext(filename)[1]
-#for datadir in datadirs:
-#    datafiles.extend( [(root, [os.path.join(root, f)
-#                       for f in files if getext(f) in dataexts])
-#                       for root, dirs, files in os.walk(datadir)] )
-
-# Add standard documentation (README et al.), if any, to data files
-#
-detected_docs = []
-for docname in standard_docs:
-    for ext in standard_doc_exts:
-        # relative to the directory in which setup.py resides
-        filename = "".join((docname, ext))
-        if os.path.isfile(filename):
-            detected_docs.append(filename)
-datafiles.append(('.', detected_docs))
 
 # Extract __version__ from the package __init__.py
 # (since it's not a good idea to actually run __init__.py during the
@@ -96,25 +57,23 @@ datafiles.append(('.', detected_docs))
 # https://stackoverflow.com/q/2058802/1959808
 #
 init_py_path = os.path.join('pyan', '__init__.py')
-version = '0.0.unknown'
+version = None
 try:
     with open(init_py_path) as f:
         for line in f:
-            if line.startswith('__version__'):
-                version = ast.parse(line).body[0].value.s
+            if line.startswith("__version__"):
+                module = ast.parse(line)
+                expr = module.body[0]
+                v = expr.value
+                if type(v) is ast.Constant:
+                    version = v.value
+                elif type(v) is ast.Str:  # TODO: Python 3.8: remove ast.Str
+                    version = v.s
                 break
-        else:
-            print((
-                "WARNING: Version information not found in "
-                "'{path}', using placeholder '{version}'").format(
-                    path=init_py_path, version=version),
-                file=sys.stderr)
 except FileNotFoundError:
-    print((
-        "WARNING: Could not find file '{path}', "
-        "using placeholder version information '{version}'").format(
-            path=init_py_path, version=version),
-        file=sys.stderr)
+    pass
+if not version:
+    raise RuntimeError(f"Version information not found in {init_py_path}")
 
 #########################################################
 # Call setup()
@@ -179,9 +138,6 @@ setup(
     zip_safe=True,
     package_data={'pyan': ["callgraph.html"]},
     include_package_data=True,
-
-    # Custom data files not inside a Python package
-    data_files=datafiles,
 
     entry_points={
         'console_scripts': [
