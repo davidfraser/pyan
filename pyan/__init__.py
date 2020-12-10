@@ -10,7 +10,7 @@ from .analyzer import CallGraphVisitor
 from .writers import SVGWriter, HTMLWriter, DotWriter
 from .visgraph import VisualGraph
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 
 # TODO: fix code duplication with main.py, should have just one implementation.
