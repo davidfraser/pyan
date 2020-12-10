@@ -6,15 +6,18 @@ import re
 import logging
 import colorsys
 
-# Set node color by filename.
-#
-# HSL: hue = top-level namespace, lightness = nesting level, saturation constant.
-#
-# The "" namespace (for *.py files) gets the first color. Since its
-# level is 0, its lightness will be 1.0, i.e. pure white regardless
-# of the hue.
-#
 class Colorizer:
+    """Output graph color manager.
+
+    We set node color by filename.
+
+    HSL: hue = top-level namespace, lightness = nesting level, saturation constant.
+
+    The "" namespace (for *.py files) gets the first color. Since its
+    level is 0, its lightness will be 1.0, i.e. pure white regardless
+    of the hue.
+    """
+
     def __init__(self, num_colors, colored=True, logger=None):
         self.logger = logger or logging.getLogger(__name__)
         self.colored = colored
