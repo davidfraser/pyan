@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """Abstract node representing data gathered from the analysis."""
 
 from enum import Enum
