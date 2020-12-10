@@ -3,7 +3,6 @@
 from typing import Union, List
 import io
 from glob import glob
-from typing import List, Union
 
 from .main import main
 from .analyzer import CallGraphVisitor
