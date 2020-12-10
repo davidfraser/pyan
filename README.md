@@ -194,19 +194,7 @@ When a binding statement is encountered, the current namespace determines in whi
 
 # Authors
 
-Original [pyan.py](https://github.com/ejrh/ejrh/blob/master/utils/pyan.py) by Edmund Horner. [Original post with explanation](http://ejrh.wordpress.com/2012/01/31/call-graphs-in-python-part-2/).
-
-[Coloring and grouping](https://ejrh.wordpress.com/2012/08/18/coloured-call-graphs/) for GraphViz output by Juha Jeronen.
-
-[Git repository cleanup](https://github.com/davidfraser/pyan/) and maintenance by David Fraser.
-
-[yEd GraphML output, and framework for easily adding new output formats](https://github.com/davidfraser/pyan/pull/1) by Patrick Massot.
-
-A bugfix [[2]](https://github.com/davidfraser/pyan/pull/2) and the option `--dot-rankdir` [[3]](https://github.com/davidfraser/pyan/pull/3) contributed by GitHub user ch41rmn.
-
-A bug in `.tgf` output [[4]](https://github.com/davidfraser/pyan/pull/4) pointed out and fix suggested by Adam Eijdenberg.
-
-This Python 3 port, analyzer expansion, and additional refactoring by Juha Jeronen.
+See [AUTHORS.md](AUTHORS.md).
 
 # License
 
