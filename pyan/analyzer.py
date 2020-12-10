@@ -530,26 +530,11 @@ class CallGraphVisitor(ast.NodeVisitor):
 
     def visit_ImportFrom(self, node):
         self.logger.debug("ImportFrom: from %s import %s, %s:%s" % (node.module, [format_alias(x) for x in node.names], self.filename, node.lineno))
-
-        # TODO: add support for relative imports (path may be like "....something.something")
-
-        # HACK: support "from . import foo"...ish. This is very difficult
-        # to get right, so right now we don't even try to do it properly.
-        #
-        # We only special-case "from . import foo" so that it doesn't crash Pyan,
-        # and may even occasionally find the right module.
-        #
-        # Pyan would need to know the package structure, and how the program
+        # Pyan needs to know the package structure, and how the program
         # being analyzed is actually going to be invoked (!), to be able to
-        # resolve relative imports correctly. The current "here's a set of files,
-        # analyze them" approach doesn't cut it.
+        # resolve relative imports correctly.
         #
         # As a solution, we register imports here and later, when all files have been parsed, resolve them.
-        #
-        # relative imports are currently not supported, i.e. `from ..mod import xy` is not correctly resolved
-        #
-        # https://stackoverflow.com/questions/14132789/relative-imports-for-the-billionth-time
-        # https://greentreesnakes.readthedocs.io/en/latest/nodes.html?highlight=functiondef#ImportFrom
         from_node = self.get_node_of_current_namespace()
         if node.module is None: # resolve relative imports 'None' such as "from . import foo"
             self.logger.debug("ImportFrom (original) from %s import %s, %s:%s" % ('.' * node.level, [format_alias(x) for x in node.names], self.filename, node.lineno))
@@ -1505,7 +1490,6 @@ class CallGraphVisitor(ast.NodeVisitor):
             status = True
         from_node.defined = True
         if to_node is None or to_node in self.defines_edges[from_node]:
-            status = status or False
             return status
         self.defines_edges[from_node].add(to_node)
         to_node.defined = True
@@ -1711,13 +1695,7 @@ class CallGraphVisitor(ast.NodeVisitor):
 
         # Lambdas and comprehensions do not define any names in the enclosing
         # scope, so we only need to treat the uses edges.
-
-        # TODO: currently we handle outgoing uses edges only.
-        #
-        # What about incoming uses edges? E.g. consider a lambda that is saved
-        # in an instance variable, then used elsewhere. How do we want the
-        # graph to look like in that case?
-
+        
         # BUG: resolve relative imports causes (RuntimeError: dictionary changed size during iteration)
         # temporary solution is adding list to force a copy of 'self.nodes'
         for name in list(self.nodes):
