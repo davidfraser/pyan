@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """Graph markup writers."""
+
 import os
 import subprocess
 import sys
@@ -15,7 +17,7 @@ class Writer(object):
         self.output = output
         self.logger = logger or logging.getLogger(__name__)
         self.indent_level = 0
-        self.tabstop = tabstop*' '
+        self.tabstop = tabstop * ' '
 
     def log(self, msg):
         self.logger.info(msg)
@@ -27,7 +29,7 @@ class Writer(object):
         self.indent_level -= level
 
     def write(self, line):
-        self.outstream.write(self.tabstop*self.indent_level+line+'\n')
+        self.outstream.write(self.tabstop * self.indent_level + line + '\n')
 
     def run(self):
         self.log('%s running' % type(self))
@@ -159,13 +161,13 @@ class DotWriter(Writer):
     def write_edge(self, edge):
         source = edge.source
         target = edge.target
-        color  = edge.color
+        color = edge.color
         if edge.flavor == 'defines':
             self.write(
                 '    %s -> %s [style="dashed",'
                 ' color="%s"];'
                 % (source.id, target.id, color))
-        else: # edge.flavor == 'uses':
+        else:  # edge.flavor == 'uses':
             self.write(
                 '    %s -> %s [style="solid",'
                 ' color="%s"];'
@@ -300,7 +302,7 @@ class YedWriter(Writer):
 
     def write_node(self, node):
         self.log('Write node %s' % node.label)
-        width = 20 + 10*len(node.label)
+        width = 20 + 10 * len(node.label)
         self.write('<node id="%s">' % node.id)
         self.indent()
         self.write('<data key="d0">')
