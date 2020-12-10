@@ -12,6 +12,7 @@ from .visgraph import VisualGraph
 __version__ = "1.1.0"
 
 
+# TODO: fix code duplication with main.py, should have just one implementation.
 def create_callgraph(
     filenames: Union[List[str], str] = "**/*.py",
     function: Union[str, None] = None,
