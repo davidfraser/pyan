@@ -4,7 +4,7 @@ from typing import Union, List
 import io
 from glob import glob
 
-from .main import main
+from .main import main  # noqa: F401, for export only.
 from .analyzer import CallGraphVisitor
 from .writers import SVGWriter, HTMLWriter, DotWriter
 from .visgraph import VisualGraph
