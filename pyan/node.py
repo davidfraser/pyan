@@ -5,6 +5,7 @@
 
 from enum import Enum
 
+
 def make_safe_label(label):
     """Avoid name clashes with GraphViz reserved words such as 'graph'."""
     unsafe_words = ("digraph", "graph", "cluster", "subgraph", "node")
@@ -13,23 +14,24 @@ def make_safe_label(label):
         out = out.replace(word, "%sX" % word)
     return out.replace('.', '__').replace('*', '')
 
+
 class Flavor(Enum):
     """Flavor describes the kind of object a node represents."""
-    UNSPECIFIED  = "---"         # as it says on the tin
-    UNKNOWN      = "???"         # not determined by analysis (wildcard)
+    UNSPECIFIED = "---"  # as it says on the tin
+    UNKNOWN = "???"  # not determined by analysis (wildcard)
 
-    NAMESPACE    = "namespace"  # node representing a namespace
-    ATTRIBUTE    = "attribute"  # attr of something, but not known if class or func.
+    NAMESPACE = "namespace"  # node representing a namespace
+    ATTRIBUTE = "attribute"  # attr of something, but not known if class or func.
 
-    IMPORTEDITEM = "import"     # imported item of unanalyzed type
+    IMPORTEDITEM = "import"  # imported item of unanalyzed type
 
-    MODULE       = "module"
-    CLASS        = "class"
-    FUNCTION     = "function"
-    METHOD       = "method"     # instance method
+    MODULE = "module"
+    CLASS = "class"
+    FUNCTION = "function"
+    METHOD = "method"  # instance method
     STATICMETHOD = "staticmethod"
-    CLASSMETHOD  = "classmethod"
-    NAME         = "name"       # Python name (e.g. "x" in "x = 42")
+    CLASSMETHOD = "classmethod"
+    NAME = "name"  # Python name (e.g. "x" in "x = 42")
 
     # Flavors have a partial ordering in specificness of the information.
     #
@@ -50,6 +52,7 @@ class Flavor(Enum):
 
     def __repr__(self):
         return self.value
+
 
 class Node:
     """A node is an object in the call graph.
