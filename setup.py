@@ -73,7 +73,7 @@ if not version:
 #########################################################
 
 setup(
-    name="pyan",
+    name="pyan3",
     version=version,
     author="Juha Jeronen",
     author_email="juha.m.jeronen@gmail.com",
