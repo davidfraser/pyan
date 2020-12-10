@@ -9,7 +9,7 @@ from .analyzer import CallGraphVisitor
 from .writers import SVGWriter, HTMLWriter, DotWriter
 from .visgraph import VisualGraph
 
-__version__ = "1.0.5"
+__version__ = "1.1.0"
 
 
 def create_callgraph(
