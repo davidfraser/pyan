@@ -58,10 +58,10 @@ dataexts = (".py", ".ipynb", ".sh", ".lyx", ".tex", ".txt", ".pdf")
 
 # Standard documentation to detect (and package if it exists).
 #
+# just the basename without file extension
 standard_docs = ["README", "LICENSE", "TODO", "CHANGELOG", "AUTHORS"]
-    # just the basename without file extension
-standard_doc_exts = [".md", ".rst", ".txt", ""]  # commonly .md for
-    # GitHub projects, but other projects may use .rst or .txt (or even blank).
+# commonly .md for GitHub projects, but other projects may use .rst or .txt (or even blank).
+standard_doc_exts = [".md", ".rst", ".txt", ""]
 
 #########################################################
 # Init
@@ -83,8 +83,8 @@ datafiles = []
 detected_docs = []
 for docname in standard_docs:
     for ext in standard_doc_exts:
-        filename = "".join((docname, ext))  # relative to the directory in
-            # which setup.py resides
+        # relative to the directory in which setup.py resides
+        filename = "".join((docname, ext))
         if os.path.isfile(filename):
             detected_docs.append(filename)
 datafiles.append(('.', detected_docs))
