@@ -1677,8 +1677,8 @@ class CallGraphVisitor(ast.NodeVisitor):
                     if n3.name == n2.name and n2.namespace is not None and n3.namespace is not None and n3.namespace != n2.namespace:
                         pn2 = self.get_parent_node(n2)
                         pn3 = self.get_parent_node(n3)
+                        # if pn3 in self.uses_edges and pn2 in self.uses_edges[pn3]:  # remove the second edge W to Y.name (TODO: add an option to choose this)
                         if pn2 in self.uses_edges and pn3 in self.uses_edges[pn2]:  # remove the first edge W to X.name
-                            #                        if pn3 in self.uses_edges and pn2 in self.uses_edges[pn3]:  # remove the second edge W to Y.name (TODO: add an option to choose this)
                             inherited = True
 
                 if inherited and n in self.uses_edges:
