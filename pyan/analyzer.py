@@ -474,7 +474,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         # resolve relative imports 'None' such as "from . import foo"
         if node.module is None:
             self.logger.debug("ImportFrom (original) from %s import %s, %s:%s" % ('.' * node.level, [format_alias(x) for x in node.names], self.filename, node.lineno))
-            tgt_level = node.level 
+            tgt_level = node.level
             current_module_namespace = self.module_name.rsplit('.', tgt_level)[0]
             tgt_name = current_module_namespace
             self.logger.debug("ImportFrom (resolved): from %s import %s, %s:%s" % (tgt_name, [format_alias(x) for x in node.names], self.filename, node.lineno))
@@ -491,7 +491,7 @@ class CallGraphVisitor(ast.NodeVisitor):
             # pyan can handle Relative imports such as "from .mod import foo" and "from ..mod import foo"
             if node.level != 0:
                 self.logger.debug("ImportFrom (original): from %s import %s, %s:%s" % (node.module, [format_alias(x) for x in node.names], self.filename, node.lineno))
-                tgt_level = node.level 
+                tgt_level = node.level
                 current_module_namespace = self.module_name.rsplit('.', tgt_level)[0]
                 tgt_name = current_module_namespace + '.' + node.module
                 self.logger.debug("ImportFrom (resolved): from %s import %s, %s:%s" % (tgt_name, [format_alias(x) for x in node.names], self.filename, node.lineno))
@@ -1656,7 +1656,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         # What about incoming uses edges? E.g. consider a lambda that is saved
         # in an instance variable, then used elsewhere. How do we want the
         # graph to look like in that case?
-        
+
         # BUG: resolve relative imports causes (RuntimeError: dictionary changed size during iteration)
         # temporary solution is adding list to force a copy of 'self.nodes'
         for name in list(self.nodes):

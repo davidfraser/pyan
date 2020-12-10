@@ -211,4 +211,3 @@ This Python 3 port, analyzer expansion, and additional refactoring by Juha Jeron
 # License
 
 [GPL v2](LICENSE.md), as per [comments here](https://ejrh.wordpress.com/2012/08/18/coloured-call-graphs/).
-
