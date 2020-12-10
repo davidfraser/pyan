@@ -208,7 +208,7 @@ def main(cli_args=None):
         'draw_defines': known_args.draw_defines,
         'draw_uses': known_args.draw_uses,
         'colored': known_args.colored,
-        'grouped_alt' : known_args.grouped_alt,
+        'grouped_alt': known_args.grouped_alt,
         'grouped': known_args.grouped,
         'nested_groups': known_args.nested_groups,
         'annotated': known_args.annotated
@@ -253,7 +253,7 @@ def main(cli_args=None):
     if known_args.dot:
         writer = DotWriter(
             graph,
-            options=['rankdir='+known_args.rankdir],
+            options=['rankdir=' + known_args.rankdir],
             output=known_args.filename,
             logger=logger
         )
@@ -261,7 +261,7 @@ def main(cli_args=None):
     if known_args.html:
         writer = HTMLWriter(
             graph,
-            options=['rankdir='+known_args.rankdir],
+            options=['rankdir=' + known_args.rankdir],
             output=known_args.filename,
             logger=logger
         )
@@ -269,7 +269,7 @@ def main(cli_args=None):
     if known_args.svg:
         writer = SVGWriter(
             graph,
-            options=['rankdir='+known_args.rankdir],
+            options=['rankdir=' + known_args.rankdir],
             output=known_args.filename,
             logger=logger
         )
