@@ -27,6 +27,7 @@ def create_callgraph(
     grouped_alt: bool = False,
     annotated: bool = False,
     grouped: bool = True,
+    max_iter: int = 1000,
 ) -> str:
     """
     create callgraph based on static code analysis
@@ -49,6 +50,7 @@ def create_callgraph(
         grouped_alt: if to use alternative grouping
         annotated: if to annotate graph with filenames
         grouped: if to group by modules
+        max_iter: maximum number of iterations for filtering. Defaults to 1000.
 
     Returns:
         str: callgraph
@@ -77,7 +79,7 @@ def create_callgraph(
             node = v.get_node(function_namespace, function_name)
         else:
             node = None
-        v.filter(node=node, namespace=namespace)
+        v.filter(node=node, namespace=namespace, max_iter=max_iter)
     graph = VisualGraph.from_visitor(v, options=graph_options)
 
     stream = io.StringIO()
