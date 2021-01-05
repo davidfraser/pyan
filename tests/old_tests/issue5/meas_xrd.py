@@ -3,6 +3,7 @@ import os.path
 import numpy as np
 import pandas.io.parsers
 
+
 class MeasXRD:
     def __init__(self, path: str):
         if not os.path.isfile(path):
@@ -23,11 +24,5 @@ class MeasXRD:
                 line = file.readline()
 
         self.data = pandas.io.parsers.read_csv(
-            path,
-            skiprows=row_ind,
-            dtype={
-                "Angle": np.float_,
-                "Intensity": np.int_
-            },
-            engine="c"
+            path, skiprows=row_ind, dtype={"Angle": np.float_, "Intensity": np.int_}, engine="c"
         )

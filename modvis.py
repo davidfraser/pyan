@@ -3,10 +3,10 @@
 """A simple import analyzer. Visualize dependencies between modules."""
 
 import ast
-import os
-import logging
 from glob import glob
+import logging
 from optparse import OptionParser  # TODO: migrate to argparse
+import os
 
 import pyan.node
 import pyan.visgraph

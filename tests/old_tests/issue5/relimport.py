@@ -1,7 +1,6 @@
 # -*- coding: utf-8; -*-
 # See issue #5
 
-from .mod2 import foo
+from . import mod1, mod1 as moo
 from ..mod3 import bar
-from . import mod1
-from . import mod1 as moo
+from .mod2 import foo

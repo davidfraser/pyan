@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from typing import Union, List
-import io
 from glob import glob
+import io
+from typing import List, Union
 
-from .main import main  # noqa: F401, for export only.
 from .analyzer import CallGraphVisitor
-from .writers import SVGWriter, HTMLWriter, DotWriter
+from .main import main  # noqa: F401, for export only.
 from .visgraph import VisualGraph
+from .writers import DotWriter, HTMLWriter, SVGWriter
 
 __version__ = "1.1.2"
 

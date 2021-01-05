@@ -1,0 +1,26 @@
+[tool.isort]
+profile = "black"
+honor_noqa = true
+line_length = 120
+combine_as_imports = true
+force_sort_within_sections = true
+known_first_party = "pyan"
+
+[tool.black]
+line-length = 120
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | egg-info
+  | buck-out
+  | build
+  | dist
+  | env
+)/
+'''
