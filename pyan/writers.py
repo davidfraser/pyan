@@ -128,7 +128,7 @@ class DotWriter(Writer):
 
         # translucent gray (no hue to avoid visual confusion with any
         # group of colored nodes)
-        self.write('graph [style="filled,rounded",' 'fillcolor="#80808018", label="%s"];' % graph.label)
+        self.write('graph [style="filled,rounded", fillcolor="#80808018", label="%s"];' % graph.label)
 
     def finish_subgraph(self, graph):
         self.log("Finish subgraph %s" % graph.label)
@@ -148,9 +148,9 @@ class DotWriter(Writer):
         target = edge.target
         color = edge.color
         if edge.flavor == "defines":
-            self.write('    %s -> %s [style="dashed",' ' color="%s"];' % (source.id, target.id, color))
+            self.write('    %s -> %s [style="dashed",  color="%s"];' % (source.id, target.id, color))
         else:  # edge.flavor == 'uses':
-            self.write('    %s -> %s [style="solid",' ' color="%s"];' % (source.id, target.id, color))
+            self.write('    %s -> %s [style="solid",  color="%s"];' % (source.id, target.id, color))
 
     def finish_graph(self):
         self.write("}")  # terminate "digraph G {"
@@ -250,7 +250,7 @@ class YedWriter(Writer):
         self.indent()
         self.write('<y:Fill color="#CCCCCC" transparent="false"/>')
         self.write(
-            '<y:NodeLabel modelName="internal" modelPosition="t" ' 'alignment="right">%s</y:NodeLabel>' % graph.label
+            '<y:NodeLabel modelName="internal" modelPosition="t" alignment="right">%s</y:NodeLabel>' % graph.label
         )
         self.write('<y:Shape type="roundrectangle"/>')
         self.dedent()
@@ -282,7 +282,7 @@ class YedWriter(Writer):
         self.indent()
         self.write('<y:Geometry height="%s" width="%s"/>' % ("30", width))
         self.write('<y:Fill color="%s" transparent="false"/>' % node.fill_color)
-        self.write('<y:BorderStyle color="#000000" type="line" ' 'width="1.0"/>')
+        self.write('<y:BorderStyle color="#000000" type="line" width="1.0"/>')
         self.write("<y:NodeLabel>%s</y:NodeLabel>" % node.label)
         self.write('<y:Shape type="ellipse"/>')
         self.dedent()
@@ -303,9 +303,9 @@ class YedWriter(Writer):
         self.write("<y:PolyLineEdge>")
         self.indent()
         if edge.flavor == "defines":
-            self.write('<y:LineStyle color="%s" ' 'type="dashed" width="1.0"/>' % edge.color)
+            self.write('<y:LineStyle color="%s" type="dashed" width="1.0"/>' % edge.color)
         else:
-            self.write('<y:LineStyle color="%s" ' 'type="line" width="1.0"/>' % edge.color)
+            self.write('<y:LineStyle color="%s" type="line" width="1.0"/>' % edge.color)
         self.write('<y:Arrows source="none" target="standard"/>')
         self.write('<y:BendStyle smoothed="true"/>')
         self.dedent()

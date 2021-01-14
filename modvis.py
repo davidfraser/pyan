@@ -235,7 +235,7 @@ class ImportVisitor(ast.NodeVisitor):
 
 def main():
     usage = """usage: %prog FILENAME... [--dot|--tgf|--yed]"""
-    desc = "Analyse one or more Python source files and generate an" "approximate module dependency graph."
+    desc = "Analyse one or more Python source files and generate an approximate module dependency graph."
     parser = OptionParser(usage=usage, description=desc)
     parser.add_option("--dot", action="store_true", default=False, help="output in GraphViz dot format")
     parser.add_option("--tgf", action="store_true", default=False, help="output in Trivial Graph Format")
