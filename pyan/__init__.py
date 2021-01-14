@@ -37,7 +37,7 @@ def create_callgraph(
         filenames: glob pattern or list of glob patterns
             to identify filenames to parse (`**` for multiple directories)
             example: **/*.py for all python files
-        root: path to known root directory at which package root sits. Defaults to None, i.e. it will be infered.
+        root: path to known root directory at which package root sits. Defaults to None, i.e. it will be inferred.
         function: if defined, function name to filter for, e.g. "my_module.my_function"
             to only include calls that are related to `my_function`
         namespace: if defined, namespace to filter for, e.g. "my_module", it is highly
