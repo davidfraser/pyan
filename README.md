@@ -79,7 +79,7 @@ Install graphviz (e.g. via `sudo apt-get install graphviz`) and modify `source/c
 # modify extensions
 extensions = [
   ...
-  "sphinx.ext.graphviz
+  "sphinx.ext.graphviz"
   "pyan.sphinx",
 ]
 
