@@ -28,9 +28,10 @@ import re
 from typing import Any
 
 from docutils.parsers.rst import directives
-from pyan import create_callgraph
 from sphinx.ext.graphviz import align_spec, figure_wrapper, graphviz
 from sphinx.util.docutils import SphinxDirective
+
+from pyan import create_callgraph
 
 
 def direction_spec(argument: Any) -> str:

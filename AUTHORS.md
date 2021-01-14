@@ -14,6 +14,6 @@ This Python 3 port, analyzer expansion, and additional refactoring by Juha Jeron
 
 HTML and SVG export by Jan Beitner.
 
-Support for relative imports by Jan Beitner and Rakan Alanazi. 
+Support for relative imports by Jan Beitner and Rakan Alanazi.
 
 Further contributions by Ioannis Filippidis, Jan Malek, José Eduardo Montenegro Cavalcanti de Oliveira, Mantas Zimnickas, Sam Basak, Brady Deetz, and GitHub user dmfreemon.

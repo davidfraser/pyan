@@ -9,13 +9,13 @@
     for rendering by e.g. GraphViz or yEd.
 """
 
-import logging
-from glob import glob
 from argparse import ArgumentParser
+from glob import glob
+import logging
 
 from .analyzer import CallGraphVisitor
 from .visgraph import VisualGraph
-from .writers import TgfWriter, DotWriter, YedWriter, HTMLWriter, SVGWriter
+from .writers import DotWriter, HTMLWriter, SVGWriter, TgfWriter, YedWriter
 
 
 def main(cli_args=None):

@@ -1,9 +1,11 @@
-import logging
 from glob import glob
+import logging
 import os
+
 import pytest
 
 from pyan.analyzer import CallGraphVisitor
+
 
 @pytest.fixture
 def callgraph():
@@ -16,6 +18,7 @@ def get_node(nodes, name):
     filtered_nodes = [node for node in nodes if node.get_name() == name]
     assert len(filtered_nodes) == 1, f"Node with name {name} should exist"
     return filtered_nodes[0]
+
 
 def get_in_dict(node_dict, name):
     return node_dict[get_node(node_dict.keys(), name)]

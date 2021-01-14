@@ -2,13 +2,16 @@
 # -*- coding: utf-8 -*-
 """Utilities for analyzer."""
 
-import os.path
 import ast
+import os.path
+
 from .node import Flavor
+
 
 def head(lst):
     if len(lst):
         return lst[0]
+
 
 def tail(lst):
     if len(lst) > 1:
@@ -16,15 +19,16 @@ def tail(lst):
     else:
         return []
 
+
 def get_module_name(filename):
     """Try to determine the full module name of a source file, by figuring out
     if its directory looks like a package (i.e. has an __init__.py file)."""
 
-    if os.path.basename(filename) == '__init__.py':
+    if os.path.basename(filename) == "__init__.py":
         return get_module_name(os.path.dirname(filename))
 
-    init_path = os.path.join(os.path.dirname(filename), '__init__.py')
-    mod_name = os.path.basename(filename).replace('.py', '')
+    init_path = os.path.join(os.path.dirname(filename), "__init__.py")
+    mod_name = os.path.basename(filename).replace(".py", "")
 
     if not os.path.exists(init_path):
         return mod_name
@@ -36,7 +40,8 @@ def get_module_name(filename):
     if not os.path.dirname(filename):
         return mod_name
 
-    return get_module_name(os.path.dirname(filename)) + '.' + mod_name
+    return get_module_name(os.path.dirname(filename)) + "." + mod_name
+
 
 def format_alias(x):
     """Return human-readable description of an ast.alias (used in Import and ImportFrom nodes)."""
@@ -48,6 +53,7 @@ def format_alias(x):
     else:
         return "%s" % (x.name)
 
+
 def get_ast_node_name(x):
     """Return human-readable name of ast.Attribute or ast.Name. Pass through anything else."""
     if isinstance(x, ast.Attribute):
@@ -58,18 +64,22 @@ def get_ast_node_name(x):
     else:
         return x
 
+
 # Helper for handling binding forms.
 def sanitize_exprs(exprs):
     """Convert ast.Tuples in exprs to Python tuples; wrap result in a Python tuple."""
+
     def process(expr):
         if isinstance(expr, (ast.Tuple, ast.List)):
             return expr.elts  # .elts is a Python tuple
         else:
             return [expr]
+
     if isinstance(exprs, (tuple, list)):
         return [process(expr) for expr in exprs]
     else:
         return process(exprs)
+
 
 def resolve_method_resolution_order(class_base_nodes, logger):
     """Compute the method resolution order (MRO) for each of the analyzed classes.
@@ -85,17 +95,21 @@ def resolve_method_resolution_order(class_base_nodes, logger):
 
     from functools import reduce
     from operator import add
+
     def C3_find_good_head(heads, tails):  # find an element of heads which is not in any of the tails
         flat_tails = reduce(add, tails, [])  # flatten the outer level
         for hd in heads:
             if hd not in flat_tails:
                 break
         else:  # no break only if there are cyclic dependencies.
-            raise LinearizationImpossible("MRO linearization impossible; cyclic dependency detected. heads: %s, tails: %s" % (heads, tails))
+            raise LinearizationImpossible(
+                "MRO linearization impossible; cyclic dependency detected. heads: %s, tails: %s" % (heads, tails)
+            )
         return hd
 
     def remove_all(elt, lst):  # remove all occurrences of elt from lst, return a copy
         return [x for x in lst if x != elt]
+
     def remove_all_in(elt, lists):  # remove elt from all lists, return a copy
         return [remove_all(elt, lst) for lst in lists]
 
@@ -117,6 +131,7 @@ def resolve_method_resolution_order(class_base_nodes, logger):
     mro = {}  # result
     try:
         memo = {}  # caching/memoization
+
         def C3_linearize(node):
             logger.debug("MRO: C3 linearizing %s" % (node))
             seen.add(node)
@@ -137,6 +152,7 @@ def resolve_method_resolution_order(class_base_nodes, logger):
                     memo[node] = [node] + C3_merge(lists)
             logger.debug("MRO: C3 linearized %s, result %s" % (node, memo[node]))
             return memo[node]
+
         for node in class_base_nodes:
             logger.debug("MRO: analyzing class %s" % (node))
             seen = set()  # break cycles (separately for each class we start from)
@@ -150,6 +166,7 @@ def resolve_method_resolution_order(class_base_nodes, logger):
         #  analyzed is so badly formed that the MRO algorithm fails)
 
         memo = {}  # caching/memoization
+
         def lookup_bases_recursive(node):
             seen.add(node)
             if node not in memo:
@@ -170,9 +187,12 @@ def resolve_method_resolution_order(class_base_nodes, logger):
 
     return mro
 
+
 class UnresolvedSuperCallError(Exception):
     """For specifically signaling an unresolved super()."""
+
     pass
+
 
 class Scope:
     """Adaptor that makes scopes look somewhat like those from the Python 2
@@ -181,14 +201,15 @@ class Scope:
     def __init__(self, table):
         """table: SymTable instance from symtable.symtable()"""
         name = table.get_name()
-        if name == 'top':
-            name = ''  # Pyan defines the top level as anonymous
+        if name == "top":
+            name = ""  # Pyan defines the top level as anonymous
         self.name = name
         self.type = table.get_type()  # useful for __repr__()
-        self.defs = {iden:None for iden in table.get_identifiers()}  # name:assigned_value
+        self.defs = {iden: None for iden in table.get_identifiers()}  # name:assigned_value
 
     def __repr__(self):
         return "<Scope: %s %s>" % (self.type, self.name)
+
 
 # A context manager, sort of a friend of CallGraphVisitor (depends on implementation details)
 class ExecuteInInnerScope:
