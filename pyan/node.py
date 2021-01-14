@@ -12,11 +12,12 @@ def make_safe_label(label):
     out = label
     for word in unsafe_words:
         out = out.replace(word, "%sX" % word)
-    return out.replace('.', '__').replace('*', '')
+    return out.replace(".", "__").replace("*", "")
 
 
 class Flavor(Enum):
     """Flavor describes the kind of object a node represents."""
+
     UNSPECIFIED = "---"  # as it says on the tin
     UNKNOWN = "???"  # not determined by analysis (wildcard)
 
@@ -100,7 +101,7 @@ class Node:
         Names of unknown nodes will include the *. prefix."""
 
         if self.namespace is None:
-            return '*.' + self.name
+            return "*." + self.name
         else:
             return self.name
 
@@ -108,7 +109,7 @@ class Node:
         """Return the short name, plus module and line number of definition site, if available.
         Names of unknown nodes will include the *. prefix."""
         if self.namespace is None:
-            return '*.' + self.name
+            return "*." + self.name
         else:
             if self.get_level() >= 1 and self.ast_node is not None:
                 return "%s\\n(%s:%d)" % (self.name, self.filename, self.ast_node.lineno)
@@ -119,11 +120,17 @@ class Node:
         """Return the short name, plus namespace, and module and line number of definition site, if available.
         Names of unknown nodes will include the *. prefix."""
         if self.namespace is None:
-            return '*.' + self.name
+            return "*." + self.name
         else:
             if self.get_level() >= 1:
                 if self.ast_node is not None:
-                    return "%s\\n\\n(%s:%d,\\n%s in %s)" % (self.name, self.filename, self.ast_node.lineno, repr(self.flavor), self.namespace)
+                    return "%s\\n\\n(%s:%d,\\n%s in %s)" % (
+                        self.name,
+                        self.filename,
+                        self.ast_node.lineno,
+                        repr(self.flavor),
+                        self.namespace,
+                    )
                 else:
                     return "%s\\n\\n(%s in %s)" % (self.name, repr(self.flavor), self.namespace)
             else:
@@ -132,12 +139,12 @@ class Node:
     def get_name(self):
         """Return the full name of this node."""
 
-        if self.namespace == '':
+        if self.namespace == "":
             return self.name
         elif self.namespace is None:
-            return '*.' + self.name
+            return "*." + self.name
         else:
-            return self.namespace + '.' + self.name
+            return self.namespace + "." + self.name
 
     def get_level(self):
         """Return the level of this node (in terms of nested namespaces).
@@ -149,7 +156,7 @@ class Node:
         if self.namespace == "":
             return 0
         else:
-            return 1 + self.namespace.count('.')
+            return 1 + self.namespace.count(".")
 
     def get_toplevel_namespace(self):
         """Return the name of the top-level namespace of this node, or "" if none."""
@@ -158,7 +165,7 @@ class Node:
         if self.namespace is None:  # group all unknowns in one namespace, "*"
             return "*"
 
-        idx = self.namespace.find('.')
+        idx = self.namespace.find(".")
         if idx > -1:
             return self.namespace[0:idx]
         else:
@@ -179,4 +186,4 @@ class Node:
         return make_safe_label(self.namespace)
 
     def __repr__(self):
-        return '<Node %s:%s>' % (repr(self.flavor), self.get_name())
+        return "<Node %s:%s>" % (repr(self.flavor), self.get_name())
