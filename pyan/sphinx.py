@@ -74,6 +74,7 @@ class CallgraphDirective(SphinxDirective):
             direction = self.options["direction"]
         dotcode = create_callgraph(
             filenames=f"{base_path}/**/*.py",
+            root=base_path,
             function=func_name,
             namespace=base_name,
             format="dot",
