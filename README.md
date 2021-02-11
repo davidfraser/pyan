@@ -221,7 +221,7 @@ class MyClass:
 
     def dostuff(self)
         self.f()
-````
+```
 
 By tracking the name `self.f`, the analyzer will see that `MyClass.dostuff()` uses `some_func()`.
 
