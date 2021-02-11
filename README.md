@@ -104,7 +104,7 @@ Example to create a callgraph for the function `pyan.create_callgraph` that is
 zoomable, is defined from left to right and links each node to the API documentation that
 was created at the toctree path `api`.
 
-````
+```
 .. callgraph:: pyan.create_callgraph
    :toctree: api
    :zoomable:
@@ -212,7 +212,7 @@ From the viewpoint of graphing the defines and uses relations, the interesting p
 Bindings are tracked, with lexical scoping, to determine which type of object, or which function, each name points to at any given point in the source code being analyzed. This allows tracking things like:
 
 ```python
-def some_func()
+def some_func():
     pass
 
 class MyClass:
