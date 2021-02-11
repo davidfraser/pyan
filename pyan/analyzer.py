@@ -774,9 +774,11 @@ class CallGraphVisitor(ast.NodeVisitor):
         self.last_value = None
         if node.value is not None:
             value = sanitize_exprs(node.value)
+            # issue #62: value may be an empty list, so it doesn't always have any elements
+            # even after `sanitize_exprs`.
             self.logger.debug(
                 "AnnAssign %s %s, %s:%s"
-                % (get_ast_node_name(target[0]), get_ast_node_name(value[0]), self.filename, node.lineno)
+                % (get_ast_node_name(target[0]), get_ast_node_name(value), self.filename, node.lineno)
             )
             self.analyze_binding(target, value)
         else:  # just a type declaration
