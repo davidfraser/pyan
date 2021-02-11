@@ -16,6 +16,7 @@ __version__ = "1.1.2"
 # TODO: fix code duplication with main.py, should have just one implementation.
 def create_callgraph(
     filenames: Union[List[str], str] = "**/*.py",
+    root: str = None,
     function: Union[str, None] = None,
     namespace: Union[str, None] = None,
     format: str = "dot",
@@ -36,6 +37,7 @@ def create_callgraph(
         filenames: glob pattern or list of glob patterns
             to identify filenames to parse (`**` for multiple directories)
             example: **/*.py for all python files
+        root: path to known root directory at which package root sits. Defaults to None, i.e. it will be inferred.
         function: if defined, function name to filter for, e.g. "my_module.my_function"
             to only include calls that are related to `my_function`
         namespace: if defined, namespace to filter for, e.g. "my_module", it is highly
@@ -71,7 +73,7 @@ def create_callgraph(
         "annotated": annotated,
     }
 
-    v = CallGraphVisitor(filenames)
+    v = CallGraphVisitor(filenames, root=root)
     if function or namespace:
         if function:
             function_name = function.split(".")[-1]

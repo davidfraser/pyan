@@ -51,7 +51,7 @@ class CallGraphVisitor(ast.NodeVisitor):
     all files.  This way use information between objects in different files
     can be gathered."""
 
-    def __init__(self, filenames, logger=None):
+    def __init__(self, filenames, root: str = None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
 
         # full module names for all given files
@@ -60,6 +60,7 @@ class CallGraphVisitor(ast.NodeVisitor):
             mod_name = get_module_name(filename)
             self.module_to_filename[mod_name] = filename
         self.filenames = filenames
+        self.root = root
 
         # data gathered from analysis
         self.defines_edges = {}
@@ -103,7 +104,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         with open(filename, "rt", encoding="utf-8") as f:
             content = f.read()
         self.filename = filename
-        self.module_name = get_module_name(filename)
+        self.module_name = get_module_name(filename, root=self.root)
         self.analyze_scopes(content, filename)  # add to the currently known scopes
         self.visit(ast.parse(content, filename))
         self.module_name = None

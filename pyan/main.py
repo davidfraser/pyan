@@ -12,6 +12,7 @@
 from argparse import ArgumentParser
 from glob import glob
 import logging
+import os
 
 from .analyzer import CallGraphVisitor
 from .visgraph import VisualGraph
@@ -149,9 +150,22 @@ def main(cli_args=None):
         help="annotate with module and source line number",
     )
 
+    parser.add_argument(
+        "--root",
+        default=None,
+        dest="root",
+        help="Package root directory. Is inferred by default.",
+    )
+
     known_args, unknown_args = parser.parse_known_args(cli_args)
 
     filenames = [fn2 for fn in unknown_args for fn2 in glob(fn, recursive=True)]
+
+    # determine root
+    if known_args.root is not None:
+        root = os.path.abspath(known_args.root)
+    else:
+        root = None
 
     if len(unknown_args) == 0:
         parser.error("Need one or more filenames to process")
@@ -189,7 +203,7 @@ def main(cli_args=None):
         handler = logging.FileHandler(known_args.logname)
         logger.addHandler(handler)
 
-    v = CallGraphVisitor(filenames, logger)
+    v = CallGraphVisitor(filenames, logger, root=root)
 
     if known_args.function or known_args.namespace:
 

@@ -20,27 +20,37 @@ def tail(lst):
         return []
 
 
-def get_module_name(filename):
+def get_module_name(filename, root: str = None):
     """Try to determine the full module name of a source file, by figuring out
-    if its directory looks like a package (i.e. has an __init__.py file)."""
+    if its directory looks like a package (i.e. has an __init__.py file or
+    there is a .py file in it )."""
 
     if os.path.basename(filename) == "__init__.py":
-        return get_module_name(os.path.dirname(filename))
+        # init file means module name is directory name
+        module_path = os.path.dirname(filename)
+    else:
+        # otherwise it is the filename without extension
+        module_path = filename.replace(".py", "")
 
-    init_path = os.path.join(os.path.dirname(filename), "__init__.py")
-    mod_name = os.path.basename(filename).replace(".py", "")
+    # find the module root - walk up the tree and check if it contains .py files - if yes. it is the new root
+    directories = [(module_path, True)]
+    if root is None:
+        while directories[0][0] != os.path.dirname(directories[0][0]):
+            potential_root = os.path.dirname(directories[0][0])
+            is_root = any([f == "__init__.py" for f in os.listdir(potential_root)])
+            directories.insert(0, (potential_root, is_root))
 
-    if not os.path.exists(init_path):
-        return mod_name
+        # keep directories where itself of parent is root
+        while not directories[0][1]:
+            directories.pop(0)
 
-    # blank path means we're looking at __init__.py, in cwd, so its module name is "__init__"
-    if not filename:
-        return "__init__"
+    else:  # root is already known - just walk up until it is matched
+        while directories[0][0] != root:
+            potential_root = os.path.dirname(directories[0][0])
+            directories.insert(0, (potential_root, True))
 
-    if not os.path.dirname(filename):
-        return mod_name
-
-    return get_module_name(os.path.dirname(filename)) + "." + mod_name
+    mod_name = ".".join([os.path.basename(f[0]) for f in directories])
+    return mod_name
 
 
 def format_alias(x):
