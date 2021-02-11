@@ -10,7 +10,7 @@ from .main import main  # noqa: F401, for export only.
 from .visgraph import VisualGraph
 from .writers import DotWriter, HTMLWriter, SVGWriter
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 
 # TODO: fix code duplication with main.py, should have just one implementation.
