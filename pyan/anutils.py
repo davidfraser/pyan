@@ -2,13 +2,16 @@
 # -*- coding: utf-8 -*-
 """Utilities for analyzer."""
 
-import os.path
 import ast
+import os.path
+
 from .node import Flavor
+
 
 def head(lst):
     if len(lst):
         return lst[0]
+
 
 def tail(lst):
     if len(lst) > 1:
@@ -16,23 +19,39 @@ def tail(lst):
     else:
         return []
 
-def get_module_name(filename):
+
+def get_module_name(filename, root: str = None):
     """Try to determine the full module name of a source file, by figuring out
-    if its directory looks like a package (i.e. has an __init__.py file)."""
+    if its directory looks like a package (i.e. has an __init__.py file or
+    there is a .py file in it )."""
 
-    if os.path.basename(filename) == '__init__.py':
-        return get_module_name(os.path.dirname(filename))
+    if os.path.basename(filename) == "__init__.py":
+        # init file means module name is directory name
+        module_path = os.path.dirname(filename)
+    else:
+        # otherwise it is the filename without extension
+        module_path = filename.replace(".py", "")
 
-    init_path = os.path.join(os.path.dirname(filename), '__init__.py')
-    mod_name = os.path.basename(filename).replace('.py', '')
+    # find the module root - walk up the tree and check if it contains .py files - if yes. it is the new root
+    directories = [(module_path, True)]
+    if root is None:
+        while directories[0][0] != os.path.dirname(directories[0][0]):
+            potential_root = os.path.dirname(directories[0][0])
+            is_root = any([f == "__init__.py" for f in os.listdir(potential_root)])
+            directories.insert(0, (potential_root, is_root))
 
-    if not os.path.exists(init_path):
-        return mod_name
+        # keep directories where itself of parent is root
+        while not directories[0][1]:
+            directories.pop(0)
 
-    if not os.path.dirname(filename):
-        return mod_name
+    else:  # root is already known - just walk up until it is matched
+        while directories[0][0] != root:
+            potential_root = os.path.dirname(directories[0][0])
+            directories.insert(0, (potential_root, True))
 
-    return get_module_name(os.path.dirname(filename)) + '.' + mod_name
+    mod_name = ".".join([os.path.basename(f[0]) for f in directories])
+    return mod_name
+
 
 def format_alias(x):
     """Return human-readable description of an ast.alias (used in Import and ImportFrom nodes)."""
@@ -44,6 +63,7 @@ def format_alias(x):
     else:
         return "%s" % (x.name)
 
+
 def get_ast_node_name(x):
     """Return human-readable name of ast.Attribute or ast.Name. Pass through anything else."""
     if isinstance(x, ast.Attribute):
@@ -54,18 +74,22 @@ def get_ast_node_name(x):
     else:
         return x
 
+
 # Helper for handling binding forms.
 def sanitize_exprs(exprs):
     """Convert ast.Tuples in exprs to Python tuples; wrap result in a Python tuple."""
+
     def process(expr):
         if isinstance(expr, (ast.Tuple, ast.List)):
             return expr.elts  # .elts is a Python tuple
         else:
             return [expr]
+
     if isinstance(exprs, (tuple, list)):
         return [process(expr) for expr in exprs]
     else:
         return process(exprs)
+
 
 def resolve_method_resolution_order(class_base_nodes, logger):
     """Compute the method resolution order (MRO) for each of the analyzed classes.
@@ -81,17 +105,21 @@ def resolve_method_resolution_order(class_base_nodes, logger):
 
     from functools import reduce
     from operator import add
+
     def C3_find_good_head(heads, tails):  # find an element of heads which is not in any of the tails
         flat_tails = reduce(add, tails, [])  # flatten the outer level
         for hd in heads:
             if hd not in flat_tails:
                 break
         else:  # no break only if there are cyclic dependencies.
-            raise LinearizationImpossible("MRO linearization impossible; cyclic dependency detected. heads: %s, tails: %s" % (heads, tails))
+            raise LinearizationImpossible(
+                "MRO linearization impossible; cyclic dependency detected. heads: %s, tails: %s" % (heads, tails)
+            )
         return hd
 
     def remove_all(elt, lst):  # remove all occurrences of elt from lst, return a copy
         return [x for x in lst if x != elt]
+
     def remove_all_in(elt, lists):  # remove elt from all lists, return a copy
         return [remove_all(elt, lst) for lst in lists]
 
@@ -113,6 +141,7 @@ def resolve_method_resolution_order(class_base_nodes, logger):
     mro = {}  # result
     try:
         memo = {}  # caching/memoization
+
         def C3_linearize(node):
             logger.debug("MRO: C3 linearizing %s" % (node))
             seen.add(node)
@@ -133,6 +162,7 @@ def resolve_method_resolution_order(class_base_nodes, logger):
                     memo[node] = [node] + C3_merge(lists)
             logger.debug("MRO: C3 linearized %s, result %s" % (node, memo[node]))
             return memo[node]
+
         for node in class_base_nodes:
             logger.debug("MRO: analyzing class %s" % (node))
             seen = set()  # break cycles (separately for each class we start from)
@@ -146,6 +176,7 @@ def resolve_method_resolution_order(class_base_nodes, logger):
         #  analyzed is so badly formed that the MRO algorithm fails)
 
         memo = {}  # caching/memoization
+
         def lookup_bases_recursive(node):
             seen.add(node)
             if node not in memo:
@@ -166,9 +197,12 @@ def resolve_method_resolution_order(class_base_nodes, logger):
 
     return mro
 
+
 class UnresolvedSuperCallError(Exception):
     """For specifically signaling an unresolved super()."""
+
     pass
+
 
 class Scope:
     """Adaptor that makes scopes look somewhat like those from the Python 2
@@ -177,14 +211,15 @@ class Scope:
     def __init__(self, table):
         """table: SymTable instance from symtable.symtable()"""
         name = table.get_name()
-        if name == 'top':
-            name = ''  # Pyan defines the top level as anonymous
+        if name == "top":
+            name = ""  # Pyan defines the top level as anonymous
         self.name = name
         self.type = table.get_type()  # useful for __repr__()
-        self.defs = {iden:None for iden in table.get_identifiers()}  # name:assigned_value
+        self.defs = {iden: None for iden in table.get_identifiers()}  # name:assigned_value
 
     def __repr__(self):
         return "<Scope: %s %s>" % (self.type, self.name)
+
 
 # A context manager, sort of a friend of CallGraphVisitor (depends on implementation details)
 class ExecuteInInnerScope:
