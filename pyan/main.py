@@ -203,7 +203,7 @@ def main(cli_args=None):
         handler = logging.FileHandler(known_args.logname)
         logger.addHandler(handler)
 
-    v = CallGraphVisitor(filenames, logger, root=root)
+    v = CallGraphVisitor(filenames, root, logger)
 
     if known_args.function or known_args.namespace:
 
