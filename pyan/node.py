@@ -12,7 +12,7 @@ def make_safe_label(label):
     out = label
     for word in unsafe_words:
         out = out.replace(word, "%sX" % word)
-    return out.replace(".", "__").replace("*", "")
+    return out.replace(".", "__").replace("*", "").replace("-", "_")
 
 
 class Flavor(Enum):
