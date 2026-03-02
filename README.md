@@ -1,3 +1,7 @@
+2.0.0 is out at https://github.com/Technologicat/pyan and on PyPI (pip install pyan3).
+
+Pythons 3.10 through 3.14 supported.
+
 # Pyan3
 
 Offline call graph generator for Python 3
